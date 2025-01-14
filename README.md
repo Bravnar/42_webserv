@@ -1,1 +1,5 @@
 # 42_webserv
+
+FOR THIS SHALL BE THE HUMBLE BEGINNINGS OF A WONDERFUL PROJECT...
+
+Let the saga begin.
