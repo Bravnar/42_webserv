@@ -3,14 +3,14 @@
 # define CONFIGMANAGER_HPP
 
 # include <string>
-# include <unordered_map>
+# include <map>
 # include <iostream>
 # include "ConfigParser.hpp"
 
 class ConfigManager {
 	private:
 
-		std::unordered_map<std::string, std::string>	_serverConf ;
+		std::map<std::string, std::map<std::string, std::string> >	_serverConf ;
 		std::string										_confPath ;
 
 		void											_parseConfig();

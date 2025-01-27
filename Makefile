@@ -5,7 +5,7 @@
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
-FILES = main
+FILES = main ConfigManager ConfigParser
 
 
 SRCS = $(addsuffix .cpp, $(FILES))

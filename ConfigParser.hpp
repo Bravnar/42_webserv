@@ -2,7 +2,7 @@
 # define CONFIGPARSER_HPP
 
 # include <string>
-# include <unordered_map>
+# include <map>
 # include <iostream>
 # include <fstream>
 # include <stdexcept>
@@ -17,7 +17,9 @@ class ConfigParser
 		~ConfigParser();
 
 	public:
-		static std::unordered_map<std::string, std::string> parse( const std::string &filePath ) ;
+		//main function that will take care of the parsing and populating the map
+		static std::map<std::string, std::map<std::string, std::string> >
+		parse( const std::string &filePath ) ;
 
 	// nested classes for custom exceptions!
 } ;
