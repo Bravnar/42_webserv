@@ -4,14 +4,20 @@
 # include <netinet/in.h>
 # include <cstring>
 # include <unistd.h>
+# include <iostream>
+# include <cerrno>
+# include "./../utils/Logger.hpp"
+# include "./../utils/Convert.hpp"
+# include <arpa/inet.h>
 
 class ServerManager {
 	private:
-		int port_;
+		const int port_;
+		const struct sockaddr_in addrv4_;
+		const struct sockaddr *address_;
+		bool isHealthy_;
 		int server_fd_;
-		struct sockaddr_in addrv4_;
-		struct sockaddr *address_;
-		void init_();
+		int init_();
 
 	public:
 		ServerManager();
@@ -19,6 +25,8 @@ class ServerManager {
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
+		bool isHealthy();
+		int run();
 };
 
 #endif
