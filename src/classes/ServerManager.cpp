@@ -65,12 +65,12 @@ int ServerManager::run() {
 		return 1;
 	int client_socket;
 	struct sockaddr_in client;
-	socklen_t client_len;
+	socklen_t client_len = sizeof(client);
 	while (true) {
 		if ((client_socket = accept(this->server_fd_, (sockaddr*)&client, &client_len)) < 0) {
 			this->isHealthy_ = false;
-			Logger::fatal("error on request accept(): " + static_cast<std::string>(strerror(errno)));
-			return 2;
+			Logger::error("error on request accept(): " + static_cast<std::string>(strerror(errno)));
+			continue;
 		} else {
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(client.sin_addr), client_ip, INET_ADDRSTRLEN);
