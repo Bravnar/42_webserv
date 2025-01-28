@@ -18,25 +18,26 @@ static std::string getCurrentDateTime() {
 }
 
 void Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
-	std::cout << "[" << getCurrentDateTime() << "] ";
+	std::ostream& stream = lvl <= 2 ? std::cerr : std::cout;
+	stream << "[" << getCurrentDateTime() << "] ";
 	switch(lvl) {
 		case LFATAL:
-			std::cout << C_RED << C_B_WHITE << "[FATAL]";
+			stream << C_RED << C_B_WHITE << "[FATAL]";
 			break;
 		case LERROR:
-			std::cout << C_RED << "[ERROR]";
+			stream << C_RED << "[ERROR]";
 			break;
 		case LWARNING:
-			std::cout << C_YELLOW << "[WARNING]";
+			stream << C_YELLOW << "[WARNING]";
 			break;
 		case LINFO:
-			std::cout << C_CYAN << "[INFO]";
+			stream << C_CYAN << "[INFO]";
 			break;
 		case LDEBUG:
-			std::cout << C_PINK << "[DEBUG]";
+			stream << C_PINK << "[DEBUG]";
 			break;
 	}
-	std::cout << C_RESET << " " << msg << std::endl;
+	stream << C_RESET << " " << msg << std::endl;
 }
 
 void Logger::fatal(const std::string& str) {
