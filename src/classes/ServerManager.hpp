@@ -8,7 +8,7 @@
 # include <cerrno>
 # include "./../utils/Logger.hpp"
 # include "./../utils/Convert.hpp"
-# include <arpa/inet.h>
+# include "./ClientHandler.hpp"
 
 class ServerManager {
 	private:
@@ -21,7 +21,7 @@ class ServerManager {
 
 	public:
 		ServerManager();
-		ServerManager(int port);
+		ServerManager(int);
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();

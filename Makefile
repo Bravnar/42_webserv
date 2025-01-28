@@ -7,6 +7,7 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
 FILES =	main \
 		classes/ServerManager \
+		classes/ClientHandler \
 		utils/Logger \
 		utils/Convert \
 
