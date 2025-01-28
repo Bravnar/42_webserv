@@ -1,0 +1,15 @@
+objs/
+*.o
+*.out
+webserv
+*.swp
+*.log
+*.~*
+
+.vscode/
+.idea/
+*.vs/
+*.vscode/
+
+.DS_Store
+Thumbs.db
