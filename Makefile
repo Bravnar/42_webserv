@@ -5,28 +5,30 @@
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
-FILES = main ConfigManager ConfigParser
+FILES =	main \
+		classes/ConfigManager \
+		classes/ConfigParser \
 
 
-SRCS = $(addsuffix .cpp, $(FILES))
+SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))
 OBJS = $(addprefix objs/, $(addsuffix .o, $(FILES)))
 
 # Additional include paths (not used in this Makefile)
 # HEADERS =
 #INCLUDE_PATHS = -I.
 
-objs/%.o: %.cpp
+objs/%.o: src/%.cpp
+		@mkdir -p $(dir $@)
 		@if ! [ -d objs ]; then\
 			mkdir objs;\
 		fi
 		@$(CXX) $(CXXFLAGS) -c -o $@ $<
-		
 
 all: $(NAME)
 
-$(NAME): $(HEADERS) $(OBJS)
+$(NAME): $(HEADERS) $(SRCS) $(OBJS)
 # @$(CXX) $(CXXFLAGS) $(INCLUDE_PATHS) -o $@ $(SRCS)
-		@$(CXX) $(CXXFLAGS) -o $@ $(SRCS)
+		@$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 		@echo "\033[0;32m ✅ Compilation done! ✅ \033[0m"
 
 clean:

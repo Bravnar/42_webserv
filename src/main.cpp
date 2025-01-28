@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "ConfigManager.hpp"
+#include "classes/ConfigManager.hpp"
 
 int	main( void ) {
 
