@@ -27,7 +27,8 @@ class Logger {
 		Logger(const Logger&) {};
 		Logger& operator=(const Logger&) {return *this;};
 		~Logger() {};
-		static void baseLog(e_logger_lvl lvl, const std::string& msg);
+		static void baseLog(e_logger_lvl lvl, const std::string&);
+		static std::string formatLog(const std::string&);
 
 	public:
 		static void fatal(const std::string&);

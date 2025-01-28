@@ -17,8 +17,38 @@ static std::string getCurrentDateTime() {
 	return std::string(current_time);
 }
 
+std::string Logger::formatLog(const std::string& msg) {
+	std::string output = msg;
+	std::size_t pos = 0;
+
+	while ((pos = output.find("http://", pos)) != std::string::npos) {
+		std::size_t end = output.find_first_of(" \t\n", pos);
+		if (end == std::string::npos) {
+			end = output.length();
+		}
+		std::string url = output.substr(pos, end - pos);
+		std::string colored_url = std::string(C_CYAN) + C_UNDERLINE + url + C_RESET;
+		output.replace(pos, url.length(), colored_url);
+		pos += colored_url.length();
+	}
+
+	pos = 0;
+	while ((pos = output.find("https://", pos)) != std::string::npos) {
+		std::size_t end = output.find_first_of(" \t\n", pos);
+		if (end == std::string::npos) {
+			end = output.length();
+		}
+		std::string url = output.substr(pos, end - pos);
+		std::string colored_url = std::string(C_CYAN) + C_UNDERLINE + url + C_RESET;
+		output.replace(pos, url.length(), colored_url);
+		pos += colored_url.length();
+	}
+	return output;
+}
+
 void Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
 	std::ostream& stream = lvl <= 2 ? std::cerr : std::cout;
+
 	stream << "[" << getCurrentDateTime() << "] ";
 	switch(lvl) {
 		case LFATAL:
@@ -37,7 +67,7 @@ void Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
 			stream << C_PINK << "[DEBUG]";
 			break;
 	}
-	stream << C_RESET << " " << msg << std::endl;
+	stream << C_RESET << " " << formatLog(msg) << std::endl;
 }
 
 void Logger::fatal(const std::string& str) {
