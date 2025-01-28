@@ -27,15 +27,15 @@ class Logger {
 		Logger(const Logger&) {};
 		Logger& operator=(const Logger&) {return *this;};
 		~Logger() {};
-		static void baseLog(e_logger_lvl lvl, const std::string&);
+		static std::ostream& baseLog(e_logger_lvl lvl, const std::string&);
 		static std::string formatLog(const std::string&);
 
 	public:
-		static void fatal(const std::string&);
-		static void error(const std::string&);
-		static void warning(const std::string&);
-		static void info(const std::string&);
-		static void debug(const std::string&);
+		static std::ostream& fatal(const std::string&);
+		static std::ostream& error(const std::string&);
+		static std::ostream& warning(const std::string&);
+		static std::ostream& info(const std::string&);
+		static std::ostream& debug(const std::string&);
 };
 
 #endif

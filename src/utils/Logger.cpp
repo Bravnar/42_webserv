@@ -46,7 +46,7 @@ std::string Logger::formatLog(const std::string& msg) {
 	return output;
 }
 
-void Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
+std::ostream& Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
 	std::ostream& stream = lvl <= 2 ? std::cerr : std::cout;
 
 	stream << "[" << getCurrentDateTime() << "] ";
@@ -68,25 +68,28 @@ void Logger::baseLog(e_logger_lvl lvl, const std::string& msg) {
 			break;
 	}
 	stream << C_RESET << " " << formatLog(msg) << std::endl;
+	return stream;
 }
 
-void Logger::fatal(const std::string& str) {
-	Logger::baseLog(LFATAL, str);
+std::ostream& Logger::fatal(const std::string& str) {
+	return Logger::baseLog(LFATAL, str);
 }
 
-void Logger::error(const std::string& str) {
-	Logger::baseLog(LERROR, str);
+std::ostream& Logger::error(const std::string& str) {
+	return Logger::baseLog(LERROR, str);
 }
 
-void Logger::warning(const std::string& str) {
-	Logger::baseLog(LWARNING, str);
+std::ostream& Logger::warning(const std::string& str) {
+	return Logger::baseLog(LWARNING, str);
 }
 
-void Logger::info(const std::string& str) {
-	Logger::baseLog(LINFO, str);
+std::ostream& Logger::info(const std::string& str) {
+	return Logger::baseLog(LINFO, str);
 }
 
-void Logger::debug(const std::string& str) {
+std::ostream& Logger::debug(const std::string& str) {
 	if (LOGGER_DEBUG)
-		Logger::baseLog(LDEBUG, str);
+		return Logger::baseLog(LDEBUG, str);
+	else
+		return std::cout;
 }
