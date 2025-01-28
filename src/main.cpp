@@ -1,4 +1,4 @@
-
+#include "./classes/ServerManager.hpp"
 #include <iostream>
 #include <poll.h>
 #include <sys/socket.h>
@@ -8,6 +8,7 @@
 #include <cerrno>
 
 int	main( void ) {
+	ServerManager server(8080);
 
 	std::cout << "Hello World!" << std::endl ;
 	int server_fd;
