@@ -5,7 +5,8 @@
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
-FILES =	main
+FILES =	main \
+		utils/Logger \
 
 
 SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))
@@ -26,7 +27,7 @@ all: $(NAME)
 
 $(NAME): $(HEADERS) $(SRCS) $(OBJS)
 # @$(CXX) $(CXXFLAGS) $(INCLUDE_PATHS) -o $@ $(SRCS)
-		@$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+		@$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 		@echo "\033[0;32m ✅ Compilation done! ✅ \033[0m"
 
 clean:
@@ -38,4 +39,8 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+debug:  $(HEADERS) $(SRCS) $(OBJS)
+		@$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1
+		@echo "\033[0;32m ✅ Compilation done (debug mode)! ✅ \033[0m"
+
+.PHONY: all clean fclean re debug
