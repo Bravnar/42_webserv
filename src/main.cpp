@@ -2,10 +2,13 @@
 #include <iostream>
 #include "classes/ConfigManager.hpp"
 
-int	main( void ) {
+int	main( int ac, char **av ) {
 
-	std::cout << "Hello World!" << std::endl ;
-
+	if (ac == 2) {
+		ConfigManager	manager(av[1]) ;
+		// ServerManager	server(manager) ;
+		
+	}
 	ConfigManager	manager("./config_files/ini_test.conf") ;
 
 	return 0;

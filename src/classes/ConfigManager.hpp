@@ -1,30 +1,30 @@
-
 #ifndef CONFIGMANAGER_HPP
 # define CONFIGMANAGER_HPP
 
 # include <string>
-# include <map>
+# include <vector>
 # include <iostream>
+# include "ServerConfig.hpp"
 # include "ConfigParser.hpp"
 
 class ConfigManager {
 	private:
 
-		std::map<std::string, std::map<std::string, std::string> >	_serverConf ;
-		std::string										_confPath ;
+		std::vector<ServerConfig>	_servers ;
+		std::string					_confPath ;
 
-		void											_parseConfig();
+		void						_parseConfig() ;
 
-		ConfigManager( void ) ;
 	public:
 
+		ConfigManager( void ) ;
 		ConfigManager( const std::string &filePath ) ;
 		ConfigManager( const ConfigManager &other ) ;
 		ConfigManager& operator=( const ConfigManager &other ) ;
-		virtual ~ConfigManager( void ) ;
+		~ConfigManager( void ) ;
 
-		std::string getConfig( const std::string& key ) const ;
-		void		printConfig() const ;
+		const	std::vector<ServerConfig>&	getServers() const ;
+		void	printConfig() const ;
 
 } ;
 
