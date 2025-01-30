@@ -1,6 +1,6 @@
 
 # include "ConfigManager.hpp"
-# include "colors.h"
+# include "../utils/colors.h"
 
 ConfigManager::ConfigManager( void ) {
 	// should not be called
@@ -8,7 +8,10 @@ ConfigManager::ConfigManager( void ) {
 
 ConfigManager::ConfigManager( const std::string &filePath ) :
 _servers(),
-_confPath( filePath ) {}
+_confPath( filePath ) { 
+	std::cout << "Constructor: created config manager with: " << filePath << std::endl ;
+	_parseConfig() ;
+}
 
 ConfigManager::ConfigManager( const ConfigManager &other ) :
 _servers(other._servers),

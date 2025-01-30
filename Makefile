@@ -8,6 +8,9 @@ NAME = webserv
 FILES =	main \
 		classes/ConfigManager \
 		classes/ConfigParser \
+		classes/ServerConfig \
+		classes/RouteConfig \
+		
 
 
 SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))

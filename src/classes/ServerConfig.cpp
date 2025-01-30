@@ -41,3 +41,10 @@ void	ServerConfig::setClientBodyLimit( int limit ) { _clientBodyLimit = limit ; 
 void	ServerConfig::addRoute( const RouteConfig& route ) { _routes.push_back(route) ; }
 
 /* GETTERS */
+
+const std::string&					ServerConfig::getHost( ) const { return _host ; }
+int									ServerConfig::getPort( ) const { return _port ; }
+const std::vector<std::string>&		ServerConfig::getServerNames( ) const { return _serverNames ; }
+const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return _errorPages ;}
+int									ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
+const std::vector<RouteConfig>		ServerConfig::getRoutes( ) const { return _routes ; }
