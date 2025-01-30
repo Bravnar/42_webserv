@@ -24,7 +24,7 @@ class ConfigManager {
 		~ConfigManager( void ) ;
 
 		const	std::vector<ServerConfig>&	getServers() const ;
-		void	printConfig() const ;
+		void	printConfig() const  ;
 
 } ;
 
