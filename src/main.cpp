@@ -12,9 +12,5 @@ int	main( void ) {
 	if (!server.isHealthy())
 		return 1;
 	server.run();
-	while (true) {
-		if (!server.isHealthy())
-			return 1;
-	}
 	return 0;
 }
