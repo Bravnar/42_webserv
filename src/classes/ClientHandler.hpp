@@ -5,16 +5,22 @@
 # include <unistd.h>
 # include <arpa/inet.h>
 # include "./../utils/Logger.hpp"
+# include "./ServerManager.hpp"
+# include "./../utils/Convert.hpp"
+# include <poll.h>
+
+class ServerManager;
 
 class ClientHandler
 {
 	private:
-		const int client_fd_;
-		const sockaddr_in client_addr_;
-		const socklen_t client_len_;
+		ServerManager& server_;
+		const pollfd socket_;
+		const sockaddr_in addr_;
+		const socklen_t len_;
 
 	public:
-		ClientHandler(int client_socket, sockaddr_in client_addr, socklen_t len);
+		ClientHandler(ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
 		ClientHandler(const ClientHandler&);
 		ClientHandler& operator=(const ClientHandler&) {return *this;};
 		~ClientHandler();

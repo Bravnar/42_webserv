@@ -40,13 +40,13 @@ int ServerManager::init_() {
 	return 0;
 }
 
-ServerManager::ServerManager(): port_(8080), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true) {
+ServerManager::ServerManager(): port_(8080), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
 }
 
-ServerManager::ServerManager(int port): port_(port), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true) {
+ServerManager::ServerManager(int port): port_(port), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
 }
 
-ServerManager::ServerManager(const ServerManager& copy): port_(copy.port_), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true) {
+ServerManager::ServerManager(const ServerManager& copy): port_(copy.port_), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
@@ -60,11 +60,9 @@ ServerManager::~ServerManager() {
 	close(this->server_fd_);
 }
 
-bool ServerManager::isHealthy() {
+bool ServerManager::isHealthy() const {
 	return this->isHealthy_;
 }
-
-
 
 int ServerManager::run() {
 	if (this->init_())
@@ -72,14 +70,19 @@ int ServerManager::run() {
 	int client_socket = -1;
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
+
 	while (true) {
 		if ((client_socket = accept(this->server_fd_, (sockaddr*)&client_addr, &client_len)) < 0) {
 			this->isHealthy_ = false;
 			Logger::error("ServerManager: error on request accept(): " + static_cast<std::string>(strerror(errno)));
 			continue;
 		}
-		ClientHandler client(client_socket, client_addr, client_len);
+		ClientHandler client(*this, client_socket, client_addr, client_len);
 		client.handle();
 	}
 	return 0;
+}
+
+std::vector<pollfd>& ServerManager::getSockets() {
+	return this->sockets_;
 }

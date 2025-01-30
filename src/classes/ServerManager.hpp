@@ -9,6 +9,10 @@
 # include "./../utils/Logger.hpp"
 # include "./../utils/Convert.hpp"
 # include "./ClientHandler.hpp"
+# include <poll.h>
+# include <vector>
+
+class ClientHandler;
 
 class ServerManager {
 	private:
@@ -16,8 +20,11 @@ class ServerManager {
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
 		bool isHealthy_;
+		const int max_clients_;
+		const int max_timeout_;
 		int server_fd_;
 		int init_();
+		std::vector<pollfd> sockets_;
 
 	public:
 		ServerManager();
@@ -25,8 +32,9 @@ class ServerManager {
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
-		bool isHealthy();
+		bool isHealthy() const;
 		int run();
+		std::vector<pollfd>& getSockets();
 };
 
 #endif
