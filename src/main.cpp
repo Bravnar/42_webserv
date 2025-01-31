@@ -7,7 +7,8 @@ int	main( int ac, char **av ) {
 		ConfigManager	manager(av[1]) ;
 	} else {
 		try {
-			ConfigManager	manager("./config_files/ini_test.conf") ;
+			ConfigManager	manager("./config_files/nginx_test.conf") ;
+			// manager.printConfig() ;
 		} catch(const std::exception& e) {
 			std::cerr << e.what() << std::endl ;
 		}
