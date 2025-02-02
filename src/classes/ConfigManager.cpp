@@ -32,28 +32,30 @@ void ConfigManager::_parseConfig( void ) {
 	catch(const std::exception& e) { std::cerr << "Error parsing config: " << e.what() << '\n'; }
 }
 
-void	ConfigManager::printConfig( ) const {
-	std::cout << "calling printConfig" << std::endl ;
-	std::cout << "_servers.size(): " << _servers.size() << std::endl ;
-	for ( size_t i = 0; i < _servers.size(); ++i ) {
-		std::cout << C_YELLOW "Server [" << i << "]:" C_RESET << std::endl ;
-		std::cout << C_WHITE "HostName: " << _servers[i].getHost() << std::endl ;
-		std::cout << "Port: " << _servers[i].getPort() << std::endl ;
-		std::cout << "Server Names: " C_RESET << std::endl ;
-		for ( size_t j = 0; j < _servers[i].getServerNames()[j].size(); ++j ) {
-			std::cout << "\t" << _servers[i].getServerNames()[j] << std::endl ;
-		}
-		std::cout << C_WHITE "Error Pages: " C_RESET << std::endl ;
-		for (std::map<int, std::string>::const_iterator it = _servers[i].getErrorPages().begin();
-				it != _servers[i].getErrorPages().end();
-				++it) {
-			std::cout << "\t" << it->first << " : " << it->second << std::endl ;
- 		}
-		std::cout << C_WHITE "Client Body Limit: " C_RESET << _servers[i].getClientBodyLimit() << std::endl ;
-		for (std::vector<RouteConfig>::const_iterator it = _servers[i].getRoutes().begin();
-				it != _servers[i].getRoutes().end();
-				++it ) {
-			std::cout << "\t" << it->getPath() << std::endl ;
-		}
-	}
-}
+// void	ConfigManager::printConfig( ) const {
+// 	std::cout << "calling printConfig" << std::endl ;
+// 	std::cout << "_servers.size(): " << _servers.size() << std::endl ;
+// 	for ( size_t i = 0; i < _servers.size(); ++i ) {
+// 		std::cout << C_YELLOW "Server [" << i << "]:" C_RESET << std::endl ;
+// 		std::cout << C_WHITE "HostName: " << _servers[i].getHost() << std::endl ;
+// 		std::cout << "Port: " << _servers[i].getPort() << std::endl ;
+// 		std::cout << "Server Names: " C_RESET << std::endl ;
+// 		for ( size_t j = 0; j < _servers[i].getServerNames()[j].size(); ++j ) {
+// 			std::cout << "\t" << _servers[i].getServerNames()[j] << std::endl ;
+// 		}
+// 		std::cout << C_WHITE "Error Pages: " C_RESET << std::endl ;
+// 		for (std::map<int, std::string>::const_iterator it = _servers[i].getErrorPages().begin();
+// 				it != _servers[i].getErrorPages().end();
+// 				++it) {
+// 			std::cout << "\t" << it->first << " : " << it->second << std::endl ;
+//  		}
+// 		std::cout << C_WHITE "Client Body Limit: " C_RESET << _servers[i].getClientBodyLimit() << std::endl ;
+// 		for (std::vector<RouteConfig>::const_iterator it = _servers[i].getRoutes().begin();
+// 				it != _servers[i].getRoutes().end();
+// 				++it ) {
+// 			std::cout << "\t" << it->getPath() << std::endl ;
+// 		}
+// 	}
+// }
+
+/* WRITE A PROPER PRINT TO CHECK */

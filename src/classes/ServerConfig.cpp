@@ -47,4 +47,4 @@ int									ServerConfig::getPort( ) const { return _port ; }
 const std::vector<std::string>&		ServerConfig::getServerNames( ) const { return _serverNames ; }
 const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return _errorPages ;}
 int									ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
-const std::vector<RouteConfig>		ServerConfig::getRoutes( ) const { return _routes ; }
+std::vector<RouteConfig>			ServerConfig::getRoutes( ) { return _routes ; }

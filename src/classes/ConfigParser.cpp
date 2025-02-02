@@ -36,18 +36,32 @@ std::string	replWhitespace( const std::string& str ) {
 	return result ;
 }
 
-void	ConfigParser::_parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line ) {
+void	parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line ) {
 	std::istringstream	iss( line ) ;
 	std::string			key, value ;
-	iss >> key ; 
-	(void) route ;
-
-	std::cout << key << std::endl ;
+	iss >> key ;
 
 	std::getline(iss, value, ';') ;
 	value = trim(value) ;
+	(void) route ;
+	(void) server ;
+	
+	if (route) {
+		std::cout << "\t" << "KEY: " << key << " VALUE: " << value << std::endl ; 
+	}
+	else 
+		std::cout << "KEY: " << key << " VALUE: " << value << std::endl ;
 
-	if (key == "host") server.setHost( value ) ;
+
+
+	/* SET UP ACCEPTED KEYS */
+	/* HAVE A LOOK WITH MAP AND FUNCTION POINTERS TO MAKE EASY PARSING*/
+
+
+	// std::getline(iss, value, ';') ;
+	// value = trim(value) ;
+
+	// if (key == "host") server.setHost( value ) ;
 }
 
 /* Main Parse method */
@@ -74,10 +88,10 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		line = replWhitespace(trim(line)) ;
 		if (line.empty() || line.at(0) == '#') continue ;
 		
-		std::cout << "Processing line: " << line << std::endl ;
+		// std::cout << "Processing line: " << line << std::endl ;
 
 		if (line == "server {") {
-			std::cout << "found server { !" << std::endl ;
+			std::cout << "IDENTIFIED SERVER BLOCK !" << std::endl ;
 			servers.push_back(ServerConfig()) ;
 			currentServer = &servers[servers.size() - 1] ;
 			inServerBlock = true ;
@@ -97,12 +111,21 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		if (line.find("location ") == 0 && line[line.size() - 1] == '{') {
 			if (currentServer) {
 				RouteConfig route ;
-				route.setPath(line.substr(9, line.size() - 10)) ;
+				route.setPath(trim(line.substr(9, line.size() - 10))) ;
+				std::cout << "IDENTIFIED LOCATION " << route.getPath() << " !"<< std::endl ;
 				currentServer->addRoute(route) ;
 				inLocationBlock = true ;
 				locationCount++ ;
 			}
 			continue ;
+		}
+
+		if (inServerBlock && !inLocationBlock) {
+			parseKeyValue(*currentServer, NULL, line) ;
+		}
+		else if (inLocationBlock) {
+			RouteConfig&	route = currentServer->getRoutes()[currentServer->getRoutes().size() - 1] ;
+			parseKeyValue(*currentServer, &route, line) ;
 		}
 	}
 	std::cout << "Server blocks counts: " << serverCount << std::endl ;

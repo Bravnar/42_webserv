@@ -12,8 +12,8 @@
 class ConfigParser {
 	private:
 		ConfigParser();
-
-		void	_parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line ) ;
+		std::vector<std::string>	_serverKeys ;
+		std::vector<std::string>	_routeKeys ; 
 
 	public:
 		ConfigParser( const ConfigParser &other ) ;

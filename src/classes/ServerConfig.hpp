@@ -36,7 +36,7 @@ class ServerConfig
 		const	std::vector<std::string>&	getServerNames() const ;
 		const 	std::map<int, std::string>&	getErrorPages() const ;
 		int									getClientBodyLimit() const ;
-		const	std::vector<RouteConfig>	getRoutes() const ;
+		std::vector<RouteConfig>			getRoutes();
 };
 
 
