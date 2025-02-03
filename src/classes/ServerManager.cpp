@@ -2,12 +2,10 @@
 
 static sockaddr_in init_addr_in(int port) {
 	struct sockaddr_in addrv4;
-
 	std::memset(&addrv4, 0, sizeof(addrv4));
-	addrv4.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET, "0.0.0.0", &addrv4.sin_addr); // TODO: Define with config manager
 	addrv4.sin_family = AF_INET;
 	addrv4.sin_port = htons(port);
-
 	return addrv4;
 }
 
@@ -15,7 +13,7 @@ int ServerManager::init_() {
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->server_fd_ < 0) {
 		this->isHealthy_ = false;
-		Logger::fatal("ServerManager: error on server_fd_ socket: " + static_cast<std::string>(strerror(errno)));
+		Logger::fatal("ServerManager: error on server_fd_ socket: " + std::string(strerror(errno)));
 		return 1;
 	}
 	int opt = 1;
@@ -26,13 +24,13 @@ int ServerManager::init_() {
 	}
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) {
 		this->isHealthy_ = false;
-		Logger::fatal("ServerManager: error on binding: " + static_cast<std::string>(strerror(errno)));
+		Logger::fatal("ServerManager: error on binding: " + std::string(strerror(errno)));
 		return 1;
 	}
 	// TODO: define connections from config
 	if (listen(this->server_fd_, 50)) {
 		this->isHealthy_ = false;
-		Logger::fatal("ServerManager: error on listen: " + static_cast<std::string>(strerror(errno)));
+		Logger::fatal("ServerManager: error on listen: " + std::string(strerror(errno)));
 		return 1;
 	}
 	Logger::info("ServerManager: Server binded on port " + Convert::ToString(this->port_));
@@ -57,6 +55,11 @@ ServerManager& ServerManager::operator=(const ServerManager& assign) {
 
 ServerManager::~ServerManager() {
 	Logger::debug("ServerManager: ServerManager deconstructor");
+	for(std::vector<ClientHandler *>::iterator it = this->clients_.begin(); it != this->clients_.end(); it++) {
+		delete *it;
+	}
+	this->clients_.clear();
+	this->sockets_.clear();
 	close(this->server_fd_);
 }
 
@@ -71,18 +74,46 @@ int ServerManager::run() {
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
 
+	pollfd server_socket;
+	server_socket.fd = this->server_fd_;
+	server_socket.events = POLLIN;
+	server_socket.revents = 0;
+	this->sockets_.push_back(server_socket);
 	while (true) {
-		if ((client_socket = accept(this->server_fd_, (sockaddr*)&client_addr, &client_len)) < 0) {
-			this->isHealthy_ = false;
-			Logger::error("ServerManager: error on request accept(): " + static_cast<std::string>(strerror(errno)));
-			continue;
+		if (poll(&this->sockets_[0], this->sockets_.size(), this->max_timeout_) < 0) {
+			if (errno == EINTR) {
+				Logger::error("ServerManager: poll error: " + std::string(strerror(errno)));
+				continue;
+			}
+			else {
+				Logger::fatal("ServerManager: poll fatal: " + std::string(strerror(errno)));
+				this->isHealthy_ = false;
+				break;
+			}
 		}
-		ClientHandler client(*this, client_socket, client_addr, client_len);
-		client.handle();
+		if (this->sockets_[0].revents & POLLIN) {
+			Logger::debug("ServerManager: Poll server");
+			client_socket = accept(this->server_fd_, (sockaddr *)&client_addr, &client_len);
+			if (client_socket < 0) {
+				Logger::error("ServerManager: error on request accept(): " + std::string(strerror(errno)));
+				continue;
+			}
+			this->clients_.push_back(new ClientHandler(*this, client_socket, client_addr, client_len));
+			Logger::debug("ServerManager: Accepted new client: " + Convert::ToString(client_socket));
+		}
+		for (size_t i = 0; i < this->clients_.size(); i++) {
+			if (this->clients_[i]->getSocket().revents & POLLIN) {
+				this->clients_[i]->handle();
+			}
+		}
 	}
 	return 0;
 }
 
 std::vector<pollfd>& ServerManager::getSockets() {
 	return this->sockets_;
+}
+
+std::vector<ClientHandler *>& ServerManager::getClients() {
+	return this->clients_;
 }

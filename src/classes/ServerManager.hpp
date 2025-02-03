@@ -25,6 +25,8 @@ class ServerManager {
 		int server_fd_;
 		int init_();
 		std::vector<pollfd> sockets_;
+		std::vector<ClientHandler *> clients_;
+		pollfd server_socket_;
 
 	public:
 		ServerManager();
@@ -35,6 +37,7 @@ class ServerManager {
 		bool isHealthy() const;
 		int run();
 		std::vector<pollfd>& getSockets();
+		std::vector<ClientHandler *>& getClients();
 };
 
 #endif

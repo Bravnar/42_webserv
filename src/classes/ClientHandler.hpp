@@ -15,9 +15,9 @@ class ClientHandler
 {
 	private:
 		ServerManager& server_;
-		const pollfd socket_;
 		const sockaddr_in addr_;
 		const socklen_t len_;
+		pollfd *socket_;
 
 	public:
 		ClientHandler(ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
@@ -25,6 +25,8 @@ class ClientHandler
 		ClientHandler& operator=(const ClientHandler&) {return *this;};
 		~ClientHandler();
 		int handle();
+		const pollfd& getSocket() const;
+
 };
 
 #endif
