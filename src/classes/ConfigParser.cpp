@@ -17,7 +17,8 @@ ConfigParser::~ConfigParser( void ) { }
 	{"port", setPort},
 	{"server_name", setServerName},
 	{"error_page", setErrorPage},
-	{"client_body_limit", setClientBodyLimit}
+	{"client_limit", setClientLimit}, // add to ServerConfig
+	{"client_body_limit", setClientBodyLimit},
 } ;
 
 const std::map<ConfigParser::RouteConfigHandler, std::string> ConfigParser::_routeKeyHandlers = {

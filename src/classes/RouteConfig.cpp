@@ -37,7 +37,7 @@ RouteConfig& RouteConfig::operator=( const RouteConfig &other ) {
 	return *this ;
 }
 /* Destructor */
-RouteConfig::~RouteConfig( void ) { }
+RouteConfig::~RouteConfig( void ) { _methods.clear() ; }
 
 /* SETTERS */
 void	RouteConfig::setPath( const std::string &path ) { _path = path ; }

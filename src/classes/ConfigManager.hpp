@@ -10,6 +10,7 @@
 class ConfigManager {
 	private:
 
+		int							_lineNum ;
 		std::vector<ServerConfig>	_servers ;
 		std::string					_confPath ;
 
