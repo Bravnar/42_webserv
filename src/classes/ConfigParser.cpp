@@ -10,6 +10,32 @@ ConfigParser& ConfigParser::operator=( const ConfigParser &other ) {
 ConfigParser::~ConfigParser( void ) { }
 /* -------------------------------------------------------------------- */
 
+/* MAP INITIALISATION ------------------------------------------------- */
+
+/* const std::map<ConfigParser::ServerConfigHandler, std::string> ConfigParser::_serverKeyHandlers = {
+	{"host", setHost},
+	{"port", setPort},
+	{"server_name", setServerName},
+	{"error_page", setErrorPage},
+	{"client_body_limit", setClientBodyLimit}
+} ;
+
+const std::map<ConfigParser::RouteConfigHandler, std::string> ConfigParser::_routeKeyHandlers = {
+	{"root", setHost},
+	{"methods", setPort},
+	{"directory_listing", setServerName},
+	{"default_file", setErrorPage},
+	{"cgi_path", setClientBodyLimit},
+	{"accept_uploads", setAcceptUploads},
+	{"upload_path", setUploadPath}
+} ; */
+
+/* SERVER CONFIGURATION HANDLERS -------------------------------------- */
+
+/* ROUTE CONFIGURATION HANDLERS --------------------------------------- */
+
+
+
 /* Helper Functions */
 std::string	trim( const std::string& str ) {
 	size_t first = str.find_first_not_of(" \t") ;
@@ -36,7 +62,7 @@ std::string	replWhitespace( const std::string& str ) {
 	return result ;
 }
 
-void	parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line ) {
+void	ConfigParser::parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line ) {
 	std::istringstream	iss( line ) ;
 	std::string			key, value ;
 	iss >> key ;
@@ -91,6 +117,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		// std::cout << "Processing line: " << line << std::endl ;
 
 		if (line == "server {") {
+			if (inServerBlock) throw std::runtime_error("Error: Indented server blocks are not allowed.") ;
 			std::cout << "IDENTIFIED SERVER BLOCK !" << std::endl ;
 			servers.push_back(ServerConfig()) ;
 			currentServer = &servers[servers.size() - 1] ;
@@ -109,6 +136,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		}
 
 		if (line.find("location ") == 0 && line[line.size() - 1] == '{') {
+			if (inLocationBlock) throw std::runtime_error("Error: Indented location blocks are not allowed.") ;
 			if (currentServer) {
 				RouteConfig route ;
 				route.setPath(trim(line.substr(9, line.size() - 10))) ;
