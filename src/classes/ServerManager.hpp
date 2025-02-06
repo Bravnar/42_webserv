@@ -42,12 +42,14 @@ class ServerManager {
 
 	public:
 		// Canonical
+
 		ServerManager();
 		ServerManager(int);
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
 		// Member functions
+
 		bool isHealthy() const;
 		int runServer();
 		void closeServer();
