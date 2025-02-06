@@ -1,5 +1,11 @@
 #include "./ClientHandler.hpp"
 
+std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_->fd) + "): " + msg); }
+std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_->fd) + "): " + msg); }
+std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_->fd) + "): " + msg); }
+std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_->fd) + "): " + msg); }
+std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_->fd) + "): " + msg); }
+
 static pollfd makeClientSocket(int fd) {
 	pollfd out;
 	out.fd = fd;
@@ -14,7 +20,7 @@ ClientHandler::ClientHandler(ServerManager& server, int client_socket, sockaddr_
 	len_(len) {
 		this->server_.getSockets().push_back(makeClientSocket(client_socket));
 		this->socket_ = &server.getSockets().back();
-		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: New socket fd: ") << this->socket_->fd << std::endl;
+		this->debug("New socket fd: ") << this->socket_->fd << std::endl;
 }
 
 ClientHandler::ClientHandler(const ClientHandler& copy):
@@ -25,7 +31,7 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 }
 
 ClientHandler::~ClientHandler() {
-	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: Client request deconstructor") << std::endl;
+	this->debug("Client request deconstructor") << std::endl;
 	close(this->socket_->fd);
 	{
 		std::vector<pollfd>& sockets_ = this->server_.getSockets();
@@ -59,20 +65,20 @@ ClientHandler::~ClientHandler() {
 void ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
-	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: handling request from ") << client_ip << std::endl;
+	this->debug("handling request from ") << client_ip << std::endl;
 	size_t buffer_size = this->server_.getConfig().max_buffer;
 	char *buffer = new char[buffer_size + 1];
 	ssize_t bytes = read(this->socket_->fd, buffer, buffer_size);
 	if (bytes > 0) {
 		buffer[bytes] = 0;
-		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: data:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
+		this->debug("data:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
 	}
 	else
-		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: no data to read") << std::endl;
+		this->debug("no data to read") << std::endl;
 	std::string res = "HTTP/1.1 200 OK\n";
 	int html_file = open("./index.html", O_RDONLY);
 	if (html_file <= 0) {
-		Logger::warning("Couldn't find") << std::endl;
+		this->warning("Couldn't find") << std::endl;
 		res += "Content-Type: text/plain\nContent-Length:24\n\nCouldn't find index.html";
 		write(this->socket_->fd, res.c_str(), res.length());
 	}

@@ -34,6 +34,11 @@ typedef struct s_config {
 class ServerManager {
 	private:
 		int init_();
+		std::ostream& fatal(const std::string&);
+		std::ostream& error(const std::string&);
+		std::ostream& warning(const std::string&);
+		std::ostream& info(const std::string&);
+		std::ostream& debug(const std::string&);
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
 		t_status status_;

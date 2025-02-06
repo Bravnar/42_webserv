@@ -15,6 +15,11 @@ class ServerManager;
 class ClientHandler
 {
 	private:
+		std::ostream& fatal(const std::string&);
+		std::ostream& error(const std::string&);
+		std::ostream& warning(const std::string&);
+		std::ostream& info(const std::string&);
+		std::ostream& debug(const std::string&);
 		ServerManager& server_;
 		const sockaddr_in addr_;
 		const socklen_t len_;
