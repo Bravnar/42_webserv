@@ -63,6 +63,8 @@ ServerManager::ServerManager(): addrv4_(newAddr(DF_PORT, DF_INTERFACE)), address
 	this->config_.port = DF_PORT;
 	this->config_.max_clients = 500;
 	this->config_.max_buffer = DF_MAX_BUFFER;
+	this->routconfig_.root = "./www/";
+	this->routconfig_.listDir = true;
 }
 
 ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
@@ -73,6 +75,8 @@ ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), ad
 	this->config_.port = port;
 	this->config_.max_clients = 500;
 	this->config_.max_buffer = DF_MAX_BUFFER;
+	this->routconfig_.root = "./www";
+	this->routconfig_.listDir = true;
 }
 
 ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_) {
@@ -83,6 +87,8 @@ ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.co
 	this->config_.port = copy.config_.port;
 	this->config_.max_clients = copy.config_.max_clients;
 	this->config_.max_buffer = copy.config_.max_buffer;
+	this->routconfig_.root = copy.routconfig_.root;
+	this->routconfig_.listDir = copy.routconfig_.listDir;
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
@@ -183,6 +189,18 @@ std::vector<ClientHandler *>& ServerManager::getClients() {
 	return this->clients_;
 }
 
-const t_config ServerManager::getConfig() const {
+/**
+ * getConfig: Get the current server configuration
+ * @return A `t_config` const reference
+ */
+const t_config& ServerManager::getConfig() const {
 	return this->config_;
+}
+
+/**
+ * getConfig: Get the current server routing configuration
+ * @return A `t_routconfig` const reference
+ */
+const t_routconfig& ServerManager::getRoutConfig() const {
+	return this->routconfig_;
 }

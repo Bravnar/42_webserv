@@ -76,14 +76,16 @@ void ClientHandler::handle() {
 	else
 		this->debug("no data to read") << std::endl;
 	std::string res = "HTTP/1.1 200 OK\n";
-	int html_file = open("./index.html", O_RDONLY);
-	if (html_file <= 0) {
-		this->warning("Couldn't find") << std::endl;
-		res += "Content-Type: text/plain\nContent-Length:24\n\nCouldn't find index.html";
+	std::string html_file = this->server_.getRoutConfig().root + "/index.html";
+	int html_file_fd = open(html_file.c_str(), O_RDONLY);
+	if (html_file_fd <= 0) {
+		this->warning("Couldn't find " + html_file) << std::endl;
+		std::string content = "Couldn't find " + html_file;
+		res += "Content-Type: text/plain\nContent-Length:" + Convert::ToString(content.length()) + "\n\n" + content;
 		write(this->socket_->fd, res.c_str(), res.length());
 	}
 	char buffer_file[2048] = {0};
-	ssize_t file_bytes = read(html_file, buffer_file, 2048);
+	ssize_t file_bytes = read(html_file_fd, buffer_file, 2048);
 	res += "Content-Type: text/html\nContent-Length:" + Convert::ToString(file_bytes) + "\n\n" + buffer_file;
 	write(this->socket_->fd, res.c_str(), res.length());
 	delete[] buffer;

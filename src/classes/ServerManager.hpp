@@ -31,6 +31,11 @@ typedef struct s_config {
 	size_t max_buffer;
 } t_config;
 
+typedef struct s_routconfig {
+	std::string root;
+	bool listDir;
+} t_routconfig;
+
 class ServerManager {
 	private:
 		int init_();
@@ -43,6 +48,7 @@ class ServerManager {
 		const struct sockaddr *address_;
 		t_status status_;
 		t_config config_;
+		t_routconfig routconfig_;
 		int server_fd_;
 		std::vector<pollfd> sockets_;
 		std::vector<ClientHandler *> clients_;
@@ -62,7 +68,8 @@ class ServerManager {
 		void closeServer();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
-		const t_config getConfig() const;
+		const t_config& getConfig() const;
+		const t_routconfig& getRoutConfig() const;
 };
 
 #endif
