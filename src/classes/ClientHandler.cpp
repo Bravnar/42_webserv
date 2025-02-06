@@ -54,10 +54,9 @@ ClientHandler::~ClientHandler() {
 //TODO: Refactor hanlde()
 /**
  * handle: Handle the client request
- * @attention Needs refactor
- * @return `1` if something went wrong
+ * @attention Nasty code! Needs refactor
  */
-int ClientHandler::handle() {
+void ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
 	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: handling request from ") << client_ip << std::endl;
@@ -70,11 +69,19 @@ int ClientHandler::handle() {
 	}
 	else
 		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: no data to read") << std::endl;
-	delete[] buffer;
-	std::string res = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
+	std::string res = "HTTP/1.1 200 OK\n";
+	int html_file = open("./index.html", O_RDONLY);
+	if (html_file <= 0) {
+		Logger::warning("Couldn't find") << std::endl;
+		res += "Content-Type: text/plain\nContent-Length:24\n\nCouldn't find index.html";
+		write(this->socket_->fd, res.c_str(), res.length());
+	}
+	char buffer_file[2048] = {0};
+	ssize_t file_bytes = read(html_file, buffer_file, 2048);
+	res += "Content-Type: text/html\nContent-Length:" + Convert::ToString(file_bytes) + "\n\n" + buffer_file;
 	write(this->socket_->fd, res.c_str(), res.length());
+	delete[] buffer;
 	delete this;
-	return 0;
 }
 
 /**

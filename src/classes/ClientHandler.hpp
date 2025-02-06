@@ -8,6 +8,7 @@
 # include "./ServerManager.hpp"
 # include "./../utils/Convert.hpp"
 # include <poll.h>
+# include <fcntl.h>
 
 class ServerManager;
 
@@ -28,7 +29,7 @@ class ClientHandler
 		~ClientHandler();
 		//Member functions
 
-		int handle();
+		void handle();
 		const pollfd& getSocket() const;
 
 };
