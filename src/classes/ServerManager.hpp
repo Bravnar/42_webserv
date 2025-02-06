@@ -14,6 +14,7 @@
 
 # define DF_PORT 8080
 # define DF_INTERFACE "0.0.0.0"
+# define DF_MAX_BUFFER 524288
 
 class ClientHandler;
 
@@ -27,6 +28,7 @@ typedef struct s_config {
 	std::string interface;
 	int port;
 	int max_clients;
+	size_t max_buffer;
 } t_config;
 
 class ServerManager {

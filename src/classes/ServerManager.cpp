@@ -56,6 +56,7 @@ ServerManager::ServerManager(): addrv4_(newAddr(DF_PORT, DF_INTERFACE)), address
 	this->config_.interface = DF_INTERFACE;
 	this->config_.port = DF_PORT;
 	this->config_.max_clients = 500;
+	this->config_.max_buffer = DF_MAX_BUFFER;
 }
 
 ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
@@ -65,6 +66,7 @@ ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), ad
 	this->config_.interface = DF_INTERFACE;
 	this->config_.port = port;
 	this->config_.max_clients = 500;
+	this->config_.max_buffer = DF_MAX_BUFFER;
 }
 
 ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_) {
@@ -74,6 +76,7 @@ ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.co
 	this->config_.interface = copy.config_.interface;
 	this->config_.port = copy.config_.port;
 	this->config_.max_clients = copy.config_.max_clients;
+	this->config_.max_buffer = copy.config_.max_buffer;
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {

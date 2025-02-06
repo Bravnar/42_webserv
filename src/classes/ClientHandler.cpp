@@ -61,13 +61,16 @@ int ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
 	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: handling request from ") << client_ip << std::endl;
-	char buffer[1025] = {0};
-	size_t bytes = read(this->socket_->fd, buffer, sizeof(buffer) - 1);
-	buffer[bytes] = 0;
-	if (bytes)
+	size_t buffer_size = this->server_.getConfig().max_buffer;
+	char *buffer = new char[buffer_size + 1];
+	ssize_t bytes = read(this->socket_->fd, buffer, buffer_size);
+	if (bytes > 0) {
+		buffer[bytes] = 0;
 		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: data:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
+	}
 	else
 		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: no data to read") << std::endl;
+	delete[] buffer;
 	std::string res = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
 	write(this->socket_->fd, res.c_str(), res.length());
 	delete this;
