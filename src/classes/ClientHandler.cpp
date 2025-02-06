@@ -14,7 +14,7 @@ ClientHandler::ClientHandler(ServerManager& server, int client_socket, sockaddr_
 	len_(len) {
 		this->server_.getSockets().push_back(makeClientSocket(client_socket));
 		this->socket_ = &server.getSockets().back();
-		Logger::debug("ClientHandler: New socket fd: ") << this->socket_->fd << std::endl;
+		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: New socket fd: ") << this->socket_->fd << std::endl;
 }
 
 ClientHandler::ClientHandler(const ClientHandler& copy):
@@ -25,7 +25,7 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 }
 
 ClientHandler::~ClientHandler() {
-	Logger::debug("ClientHandler: Client request deconstructor") << std::endl;
+	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: Client request deconstructor") << std::endl;
 	close(this->socket_->fd);
 	{
 		std::vector<pollfd>& sockets_ = this->server_.getSockets();
@@ -60,14 +60,14 @@ ClientHandler::~ClientHandler() {
 int ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
-	Logger::debug("ClientHandler: handling request from ") << client_ip << std::endl;
+	Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: handling request from ") << client_ip << std::endl;
 	char buffer[1025] = {0};
 	size_t bytes = read(this->socket_->fd, buffer, sizeof(buffer) - 1);
 	buffer[bytes] = 0;
 	if (bytes)
-		Logger::debug("ClientHandler: data:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
+		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: data:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
 	else
-		Logger::debug("ClientHandler: no data to read") << std::endl;
+		Logger::debug(C_BLUE + this->server_.getConfig().name + C_RESET + ": ClientHandler: no data to read") << std::endl;
 	std::string res = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!";
 	write(this->socket_->fd, res.c_str(), res.length());
 	delete this;

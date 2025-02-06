@@ -55,6 +55,7 @@ class ServerManager {
 		void closeServer();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
+		const t_config getConfig() const;
 };
 
 #endif

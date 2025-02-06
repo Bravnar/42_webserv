@@ -23,28 +23,28 @@ int ServerManager::init_() {
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->server_fd_ < 0) {
 		this->status_.isHealthy = false;
-		Logger::fatal("ServerManager: error on server_fd_ socket: ") << strerror(errno) << std::endl;
+		Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: error on server_fd_ socket: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	int opt = 1;
 	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 		this->status_.isHealthy = false;
-		Logger::fatal("ServerManager: error on setsockopt: ") << strerror(errno) << std::endl;
+		Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: error on setsockopt: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) {
 		this->status_.isHealthy = false;
-		Logger::fatal("ServerManager: error on binding: ") << strerror(errno) << std::endl;
+		Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: error on binding: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	// TODO: define connections from config
 	if (listen(this->server_fd_, 50)) {
 		this->status_.isHealthy = false;
-		Logger::fatal("ServerManager: error on listen: ") << strerror(errno) << std::endl;
+		Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: error on listen: ") << strerror(errno) << std::endl;
 		return 1;
 	}
-	Logger::info("ServerManager: Server binded on port ") << this->config_.port << std::endl;
-	Logger::info("ServerManager: You can access it from: http://" + (this->config_.interface == "0.0.0.0" ? "127.0.0.1" : this->config_.interface) + ":" + std::string(Convert::ToString(this->config_.port))) << std::endl;
+	Logger::info(C_BLUE + this->config_.name + C_RESET + ": ServerManager: Server binded on port ") << this->config_.port << std::endl;
+	Logger::info(C_BLUE + this->config_.name + C_RESET + ": ServerManager: You can access it from: http://" + (this->config_.interface == "0.0.0.0" ? "127.0.0.1" : this->config_.interface) + ":" + std::string(Convert::ToString(this->config_.port))) << std::endl;
 	this->status_.isRunning = true;
 	return 0;
 }
@@ -83,7 +83,7 @@ ServerManager& ServerManager::operator=(const ServerManager& assign) {
 }
 
 ServerManager::~ServerManager() {
-	Logger::debug("ServerManager: ServerManager deconstructor") << std::endl;
+	Logger::debug(C_BLUE + this->config_.name + C_RESET + ": ServerManager: ServerManager deconstructor") << std::endl;
 	this->closeServer();
 }
 
@@ -113,24 +113,24 @@ int ServerManager::runServer() {
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
-				Logger::error("ServerManager: poll error: ") << strerror(errno) << std::endl;
+				Logger::error(C_BLUE + this->config_.name + C_RESET + ": ServerManager: poll error: ") << strerror(errno) << std::endl;
 				continue;
 			}
 			else {
-				Logger::fatal("ServerManager: poll fatal: ") << strerror(errno) << std::endl;
+				Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: poll fatal: ") << strerror(errno) << std::endl;
 				this->status_.isHealthy = false;
 				break;
 			}
 		}
 		if (this->sockets_[0].revents & POLLIN) {
-			Logger::debug("ServerManager: Poll server") << std::endl;
+			Logger::debug(C_BLUE + this->config_.name + C_RESET + ": ServerManager: Poll server") << std::endl;
 			client_socket = accept(this->server_fd_, (sockaddr *)&client_addr, &client_len);
 			if (client_socket < 0) {
-				Logger::error("ServerManager: error on request accept(): ") << strerror(errno) << std::endl;
+				Logger::error(C_BLUE + this->config_.name + C_RESET + ": ServerManager: error on request accept(): ") << strerror(errno) << std::endl;
 				continue;
 			}
 			this->clients_.push_back(new ClientHandler(*this, client_socket, client_addr, client_len));
-			Logger::debug("ServerManager: Accepted new client: ") << client_socket << std::endl;
+			Logger::debug(C_BLUE + this->config_.name + C_RESET + ": ServerManager: Accepted new client: ") << client_socket << std::endl;
 		}
 		for (size_t i = 0; i < this->clients_.size(); i++) {
 			if (this->clients_[i]->getSocket().revents & POLLIN) {
@@ -172,4 +172,8 @@ std::vector<pollfd>& ServerManager::getSockets() {
  */
 std::vector<ClientHandler *>& ServerManager::getClients() {
 	return this->clients_;
+}
+
+const t_config ServerManager::getConfig() const {
+	return this->config_;
 }
