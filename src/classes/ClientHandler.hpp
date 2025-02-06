@@ -20,10 +20,14 @@ class ClientHandler
 		pollfd *socket_;
 
 	public:
+		// Canonical
+
 		ClientHandler(ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
 		ClientHandler(const ClientHandler&);
 		ClientHandler& operator=(const ClientHandler&) {return *this;};
 		~ClientHandler();
+		//Member functions
+
 		int handle();
 		const pollfd& getSocket() const;
 

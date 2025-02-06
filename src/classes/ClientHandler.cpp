@@ -51,7 +51,12 @@ ClientHandler::~ClientHandler() {
 	}
 }
 
-// TODO: This handler is basic and nasty, needs refactor
+//TODO: Refactor hanlde()
+/**
+ * handle: Handle the client request
+ * @attention Needs refactor
+ * @return `1` if something went wrong
+ */
 int ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
@@ -69,6 +74,10 @@ int ClientHandler::handle() {
 	return 0;
 }
 
+/**
+ * getSocket: Get client socket
+ * @return `pollfd` socket reference
+ */
 const pollfd& ClientHandler::getSocket() const {
 	return *this->socket_;
 }
