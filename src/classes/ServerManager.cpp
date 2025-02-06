@@ -1,50 +1,79 @@
 #include "./ServerManager.hpp"
 
-static sockaddr_in init_addr_in(int port) {
+/**
+ * newAddr: Creates a new socket address from specific port and ipv4 interface
+ * @param port The port to bind to
+ * @param interface The ipv4 interface address to bind to
+ * @return New socket address as `sockaddr_in`
+ */
+static sockaddr_in newAddr(int port, std::string interface) {
 	struct sockaddr_in addrv4;
 	std::memset(&addrv4, 0, sizeof(addrv4));
-	inet_pton(AF_INET, "0.0.0.0", &addrv4.sin_addr); // TODO: Define with config manager
+	inet_pton(AF_INET, interface.c_str(), &addrv4.sin_addr); // TODO: Define with config manager
 	addrv4.sin_family = AF_INET;
 	addrv4.sin_port = htons(port);
 	return addrv4;
 }
 
+/**
+ * init_: Initialize the server by binding it's address and setting internal variable
+ * @return `1` if the server couldn't init
+ */
 int ServerManager::init_() {
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->server_fd_ < 0) {
-		this->isHealthy_ = false;
+		this->status_.isHealthy = false;
 		Logger::fatal("ServerManager: error on server_fd_ socket: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	int opt = 1;
 	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-		this->isHealthy_ = false;
+		this->status_.isHealthy = false;
 		Logger::fatal("ServerManager: error on setsockopt: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) {
-		this->isHealthy_ = false;
+		this->status_.isHealthy = false;
 		Logger::fatal("ServerManager: error on binding: ") << strerror(errno) << std::endl;
 		return 1;
 	}
 	// TODO: define connections from config
 	if (listen(this->server_fd_, 50)) {
-		this->isHealthy_ = false;
+		this->status_.isHealthy = false;
 		Logger::fatal("ServerManager: error on listen: ") << strerror(errno) << std::endl;
 		return 1;
 	}
-	Logger::info("ServerManager: Server binded on port ") << this->port_ << std::endl;
-	Logger::info("ServerManager: You can access it from: http://127.0.0.1:" + std::string(Convert::ToString(this->port_))) << std::endl;
+	Logger::info("ServerManager: Server binded on port ") << this->config_.port << std::endl;
+	Logger::info("ServerManager: You can access it from: http://" + (this->config_.interface == "0.0.0.0" ? "127.0.0.1" : this->config_.interface) + ":" + std::string(Convert::ToString(this->config_.port))) << std::endl;
+	this->status_.isRunning = true;
 	return 0;
 }
 
-ServerManager::ServerManager(): port_(8080), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
+ServerManager::ServerManager(): addrv4_(newAddr(DF_PORT, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
+	this->server_fd_ = 0;
+	std::memset(&this->status_, 0, sizeof(t_status));
+	this->config_.name = "example";
+	this->config_.interface = DF_INTERFACE;
+	this->config_.port = DF_PORT;
+	this->config_.max_clients = 500;
 }
 
-ServerManager::ServerManager(int port): port_(port), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
+ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
+	this->server_fd_ = 0;
+	std::memset(&this->status_, 0, sizeof(t_status));
+	this->config_.name = "example";
+	this->config_.interface = DF_INTERFACE;
+	this->config_.port = port;
+	this->config_.max_clients = 500;
 }
 
-ServerManager::ServerManager(const ServerManager& copy): port_(copy.port_), addrv4_(init_addr_in(this->port_)), address_((sockaddr *)&this->addrv4_), isHealthy_(true), max_clients_(500), max_timeout_(2000) {
+ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_) {
+	this->server_fd_ = 0;
+	std::memset(&this->status_, 0, sizeof(t_status));
+	this->config_.name = copy.config_.name + " copy";
+	this->config_.interface = copy.config_.interface;
+	this->config_.port = copy.config_.port;
+	this->config_.max_clients = copy.config_.max_clients;
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
@@ -55,39 +84,41 @@ ServerManager& ServerManager::operator=(const ServerManager& assign) {
 
 ServerManager::~ServerManager() {
 	Logger::debug("ServerManager: ServerManager deconstructor") << std::endl;
-	for(std::vector<ClientHandler *>::iterator it = this->clients_.begin(); it != this->clients_.end(); it++) {
-		delete *it;
-	}
-	this->clients_.clear();
-	this->sockets_.clear();
-	close(this->server_fd_);
+	this->closeServer();
 }
 
+/**
+ * isHealthy: Check if the server is healthy
+ * @return Health status
+ */
 bool ServerManager::isHealthy() const {
-	return this->isHealthy_;
+	return this->status_.isHealthy;
 }
 
-int ServerManager::run() {
+/**
+ * newAddr: Starts the server
+ * @return `1` if something went wrong
+ */
+int ServerManager::runServer() {
 	if (this->init_())
 		return 1;
 	int client_socket = -1;
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-
 	pollfd server_socket;
 	server_socket.fd = this->server_fd_;
 	server_socket.events = POLLIN;
 	server_socket.revents = 0;
 	this->sockets_.push_back(server_socket);
 	while (true) {
-		if (poll(&this->sockets_[0], this->sockets_.size(), this->max_timeout_) < 0) {
+		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
 				Logger::error("ServerManager: poll error: ") << strerror(errno) << std::endl;
 				continue;
 			}
 			else {
 				Logger::fatal("ServerManager: poll fatal: ") << strerror(errno) << std::endl;
-				this->isHealthy_ = false;
+				this->status_.isHealthy = false;
 				break;
 			}
 		}
@@ -110,10 +141,35 @@ int ServerManager::run() {
 	return 0;
 }
 
+/**
+ * closeServer: Will close and clear the server if it's running 
+ */
+void ServerManager::closeServer() {
+	if (!this->status_.isRunning)
+		return;
+	Logger::info("Closing server") << std::endl;
+	this->status_.isRunning = false;
+	for(std::vector<ClientHandler *>::iterator it = this->clients_.begin(); it != this->clients_.end(); it++) {
+		delete *it;
+	}
+	this->clients_.clear();
+	this->sockets_.clear();
+	if (this->server_fd_)
+		close(this->server_fd_);
+}
+
+/**
+ * getSockets: Get server sockets, including `server socket` at position `0`
+ * @return A `<pollfd>` socket vector reference
+ */
 std::vector<pollfd>& ServerManager::getSockets() {
 	return this->sockets_;
 }
 
+/**
+ * getClients: Get the current clients communicating with the server
+ * @return A `<ClintHandler *>` vector reference
+ */
 std::vector<ClientHandler *>& ServerManager::getClients() {
 	return this->clients_;
 }

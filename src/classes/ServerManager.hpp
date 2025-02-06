@@ -12,30 +12,45 @@
 # include <poll.h>
 # include <vector>
 
+# define DF_PORT 8080
+# define DF_INTERFACE "0.0.0.0"
+
 class ClientHandler;
+
+typedef struct s_status {
+	bool isHealthy;
+	bool isRunning;
+} t_status;
+
+typedef struct s_config {
+	std::string name;
+	std::string interface;
+	int port;
+	int max_clients;
+} t_config;
 
 class ServerManager {
 	private:
-		const int port_;
+		int init_();
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
-		bool isHealthy_;
-		const int max_clients_;
-		const int max_timeout_;
+		t_status status_;
+		t_config config_;
 		int server_fd_;
-		int init_();
 		std::vector<pollfd> sockets_;
 		std::vector<ClientHandler *> clients_;
-		pollfd server_socket_;
 
 	public:
+		// Canonical
 		ServerManager();
 		ServerManager(int);
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
+		// Member functions
 		bool isHealthy() const;
-		int run();
+		int runServer();
+		void closeServer();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
 };

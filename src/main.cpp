@@ -9,8 +9,6 @@
 
 int	main( void ) {
 	ServerManager server(8080);
-	if (!server.isHealthy())
-		return 1;
-	server.run();
+	server.runServer();
 	return 0;
 }
