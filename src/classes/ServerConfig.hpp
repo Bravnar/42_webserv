@@ -40,7 +40,7 @@ class ServerConfig
 		int									getClientBodyLimit() const ;
 		const std::string					&getDefaultFile( ) const ;
 		std::vector<RouteConfig>			&getRoutes();
-		const std::vector<RouteConfig>		getRoutes() const ;
+		const std::vector<RouteConfig>		&getRoutes() const ;
 };
 
 #endif
