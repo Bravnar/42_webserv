@@ -11,6 +11,7 @@ FILES =	main \
 		classes/HttpRequest \
 		classes/ConfigManager \
 		classes/ConfigParser \
+		classes/Runtime \
 		classes/ServerConfig \
 		classes/RouteConfig \
 		utils/ParseUtils \

@@ -8,16 +8,14 @@
 # include <cerrno>
 # include "./../utils/Logger.hpp"
 # include "./../utils/Convert.hpp"
-# include "./ClientHandler.hpp"
 # include <poll.h>
 # include <vector>
 # include "./ConfigManager.hpp"
+# include <arpa/inet.h>
 
 # define DF_PORT 8080
 # define DF_INTERFACE "0.0.0.0"
 # define DF_MAX_BUFFER 524288
-
-class ClientHandler;
 
 typedef struct s_status {
 	bool isHealthy;
@@ -26,7 +24,6 @@ typedef struct s_status {
 
 class ServerManager {
 	private:
-		int init_();
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
@@ -38,8 +35,7 @@ class ServerManager {
 		const std::vector<RouteConfig>& routeconfig_;
 		t_status status_;
 		int server_fd_;
-		std::vector<pollfd> sockets_;
-		std::vector<ClientHandler *> clients_;
+		pollfd socket_;
 
 	public:
 		// Canonical
@@ -50,11 +46,9 @@ class ServerManager {
 		~ServerManager();
 		// Member functions
 
+		int init();
 		bool isHealthy() const;
-		int runServer();
-		void closeServer();
-		std::vector<pollfd>& getSockets();
-		std::vector<ClientHandler *>& getClients();
+		const pollfd& getSocket() const;
 		const ServerConfig& getConfig() const;
 		const std::vector<RouteConfig>& getRouteConfig() const;
 };

@@ -36,7 +36,6 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 	return exception;
 }
 
-// TODO: Handle body if any
 int HttpRequest::parseBuffer_(char *buffer) {
 	int exception = 0;
 

@@ -3,15 +3,15 @@
 
 # include <netinet/in.h>
 # include <unistd.h>
-# include <arpa/inet.h>
 # include "./../utils/Logger.hpp"
-# include "./ServerManager.hpp"
 # include "./../utils/Convert.hpp"
 # include <poll.h>
 # include <fcntl.h>
 # include "./HttpRequest.hpp"
+# include "./Runtime.hpp"
+# include "./ServerManager.hpp"
 
-class ServerManager;
+class Runtime;
 
 class ClientHandler
 {
@@ -21,22 +21,23 @@ class ClientHandler
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+		Runtime& runtime_;
 		ServerManager& server_;
 		const sockaddr_in addr_;
 		const socklen_t len_;
-		pollfd *socket_;
+		int socket_;
 
 	public:
 		// Canonical
 
-		ClientHandler(ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
+		ClientHandler(Runtime&, ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
 		ClientHandler(const ClientHandler&);
 		ClientHandler& operator=(const ClientHandler&) {return *this;};
 		~ClientHandler();
 		//Member functions
 
 		void handle();
-		const pollfd& getSocket() const;
+		int getSocket() const;
 
 };
 

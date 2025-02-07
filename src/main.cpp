@@ -2,6 +2,7 @@
 #include <iostream>
 #include "classes/ConfigManager.hpp"
 #include "classes/ServerManager.hpp"
+#include "classes/Runtime.hpp"
 
 int	main( int ac, char **av ) {
 	ConfigManager	manager;
@@ -18,17 +19,7 @@ int	main( int ac, char **av ) {
 	}
 
 	manager.printConfig();
-	{
-		const std::vector<ServerConfig>& serversConf = manager.getServers();
-		for(std::vector<ServerConfig>::const_iterator it = serversConf.begin(); it != serversConf.end(); it++) {
-			servers.push_back(new ServerManager(*it));
-		}
-	}
-	{
-		for(std::vector<ServerManager *>::iterator it = servers.begin(); it != servers.end(); it++) {
-			Logger::info("Running ") << (*it)->getConfig().getServerNames()[0] << std::endl;
-			(*it)->runServer();
-		}
-	}
+	Runtime runtime = Runtime(manager.getServers());
+	runtime.runServers();
 	return 0;
 }
