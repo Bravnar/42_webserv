@@ -10,6 +10,7 @@ FILES =	main \
 		classes/ConfigParser \
 		classes/ServerConfig \
 		classes/RouteConfig \
+		utils/ParseUtils \
 		
 
 

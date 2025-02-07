@@ -2,11 +2,12 @@
 
 /* Default Constructor */
 ServerConfig::ServerConfig( void ) :
-_host(""),
-_port(8080),
+_host("0.0.0.0"),
+_port(80),
 _serverNames(),
 _errorPages(),
 _clientBodyLimit(1024),
+_defaultFile(""),
 _routes() { }
 
 /* Copy Constructor */
@@ -15,6 +16,8 @@ _host(other._host),
 _port(other._port),
 _serverNames(other._serverNames),
 _errorPages(other._errorPages),
+_clientBodyLimit(other._clientBodyLimit),
+_defaultFile(other._defaultFile),
 _routes(other._routes) { }
 
 /* Assignment Operator Overload */
@@ -24,6 +27,9 @@ ServerConfig& ServerConfig::operator=( const ServerConfig &other ) {
 		_port = other._port ;
 		_serverNames = other._serverNames ;
 		_errorPages = other._errorPages ;
+		_clientBodyLimit = other._clientBodyLimit ;
+		_defaultFile = other._defaultFile ;
+		_routes = other._routes ;
 	} return *this ;
 }
 
@@ -38,6 +44,7 @@ void	ServerConfig::addErrorPage( int errorCode, const std::string& errorFile ) {
 	_errorPages[errorCode] = errorFile ; 
 }
 void	ServerConfig::setClientBodyLimit( int limit ) { _clientBodyLimit = limit ; }
+void	ServerConfig::setDefaultFile( const std::string &file ) { _defaultFile = file ; }
 void	ServerConfig::addRoute( const RouteConfig& route ) { _routes.push_back(route) ; }
 
 /* GETTERS */
@@ -47,4 +54,6 @@ int									ServerConfig::getPort( ) const { return _port ; }
 const std::vector<std::string>&		ServerConfig::getServerNames( ) const { return _serverNames ; }
 const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return _errorPages ;}
 int									ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
-std::vector<RouteConfig>			ServerConfig::getRoutes( ) { return _routes ; }
+const std::string&					ServerConfig::getDefaultFile( ) const { return _defaultFile ; } 
+std::vector<RouteConfig>&			ServerConfig::getRoutes( ) { return _routes ; }
+const std::vector<RouteConfig>		ServerConfig::getRoutes( ) const { return _routes ; }

@@ -8,10 +8,7 @@ ConfigManager::ConfigManager( void ) {
 
 ConfigManager::ConfigManager( const std::string &filePath ) :
 _servers(),
-_confPath( filePath ) { 
-	std::cout << "Constructor: created config manager with: " << filePath << std::endl ;
-	_parseConfig() ;
-}
+_confPath( filePath ) { _parseConfig() ; }
 
 ConfigManager::ConfigManager( const ConfigManager &other ) :
 _servers(other._servers),
@@ -32,30 +29,89 @@ void ConfigManager::_parseConfig( void ) {
 	catch(const std::exception& e) { std::cerr << "Error parsing config: " << e.what() << '\n'; }
 }
 
-// void	ConfigManager::printConfig( ) const {
-// 	std::cout << "calling printConfig" << std::endl ;
-// 	std::cout << "_servers.size(): " << _servers.size() << std::endl ;
-// 	for ( size_t i = 0; i < _servers.size(); ++i ) {
-// 		std::cout << C_YELLOW "Server [" << i << "]:" C_RESET << std::endl ;
-// 		std::cout << C_WHITE "HostName: " << _servers[i].getHost() << std::endl ;
-// 		std::cout << "Port: " << _servers[i].getPort() << std::endl ;
-// 		std::cout << "Server Names: " C_RESET << std::endl ;
-// 		for ( size_t j = 0; j < _servers[i].getServerNames()[j].size(); ++j ) {
-// 			std::cout << "\t" << _servers[i].getServerNames()[j] << std::endl ;
-// 		}
-// 		std::cout << C_WHITE "Error Pages: " C_RESET << std::endl ;
-// 		for (std::map<int, std::string>::const_iterator it = _servers[i].getErrorPages().begin();
-// 				it != _servers[i].getErrorPages().end();
-// 				++it) {
-// 			std::cout << "\t" << it->first << " : " << it->second << std::endl ;
-//  		}
-// 		std::cout << C_WHITE "Client Body Limit: " C_RESET << _servers[i].getClientBodyLimit() << std::endl ;
-// 		for (std::vector<RouteConfig>::const_iterator it = _servers[i].getRoutes().begin();
-// 				it != _servers[i].getRoutes().end();
-// 				++it ) {
-// 			std::cout << "\t" << it->getPath() << std::endl ;
-// 		}
-// 	}
-// }
+const std::vector<ServerConfig>& ConfigManager::getServers() const {
+    return _servers ;
+}
 
-/* WRITE A PROPER PRINT TO CHECK */
+void	ConfigManager::printConfig( void ) const {
+	std::cout << C_YELLOW "\n============== SERVER CONFIGURATION ==============\n" C_RESET ;
+
+	for ( size_t i = 0; i < _servers.size(); ++i ) {
+		const ServerConfig& server = _servers[i] ;
+
+		std::cout << C_BLUE "\n--------------------------------------------------\n" C_RESET ;
+		std::cout << C_RED "SERVER [" << i << "]" C_RESET << std::endl ;
+		std::cout << C_BLUE "--------------------------------------------------\n" C_RESET ;
+
+		std::cout << C_BLUE "[HOST]\t\t" C_RESET << server.getHost() << std::endl ;
+        std::cout << C_BLUE "[PORT]\t\t" C_RESET << server.getPort() << std::endl ;
+
+		std::cout << C_BLUE "[SERVER_NAMES]\t" C_RESET;
+        const std::vector<std::string>& serverNames = server.getServerNames();
+        if (!serverNames.empty()) {
+            for (size_t j = 0; j < serverNames.size(); ++j) {
+                std::cout << serverNames[j] << (j < serverNames.size() - 1 ? ", " : "");
+            }
+        } else {
+            std::cout << "(None)";
+        }
+        std::cout << std::endl ;
+
+		std::cout << C_BLUE "[DEFAULT_FILE]\t" C_RESET << server.getDefaultFile() << std::endl ;
+		std::cout << C_BLUE "[BODY_LIMIT]\t" C_RESET << server.getClientBodyLimit() << " bytes" << std::endl ;
+
+		std::cout << C_BLUE "[ERROR_PAGES]\n" C_RESET;
+        const std::map<int, std::string>& errorPages = server.getErrorPages();
+        if (!errorPages.empty()) {
+            for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); ++it) {
+                std::cout << "\t" C_ORANGE << it->first << C_RESET " →\t" << it->second << std::endl ;
+            }
+        } else {
+            std::cout << "\t(None configured)" << std::endl ;
+        }
+		const std::vector<RouteConfig>& routes = server.getRoutes();
+        if (!routes.empty()) {
+            std::cout << C_MAGENTA "\n[ROUTES]" C_RESET << std::endl ;
+            for (size_t j = 0; j < routes.size(); ++j) {
+                const RouteConfig& route = routes[j];
+
+                std::cout << C_CYAN "\nROUTE [" << j << "] - Path: < " << route.getPath() << " >\n" C_RESET;
+                std::cout << "-----------------------------------\n";
+                std::cout << C_BLUE "[ROOT]\t\t" C_RESET << route.getRoot() << "\n";
+
+                // Print Allowed Methods
+                std::cout << C_BLUE "[METHODS]\t" C_RESET;
+                const std::vector<std::string>& methods = route.getMethods();
+                if (!methods.empty()) {
+                    for (size_t k = 0; k < methods.size(); ++k) {
+                        std::cout << methods[k] << (k < methods.size() - 1 ? ", " : "");
+                    }
+                } else {
+                    std::cout << "(None)";
+                }
+                std::cout << std::endl;
+
+                std::cout << C_BLUE "[DIR_LIST]\t" C_RESET << (route.isDirectoryListingEnabled() ? "ON" : "OFF") << "\n";
+
+                if (!route.getCgiPath().empty()) {
+                    std::cout << C_BLUE "[CGI_PATH]\t" C_RESET << route.getCgiPath() << std::endl ;
+                }
+
+                if (route.isUploadAccepted()) {
+                    std::cout << C_BLUE "[UPL_ACCEPT]\t" C_RESET << "ON" << std::endl ;
+                    std::cout << C_BLUE "[UPL_PATH]\t" C_RESET << route.getUploadPath() << std::endl ;
+                }
+
+                if (!route.getRedirect().empty()) {
+                    std::cout << C_BLUE "[REDIRECT]\t" C_RESET << route.getRedirect() << std::endl ;
+                }
+            }
+        } else {
+            std::cout << "\nRoutes: (None configured)" << std::endl ;
+        }
+
+        std::cout << std::endl ;
+    }
+
+    std::cout << "==========================================\n";
+}

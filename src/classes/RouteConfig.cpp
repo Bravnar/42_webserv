@@ -6,8 +6,9 @@ _path(""),
 _methods(),
 _root(""),
 _directoryListing(false),
-_defaultFile(""),
+// _defaultFile(""),
 _cgiPath(""),
+_redirect(""),
 _acceptUploads(false),
 _uploadPath("") { }
 
@@ -17,8 +18,9 @@ _path(other._path),
 _methods(other._methods),
 _root(other._root),
 _directoryListing(other._directoryListing),
-_defaultFile(other._defaultFile),
+// _defaultFile(other._defaultFile),
 _cgiPath(other._cgiPath),
+_redirect(other._redirect),
 _acceptUploads(other._acceptUploads),
 _uploadPath(other._uploadPath) { }
 
@@ -29,8 +31,9 @@ RouteConfig& RouteConfig::operator=( const RouteConfig &other ) {
 		_methods = other._methods ;
 		_root = other._root ;
 		_directoryListing = other._directoryListing ;
-		_defaultFile = other._defaultFile;
-		_cgiPath = other._cgiPath;
+		// _defaultFile = other._defaultFile;
+		_cgiPath = other._cgiPath ;
+		_redirect = other._redirect ;
 		_acceptUploads = other._acceptUploads ;
 		_uploadPath = other._uploadPath ;
 	}
@@ -44,8 +47,9 @@ void	RouteConfig::setPath( const std::string &path ) { _path = path ; }
 void	RouteConfig::addMethod( const std::string &path ) { _methods.push_back(path) ; }
 void	RouteConfig::setRoot( const std::string &path ) { _root = path ; }
 void	RouteConfig::setDirectoryListing( bool io ) { _directoryListing = io ; }
-void	RouteConfig::setDefaultFile( const std::string &file ) { _defaultFile = file ; }
+// void	RouteConfig::setDefaultFile( const std::string &file ) { _defaultFile = file ; }
 void	RouteConfig::setCgiPath( const std::string &cgiPath ) { _cgiPath = cgiPath ; }
+void	RouteConfig::setRedirect( const std::string &path ) { _redirect = path ; }
 void	RouteConfig::setAcceptUploads( bool io ) { _acceptUploads = io ; }
 void	RouteConfig::setUploadPath( const std::string &path ) { _uploadPath = path ; }
 
@@ -54,7 +58,8 @@ const std::string&	RouteConfig::getPath( ) const { return _path ; }
 const std::vector<std::string>&	RouteConfig::getMethods( ) const { return _methods ; } 
 const std::string&	RouteConfig::getRoot( ) const { return _root ; } 
 bool	RouteConfig::isDirectoryListingEnabled( ) const { return _directoryListing ; } 
-const std::string&	RouteConfig::getDefaultFile( ) const { return _defaultFile ; } 
-const std::string&	RouteConfig::getCgiPath( ) const { return _cgiPath ; } 
+// const std::string&	RouteConfig::getDefaultFile( ) const { return _defaultFile ; } 
+const std::string&	RouteConfig::getCgiPath( ) const { return _cgiPath ; }
+const std::string&	RouteConfig::getRedirect( ) const { return _redirect ; }
 bool	RouteConfig::isUploadAccepted( ) const { return _acceptUploads ; } 
 const std::string&	RouteConfig::getUploadPath( ) const { return _uploadPath ; } 
