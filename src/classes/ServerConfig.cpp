@@ -56,4 +56,4 @@ const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return 
 int									ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
 const std::string&					ServerConfig::getDefaultFile( ) const { return _defaultFile ; } 
 std::vector<RouteConfig>&			ServerConfig::getRoutes( ) { return _routes ; }
-const std::vector<RouteConfig>		ServerConfig::getRoutes( ) const { return _routes ; }
+const std::vector<RouteConfig>&		ServerConfig::getRoutes( ) const { return _routes ; }
