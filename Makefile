@@ -6,12 +6,16 @@ CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
 FILES =	main \
+		classes/ClientHandler \
+		classes/ServerManager \
+		classes/HttpRequest \
 		classes/ConfigManager \
 		classes/ConfigParser \
 		classes/ServerConfig \
 		classes/RouteConfig \
 		utils/ParseUtils \
 		utils/Logger \
+		utils/Convert \
 
 
 SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))
