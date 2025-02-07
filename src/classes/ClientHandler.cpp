@@ -76,7 +76,7 @@ void ClientHandler::handle() {
 	else
 		this->debug("no data to read") << std::endl;
 	std::string res = "HTTP/1.1 ";
-	std::string html_file = this->server_.getRoutConfig().root + "/index.html";
+	std::string html_file = this->server_.getRouteConfig()[0].getRoot() + "/index.html";
 	int html_file_fd = open(html_file.c_str(), O_RDONLY);
 	if (html_file_fd <= 0) {
 		this->warning("Couldn't find " + html_file) << std::endl;

@@ -9,6 +9,11 @@ FILES =	main \
 		classes/ClientHandler \
 		classes/ServerManager \
 		classes/HttpRequest \
+		classes/ConfigManager \
+		classes/ConfigParser \
+		classes/ServerConfig \
+		classes/RouteConfig \
+		utils/ParseUtils \
 		utils/Logger \
 		utils/Convert \
 

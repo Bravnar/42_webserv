@@ -55,31 +55,17 @@ int ServerManager::init_() {
 	return 0;
 }
 
-ServerManager::ServerManager(): addrv4_(newAddr(DF_PORT, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
+ServerManager::ServerManager(const ServerConfig& config): addrv4_(newAddr(config.getPort(), config.getHost())), address_((sockaddr *)&this->addrv4_), routeconfig_(config.getRoutes()) {
 	this->server_fd_ = 0;
 	std::memset(&this->status_, 0, sizeof(t_status));
-	this->config_.name = "example";
-	this->config_.interface = DF_INTERFACE;
-	this->config_.port = DF_PORT;
-	this->config_.max_clients = 500;
-	this->config_.max_buffer = DF_MAX_BUFFER;
-	this->routconfig_.root = "./www/";
-	this->routconfig_.listDir = true;
+	this->config_.name = config.getServerNames()[0];
+	this->config_.interface = config.getHost();
+	this->config_.port = config.getPort();
+	this->config_.max_clients = 500; // TODO: include this in configmanager
+	this->config_.max_buffer = config.getClientBodyLimit();
 }
 
-ServerManager::ServerManager(int port): addrv4_(newAddr(port, DF_INTERFACE)), address_((sockaddr *)&this->addrv4_) {
-	this->server_fd_ = 0;
-	std::memset(&this->status_, 0, sizeof(t_status));
-	this->config_.name = "example";
-	this->config_.interface = DF_INTERFACE;
-	this->config_.port = port;
-	this->config_.max_clients = 500;
-	this->config_.max_buffer = DF_MAX_BUFFER;
-	this->routconfig_.root = "./www";
-	this->routconfig_.listDir = true;
-}
-
-ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_) {
+ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_), routeconfig_(copy.routeconfig_) {
 	this->server_fd_ = 0;
 	std::memset(&this->status_, 0, sizeof(t_status));
 	this->config_.name = copy.config_.name + " copy";
@@ -87,8 +73,6 @@ ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.co
 	this->config_.port = copy.config_.port;
 	this->config_.max_clients = copy.config_.max_clients;
 	this->config_.max_buffer = copy.config_.max_buffer;
-	this->routconfig_.root = copy.routconfig_.root;
-	this->routconfig_.listDir = copy.routconfig_.listDir;
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
@@ -198,9 +182,9 @@ const t_config& ServerManager::getConfig() const {
 }
 
 /**
- * getConfig: Get the current server routing configuration
- * @return A `t_routconfig` const reference
+ * getRouteConfig: Get the current server routing configuration
+ * @return A `std::vector<RouteConfig>` const reference
  */
-const t_routconfig& ServerManager::getRoutConfig() const {
-	return this->routconfig_;
+const std::vector<RouteConfig>& ServerManager::getRouteConfig() const {
+	return this->routeconfig_;
 }

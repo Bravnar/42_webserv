@@ -11,6 +11,7 @@
 # include "./ClientHandler.hpp"
 # include <poll.h>
 # include <vector>
+# include "./ConfigManager.hpp"
 
 # define DF_PORT 8080
 # define DF_INTERFACE "0.0.0.0"
@@ -31,10 +32,10 @@ typedef struct s_config {
 	size_t max_buffer;
 } t_config;
 
-typedef struct s_routconfig {
+/*typedef struct s_routconfig {
 	std::string root;
 	bool listDir;
-} t_routconfig;
+} t_routconfig;*/
 
 class ServerManager {
 	private:
@@ -46,9 +47,9 @@ class ServerManager {
 		std::ostream& debug(const std::string&);
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
+		const std::vector<RouteConfig>& routeconfig_;
 		t_status status_;
 		t_config config_;
-		t_routconfig routconfig_;
 		int server_fd_;
 		std::vector<pollfd> sockets_;
 		std::vector<ClientHandler *> clients_;
@@ -56,8 +57,7 @@ class ServerManager {
 	public:
 		// Canonical
 
-		ServerManager();
-		ServerManager(int);
+		ServerManager(const ServerConfig&);
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
@@ -69,7 +69,7 @@ class ServerManager {
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
 		const t_config& getConfig() const;
-		const t_routconfig& getRoutConfig() const;
+		const std::vector<RouteConfig>& getRouteConfig() const;
 };
 
 #endif
