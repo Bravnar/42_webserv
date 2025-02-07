@@ -24,19 +24,6 @@ typedef struct s_status {
 	bool isRunning;
 } t_status;
 
-typedef struct s_config {
-	std::string name;
-	std::string interface;
-	int port;
-	int max_clients;
-	size_t max_buffer;
-} t_config;
-
-/*typedef struct s_routconfig {
-	std::string root;
-	bool listDir;
-} t_routconfig;*/
-
 class ServerManager {
 	private:
 		int init_();
@@ -45,11 +32,11 @@ class ServerManager {
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+		const ServerConfig& config_;
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
 		const std::vector<RouteConfig>& routeconfig_;
 		t_status status_;
-		t_config config_;
 		int server_fd_;
 		std::vector<pollfd> sockets_;
 		std::vector<ClientHandler *> clients_;
@@ -68,7 +55,7 @@ class ServerManager {
 		void closeServer();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
-		const t_config& getConfig() const;
+		const ServerConfig& getConfig() const;
 		const std::vector<RouteConfig>& getRouteConfig() const;
 };
 

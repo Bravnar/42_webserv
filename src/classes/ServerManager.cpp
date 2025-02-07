@@ -1,10 +1,10 @@
 #include "./ServerManager.hpp"
 
-std::ostream& ServerManager::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + this->config_.name + C_RESET + ": ServerManager: " + msg); }
-std::ostream& ServerManager::error(const std::string& msg) { return Logger::error(C_BLUE + this->config_.name + C_RESET + ": ServerManager: " + msg); }
-std::ostream& ServerManager::warning(const std::string& msg) { return Logger::warning(C_BLUE + this->config_.name + C_RESET + ": ServerManager: " + msg); }
-std::ostream& ServerManager::info(const std::string& msg) { return Logger::info(C_BLUE + this->config_.name + C_RESET + ": ServerManager: " + msg); }
-std::ostream& ServerManager::debug(const std::string& msg) { return Logger::debug(C_BLUE + this->config_.name + C_RESET + ": ServerManager: " + msg); }
+std::ostream& ServerManager::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + this->config_.getServerNames()[0] + C_RESET + ": ServerManager: " + msg); }
+std::ostream& ServerManager::error(const std::string& msg) { return Logger::error(C_BLUE + this->config_.getServerNames()[0] + C_RESET + ": ServerManager: " + msg); }
+std::ostream& ServerManager::warning(const std::string& msg) { return Logger::warning(C_BLUE + this->config_.getServerNames()[0] + C_RESET + ": ServerManager: " + msg); }
+std::ostream& ServerManager::info(const std::string& msg) { return Logger::info(C_BLUE + this->config_.getServerNames()[0] + C_RESET + ": ServerManager: " + msg); }
+std::ostream& ServerManager::debug(const std::string& msg) { return Logger::debug(C_BLUE + this->config_.getServerNames()[0] + C_RESET + ": ServerManager: " + msg); }
 
 /**
  * newAddr: Creates a new socket address from specific port and ipv4 interface
@@ -49,30 +49,20 @@ int ServerManager::init_() {
 		this->fatal("error on listen: ") << strerror(errno) << std::endl;
 		return 1;
 	}
-	this->info("Server binded on port ") << this->config_.port << std::endl;
-	this->info("You can access it from: http://" + (this->config_.interface == "0.0.0.0" ? "127.0.0.1" : this->config_.interface) + ":" + std::string(Convert::ToString(this->config_.port))) << std::endl;
+	this->info("Server binded on port ") << this->config_.getPort() << std::endl;
+	this->info("You can access it from: http://" + (this->config_.getHost() == "0.0.0.0" ? "127.0.0.1" : this->config_.getHost()) + ":" + std::string(Convert::ToString(this->config_.getPort()))) << std::endl;
 	this->status_.isRunning = true;
 	return 0;
 }
 
-ServerManager::ServerManager(const ServerConfig& config): addrv4_(newAddr(config.getPort(), config.getHost())), address_((sockaddr *)&this->addrv4_), routeconfig_(config.getRoutes()) {
+ServerManager::ServerManager(const ServerConfig& config): config_(config), addrv4_(newAddr(config.getPort(), config.getHost())), address_((sockaddr *)&this->addrv4_), routeconfig_(config.getRoutes()) {
 	this->server_fd_ = 0;
 	std::memset(&this->status_, 0, sizeof(t_status));
-	this->config_.name = config.getServerNames()[0];
-	this->config_.interface = config.getHost();
-	this->config_.port = config.getPort();
-	this->config_.max_clients = 500; // TODO: include this in configmanager
-	this->config_.max_buffer = config.getClientBodyLimit();
 }
 
-ServerManager::ServerManager(const ServerManager& copy): addrv4_(newAddr(copy.config_.port, copy.config_.interface)), address_((sockaddr *)&this->addrv4_), routeconfig_(copy.routeconfig_) {
+ServerManager::ServerManager(const ServerManager& copy): config_(copy.config_), addrv4_(copy.addrv4_), address_((sockaddr *)&this->addrv4_), routeconfig_(copy.routeconfig_) {
 	this->server_fd_ = 0;
 	std::memset(&this->status_, 0, sizeof(t_status));
-	this->config_.name = copy.config_.name + " copy";
-	this->config_.interface = copy.config_.interface;
-	this->config_.port = copy.config_.port;
-	this->config_.max_clients = copy.config_.max_clients;
-	this->config_.max_buffer = copy.config_.max_buffer;
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
@@ -175,9 +165,9 @@ std::vector<ClientHandler *>& ServerManager::getClients() {
 
 /**
  * getConfig: Get the current server configuration
- * @return A `t_config` const reference
+ * @return A `ServerConfig` const reference
  */
-const t_config& ServerManager::getConfig() const {
+const ServerConfig& ServerManager::getConfig() const {
 	return this->config_;
 }
 

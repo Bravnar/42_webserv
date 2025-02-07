@@ -26,7 +26,7 @@ int	main( int ac, char **av ) {
 	}
 	{
 		for(std::vector<ServerManager *>::iterator it = servers.begin(); it != servers.end(); it++) {
-			Logger::info("Running ") << (*it)->getConfig().name << std::endl;
+			Logger::info("Running ") << (*it)->getConfig().getServerNames()[0] << std::endl;
 			(*it)->runServer();
 		}
 	}
