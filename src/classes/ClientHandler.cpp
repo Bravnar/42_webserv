@@ -83,6 +83,8 @@ void ClientHandler::handle() {
 		std::string content = "Couldn't find " + html_file;
 		res += "404 Not Found\nContent-Type: text/plain\nContent-Length:" + Convert::ToString(content.length()) + "\n\n" + content;
 	} else {
+		// test
+		HttpRequest req(buffer);
 		char buffer_file[2048] = {0};
 		ssize_t file_bytes = read(html_file_fd, buffer_file, 2048);
 		res += "200 OK\nContent-Type: text/html\nContent-Length:" + Convert::ToString(file_bytes) + "\n\n" + buffer_file;

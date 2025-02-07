@@ -12,6 +12,7 @@ class Convert {
 		~Convert() {};
 	public:
 		static std::string ToString(int);
+		static long long ToInt(const std::string&);
 };
 
 #endif

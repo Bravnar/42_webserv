@@ -9,6 +9,7 @@
 # include "./../utils/Convert.hpp"
 # include <poll.h>
 # include <fcntl.h>
+# include "./HttpRequest.hpp"
 
 class ServerManager;
 

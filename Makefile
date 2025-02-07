@@ -6,8 +6,9 @@ CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
 FILES =	main \
-		classes/ServerManager \
 		classes/ClientHandler \
+		classes/ServerManager \
+		classes/HttpRequest \
 		utils/Logger \
 		utils/Convert \
 
