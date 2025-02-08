@@ -24,9 +24,13 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		old_pos = pos + 1;
 		iter++;
 	}
-	if ((this->method_ != "GET" && this->method_ != "POST") ||
-		this->httpVersion_ != "HTTP/1.1") {
-			throw std::runtime_error(EXC_INVALID_RL);
+	Logger::warning("hereeee '") << this->method_ << "' '" << this->httpVersion_ << "'" << std::endl;
+	if (this->method_ != "GET" && this->method_ != "POST") {
+		Logger::debug("request invalid method");
+		throw std::runtime_error(EXC_INVALID_RL);
+	} else if (this->httpVersion_ != "HTTP/1.1") {
+		Logger::debug("request invalid http version");
+		throw std::runtime_error(EXC_INVALID_RL);
 	}
 	return 0;
 }
@@ -90,10 +94,8 @@ HttpRequest::HttpRequest():
 
 HttpRequest::HttpRequest(const char *buffer): buffer_str_(0) {
 	this->body_ = 0;
-	if (parseBuffer_(buffer))
-		this->isValid_ = false;
-	else
-		this->isValid_ = true;
+	parseBuffer_(buffer);
+	this->isValid_ = true;
 }
 
 // TODO: deep copy
