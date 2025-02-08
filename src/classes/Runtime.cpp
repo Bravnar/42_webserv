@@ -55,10 +55,56 @@ Runtime::~Runtime() {
 	this->sockets_.clear();
 }
 
-void Runtime::runServers() {
+void Runtime::checkServers_() {
 	int client_socket = -1;
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
+	for (size_t i = 0; i < this->servers_.size(); i++) {
+		if (this->sockets_[i].revents & POLLIN) {
+			this->debug("Poll server '") << this->servers_[this->sockets_[i].fd]->getConfig().getServerNames()[0] << std::endl;
+			client_socket = accept(this->sockets_[i].fd, (sockaddr *)&client_addr, &client_len);
+			if (client_socket < 0) {
+				this->error("error on request accept(): ") << strerror(errno) << std::endl;
+				continue;
+			}
+			this->clients_.push_back(new ClientHandler(*this, *this->servers_[this->sockets_[i].fd], client_socket, client_addr, client_len));
+		}
+	}
+}
+
+void Runtime::checkClients_() {
+	for(size_t i = 0; i < this->clients_.size(); i++) {
+		for(size_t j = 0; j < this->sockets_.size(); j++) { // only to find his socket
+			if (this->sockets_[j].fd == this->clients_[i]->getSocket()) {
+				if (this->sockets_[j].revents & POLLIN) {
+					try {
+						const HttpRequest& req = this->clients_[i]->fetch();
+						std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+						if (req.isValid()) this->info("Client " + this->clients_[i]->getClientIp() + std::string(" requested ") + element) << std::endl;
+						const HttpResponse& resp = this->clients_[i]->getResponse();
+						try {
+							this->clients_[i]->handle();
+							this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+						} catch(const std::exception& httpError) {
+							this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+						}
+					}
+					catch (const std::exception& e) {
+						this->error(e.what()) << std::endl;
+					}
+					delete this->clients_[i];
+				}
+				break;
+			}
+		}
+	}
+}
+
+void Runtime::checkFiles_() {
+	// need code
+}
+
+void Runtime::runServers() {
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
@@ -70,42 +116,9 @@ void Runtime::runServers() {
 				break;
 			}
 		}
-		for (size_t i = 0; i < this->servers_.size(); i++) {
-			if (this->sockets_[i].revents & POLLIN) {
-				this->debug("Poll server '") << this->servers_[this->sockets_[i].fd]->getConfig().getServerNames()[0] << std::endl;
-				client_socket = accept(this->sockets_[i].fd, (sockaddr *)&client_addr, &client_len);
-				if (client_socket < 0) {
-					this->error("error on request accept(): ") << strerror(errno) << std::endl;
-					continue;
-				}
-				this->clients_.push_back(new ClientHandler(*this, *this->servers_[this->sockets_[i].fd], client_socket, client_addr, client_len));
-			}
-		}
-		for(size_t i = 0; i < this->clients_.size(); i++) {
-			for(size_t j = 0; j < this->sockets_.size(); j++) {
-				if (this->sockets_[j].fd == this->clients_[i]->getSocket()) {
-					if (this->sockets_[j].revents & POLLIN) {
-						try {
-							const HttpRequest& req = this->clients_[i]->fetch();
-							std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-							if (req.isValid()) this->info("Client " + this->clients_[i]->getClientIp() + std::string(" requested ") + element) << std::endl;
-							const HttpResponse& resp = this->clients_[i]->getResponse();
-							try {
-								this->clients_[i]->handle();
-								this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-							} catch(const std::exception& httpError) {
-								this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-							}
-						}
-						catch (const std::exception& e) {
-							this->error(e.what()) << std::endl;
-						}
-						delete this->clients_[i];
-					}
-					break;
-				}
-			}
-		}
+		this->checkServers_();
+		this->checkClients_();
+		this->checkFiles_();
 	}
 	return;
 }
