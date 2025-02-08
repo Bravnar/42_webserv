@@ -8,6 +8,12 @@
 # include "./../utils/Convert.hpp"
 # include <cstring>
 
+# define EXC_INVALID_RL "invalid RequestLine"
+# define EXC_BODY_NEG_SIZE "Negative body size"
+# define EXC_BODY_NOLIMITER "No body delimiter"
+# define EXC_BODY_REQ_COPY "Error on http request body copy"
+# define EXC_HEADER_NOHOST "No host header"
+
 # define H_HOST "Host"
 # define H_USERAGENT "User-Agent"
 # define H_ACCEPT "Accept"
@@ -31,6 +37,7 @@ class HttpRequest {
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
 		bool isValid_;
+		std::string *buffer_str_;
 
 	public:
 		// canonical

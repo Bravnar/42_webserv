@@ -100,9 +100,7 @@ void ClientHandler::loadHeaders_() {
 		if (bytesRead < DF_MAX_BUFFER)
 			break;
 	}
-	if (bytesRead < 0) {
-		throw std::runtime_error("Error reading from socket");
-	}
+	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
 void ClientHandler::buildBody_(int fileFd) {
@@ -117,7 +115,7 @@ void ClientHandler::buildBody_(int fileFd) {
 	close(fileFd);
 	if (bytesRead < 0) {
 		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
-		throw std::runtime_error("Error reading file");
+		throw std::runtime_error(EXC_FILE_READ);
 	}
 }
 
@@ -131,10 +129,6 @@ void ClientHandler::handle() {
 	this->debug("handling request from ") << this->clientIp_ << std::endl;
 	if (!this->fetched_)
 		this->fetch();
-	if (!this->req_.isValid()) {
-		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
-		throw std::runtime_error("Invalid HttpRequest");
-	}
 	this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
 
 	int fileFd = -1;
@@ -149,7 +143,7 @@ void ClientHandler::handle() {
 		(this->resp_ = HttpResponse(200, this->fileBuffer_->data(), this->fileBuffer_->size(), req_.getUrl())).sendResp(this->socket_);
 	} else {
 		(this->resp_ = HttpResponse(404)).sendResp(this->socket_);
-		throw std::runtime_error(fileName + " not found");
+		throw std::runtime_error(EXC_FILE_NF(fileName));
 	}
 }
 
@@ -174,7 +168,13 @@ const HttpRequest& ClientHandler::fetch() {
 		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
 		throw;
 	}
-	this->req_ = HttpRequest(this->headers_->data());
+	try {
+		this->req_ = HttpRequest(this->headers_->data());
+	} catch(const std::exception& e) {
+		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
+		throw;
+	}
+	
 	return this->req_;
 }
 

@@ -87,10 +87,11 @@ void Runtime::checkClients_() {
 							this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
 						} catch(const std::exception& httpError) {
 							this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+							this->debug(httpError.what()) << std::endl;
 						}
 					}
 					catch (const std::exception& e) {
-						this->error(e.what()) << std::endl;
+						this->error(e.what()) << " from client " << this->clients_[i]->getClientIp() << std::endl;
 					}
 					delete this->clients_[i];
 				}
