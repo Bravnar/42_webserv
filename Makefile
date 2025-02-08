@@ -9,6 +9,7 @@ FILES =	main \
 		classes/ClientHandler \
 		classes/ServerManager \
 		classes/HttpRequest \
+		classes/HttpResponse \
 		classes/ConfigManager \
 		classes/ConfigParser \
 		classes/Runtime \

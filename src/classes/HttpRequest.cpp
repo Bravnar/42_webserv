@@ -36,7 +36,7 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 	return exception;
 }
 
-int HttpRequest::parseBuffer_(char *buffer) {
+int HttpRequest::parseBuffer_(const char *buffer) {
 	int exception = 0;
 
 	std::string *request = new std::string(buffer);
@@ -54,7 +54,6 @@ int HttpRequest::parseBuffer_(char *buffer) {
 				delete request;
 				return exception;
 			}
-			Logger::debug("RequestLine validated") << std::endl;
 		} else {
 			if (line.empty()) {
 				isBody = true;
@@ -80,12 +79,12 @@ int HttpRequest::parseBuffer_(char *buffer) {
 					return (exception = 400);
 				}
 				this->body_ = new unsigned char[bodySize];
-				char *bodySep = std::strstr(buffer, "\r\n\r\n");
+				const char *bodySep = std::strstr(buffer, "\r\n\r\n");
 				if (!bodySep) {
 					Logger::debug("Request should contain body but delimiter '\\r\\n\\r\\n' was not found") << std::endl;
 					return (exception = 400);
 				} else {
-					unsigned char *data = reinterpret_cast<unsigned char *>(bodySep + 2);
+					const unsigned char *data = reinterpret_cast<const unsigned char *>(bodySep + 2);
 					try {
 						std::copy(data, data + bodySize, this->body_);
 					} catch(const std::exception& e) {
@@ -98,18 +97,28 @@ int HttpRequest::parseBuffer_(char *buffer) {
 		}
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) {
+		Logger::debug("No host") << std::endl;
 		return (exception = 400);
 	}
 	return exception;
 }
 
-HttpRequest::HttpRequest(char *buffer) {
-	this->body_ = 0;
-	parseBuffer_(buffer);
+HttpRequest::HttpRequest(): method_(""), url_(""), httpVersion_(""), body_(0), isValid_(false) {
+
 }
 
-HttpRequest::HttpRequest(const HttpRequest& copy): method_(copy.method_), url_(copy.url_), httpVersion_(copy.httpVersion_), headers_(copy.headers_), body_(copy.body_) {}
+HttpRequest::HttpRequest(const char *buffer) {
+	this->body_ = 0;
+	if (parseBuffer_(buffer))
+		this->isValid_ = false;
+	else
+		this->isValid_ = true;
+}
 
+// TODO: deep copy
+HttpRequest::HttpRequest(const HttpRequest& copy): method_(copy.method_), url_(copy.url_), httpVersion_(copy.httpVersion_), headers_(copy.headers_), body_(copy.body_), isValid_(copy.isValid_) {}
+
+// TODO: deep copy
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	if (this == &assign)
 		return *this;
@@ -118,6 +127,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->httpVersion_ = assign.httpVersion_;
 	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
+	this->isValid_ = assign.isValid_;
 	return *this;
 }
 
@@ -143,4 +153,12 @@ const std::string HttpRequest::getStringBody() const {
 		return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headers_.at(H_CONTENT_LENGTH)));
 	}
 	return "";
+}
+
+bool HttpRequest::isValid() const {
+	return this->isValid_;
+}
+
+const std::string& HttpRequest::getUrl() const {
+	return this->url_;
 }

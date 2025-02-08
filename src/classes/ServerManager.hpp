@@ -15,7 +15,7 @@
 
 # define DF_PORT 8080
 # define DF_INTERFACE "0.0.0.0"
-# define DF_MAX_BUFFER 524288
+# define DF_MAX_BUFFER 8192
 
 typedef struct s_status {
 	bool isHealthy;

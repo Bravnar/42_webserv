@@ -8,6 +8,7 @@
 # include <poll.h>
 # include <fcntl.h>
 # include "./HttpRequest.hpp"
+# include "./HttpResponse.hpp"
 # include "./Runtime.hpp"
 # include "./ServerManager.hpp"
 

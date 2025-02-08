@@ -1,5 +1,4 @@
 #include "./Logger.hpp"
-#include <sys/time.h>
 
 static std::string getCurrentDateTime() {
 	struct timeval tv;
