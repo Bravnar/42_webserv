@@ -30,16 +30,16 @@ int ServerManager::init() {
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->server_fd_ < 0) {
 		this->status_.isHealthy = false;
-		throw std::logic_error("error on server_fd_ socket: " + std::string(strerror(errno)));
+		throw std::logic_error("server_fd_ socket: " + std::string(strerror(errno)));
 	}
 	int opt = 1;
 	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 		this->status_.isHealthy = false;
-		throw std::logic_error("error on setsockopt: " + std::string(strerror(errno)));
+		throw std::logic_error("setsockopt: " + std::string(strerror(errno)));
 	}
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) {
 		this->status_.isHealthy = false;
-		throw std::logic_error("error on binding socket: " + std::string(strerror(errno)));
+		throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno)));
 	}
 	// TODO: define connections from config
 	if (listen(this->server_fd_, 500)) {

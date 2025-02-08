@@ -20,7 +20,7 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs) {
 				this->servers_.insert(std::make_pair(srv->getSocket().fd, srv));
 				this->sockets_.push_back(srv->getSocket());
 			} catch (const std::exception& e) {
-				this->fatal("couldn't bind host '") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
+				this->fatal("'") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 			}
 		}
 	}
@@ -105,6 +105,10 @@ void Runtime::checkFiles_() {
 }
 
 void Runtime::runServers() {
+	if (this->servers_.empty()) {
+		this->error("No binded servers to run") << std::endl;
+		return;
+	}
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
