@@ -25,10 +25,10 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		iter++;
 	}
 	if (this->method_ != "GET" && this->method_ != "POST") {
-		Logger::debug("request invalid method");
+		Logger::debug("request invalid method") << std::endl;
 		throw std::runtime_error(EXC_INVALID_RL);
 	} else if (this->httpVersion_ != "HTTP/1.1") {
-		Logger::debug("request invalid http version");
+		Logger::debug("request invalid http version") << std::endl;
 		throw std::runtime_error(EXC_INVALID_RL);
 	}
 	return 0;
