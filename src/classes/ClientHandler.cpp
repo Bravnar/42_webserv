@@ -58,26 +58,34 @@ ClientHandler::~ClientHandler() {
 	delete this->headers_;
 	delete this->fileBuffer_;
 	{
+		bool trigger = false;
 		std::vector<pollfd>& sockets_ = this->runtime_.getSockets();
 		std::vector<pollfd>::iterator it_sockets = sockets_.begin();
 		while (it_sockets != sockets_.end()) {
 			if (it_sockets->fd == this->socket_) {
 				sockets_.erase(it_sockets);
+				trigger = true;
 				break;
 			}
 			it_sockets++;
 		}
+		if (!trigger)
+			this->error("socket not destroyed from Runtime sockets_");
 	}
 	{
+		bool trigger = false;
 		std::vector<ClientHandler *>& clients_ = this->runtime_.getClients();
 		std::vector<ClientHandler *>::iterator it_clients = clients_.begin();
 		while (it_clients != clients_.end()) {
 			if (*it_clients == this) {
 				it_clients = clients_.erase(it_clients);
+				trigger = true;
 				break;
 			}
 			it_clients++;
 		}
+		if (!trigger)
+			this->error("client not destroyed from Runtime clients_");
 	}
 }
 
