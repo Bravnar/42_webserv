@@ -97,26 +97,27 @@ void ClientHandler::loadHeaders_() {
 	while ((bytesRead = recv(this->socket_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->headers_->append(buffer, bytesRead);
 		totalBytesRead += bytesRead;
-		if (bytesRead < DF_MAX_BUFFER)
+	 if (bytesRead < DF_MAX_BUFFER)
 			break;
+	// TODO: better loader
+	// recv (une fois) if <= 0 sortir
+	// retourner poll
+	// vérifier si toujours read
+	// recv si oui
 	}
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
-void ClientHandler::buildBody_(int fileFd) {
-	char buffer[DF_MAX_BUFFER];
+void ClientHandler::buildBody_(std::ifstream& input) {
 	this->fileBuffer_ = new std::string("");
-	ssize_t bytesRead;
-	size_t totalBytesRead = 0;
-	while ((bytesRead = read(fileFd, buffer, DF_MAX_BUFFER)) > 0) {
-		this->fileBuffer_->append(buffer, bytesRead);
-		totalBytesRead += bytesRead;
+	std::string line;
+	while (std::getline(input, line)) {
+		this->fileBuffer_->append(line.append("\n"));
 	}
-	close(fileFd);
-	if (bytesRead < 0) {
-		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
+	if (input.bad()) {
 		throw std::runtime_error(EXC_FILE_READ);
 	}
+	input.close();
 }
 
 //TODO: Refactor hanlde()
@@ -131,11 +132,11 @@ void ClientHandler::handle() {
 		this->fetch();
 	this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
 
-	int fileFd = -1;
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + req_.getUrl();
-	if ((fileFd = open(fileName.c_str(), O_RDONLY)) > 0) {
+	std::ifstream input(fileName.c_str());
+	if (input.is_open()) {
 		try {
-			buildBody_(fileFd);
+			buildBody_(input);
 		} catch (const std::exception& e) {
 			(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
 			throw;

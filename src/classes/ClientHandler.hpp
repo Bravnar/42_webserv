@@ -11,6 +11,7 @@
 # include "./HttpResponse.hpp"
 # include "./Runtime.hpp"
 # include "./ServerManager.hpp"
+# include <fstream>
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from socket"
@@ -27,7 +28,7 @@ class ClientHandler
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 		void loadHeaders_();
-		void buildBody_(int fileFd);
+		void buildBody_(std::ifstream& input);
 		Runtime& runtime_;
 		ServerManager& server_;
 		const sockaddr_in addr_;
