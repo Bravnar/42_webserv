@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<!--Coypright 2024 - ruinformatique.ch-->
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content= "width=device-width, user-scalable=no">
+	<title>Ruinfo - Accueil</title>
+	<script src="assets/js/dat.gui/dat.gui.min.js"></script>
+	<link rel="stylesheet" href="assets/css/stars-interactive.css">
+<link rel="stylesheet" href="assets/css/tailwind.css">
+	<link href="https:////fonts.googleapis.com/css?family=Didact Gothic" rel="stylesheet">
+	<link rel="icon" href="assets/img/ruinformatique.gif">
+</head>
+<body class="text-gray-200 2xl:pl-[120px] font-didact-gothic">
+	<header class="w-full 2xl:w-fit z-50 fixed top-0 2xl:top-10 left-0 2xl:left-8 bg-primary 2xl:rounded-3xl">
+		<a href="https://www.ruinformatique.ch">
+			<div class="flex items-center p-2 2xl:p-4">
+				<img class="max-h-10 2xl:max-h-12" src="assets/img/ruinformatique.gif">
+				<h1 class="text-xl 2xl:text-3xl font-bold">Ruinformatique</h1>
+			</div>
+		</a>
+	</header>
+	<nav class="z-50 fixed bottom-0 left-0 right-0 2xl:top-36 2xl:left-8 2xl:h-fit 2xl:w-44 bg-primary 2xl:rounded-3xl text-xl">
+		<ul class="w-full grid grid-cols-3 2xl:inline-block">
+			<li><a class="p-3 2xl:pl-5 flex items-center gap-3 w-full text-nowrap duration-500 xl:hover:bg-blacktransp xl:hover:w-[130%] xl:hover:pl-16 rounded-tl-3xl" href="#home"><img class="invert mx-auto 2xl:mx-0" src="assets/img/ui/icons/icons8-windowsmetro/home.svg"><p class="hidden 2xl:block">Accueil</p></a></li>
+			<li><a class="p-3 2xl:pl-5 flex items-center gap-3 w-full text-nowrap duration-500 xl:hover:bg-blacktransp xl:hover:w-[130%] xl:hover:pl-16" href="#projects"><img class="invert mx-auto 2xl:mx-0" src="assets/img/ui/icons/icons8-windowsmetro/briefcase.svg"><p class="hidden 2xl:block">Projets</p></a></li>
+			<li><a class="p-3 2xl:pl-5 flex items-center gap-3 w-full text-nowrap duration-500 xl:hover:bg-blacktransp xl:hover:w-[130%] xl:hover:pl-16 rounded-bl-3xl" href="#about"><img class="invert mx-auto 2xl:mx-0" src="assets/img/ui/icons/icons8-windowsmetro/about.svg"><p class="hidden 2xl:block">À propos</p></a></li>
+		</ul>
+	</nav>
+	<section id="home" class="2xl:px-60 min-h-screen flex flex-col justify-center py-16">
+		<div>
+			<div class="container relative bg-secondary px-10 py-5 rounded-3xl mx-auto">
+				<h1 class="text-center text-4xl font-extrabold">Accueil</h1>
+			</div>
+			<div class="mt-10 rounded-3xl 2xl:grid 2xl:grid-cols-5 2xl:gap-10 mx-auto">
+				<aside class="px-5 2xl:col-span-3 mb-10 h-fit rounded-3xl">
+					<div class="h-full container relative bg-secondary px-10 py-5 rounded-3xl mx-auto">
+						<h2 class="text-2xl font-bold">Mon projet actuel</h2>
+						<p>42-Repos représente mon avancée à l'êcole 42, il contient tous les projets dans lesquels j'ai travaillé durant le cursus.</p>
+						<img class="invert h-40 mx-auto my-10 w-auto" alt="logo 42 lausanne" src="assets/img/42_logo.svg">
+						<div class="w-full flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/42-repos" target="_blank">open-source</a>
+						</div>
+					</div>
+				</aside>
+				<aside class="mb-10 overflow-x-auto no-scrollbar 2xl:overflow-x-hidden overflow-y-auto rounded-3xl 2xl:max-h-[65vh] 2xl:col-span-2 flex 2xl:flex-col 2xl:gap-y-10">
+					<div class="relative w-full shrink-0 px-5 2xl:px-0">
+						<div class="bg-secondary py-5 mx-auto rounded-3xl">
+							<h2 class="px-10 text-2xl font-bold">Remise en service</h2>
+							<br>
+							<div class="px-10 max-h-[50vh] xl:max-h-[30vh] overflow-y-auto">
+								<p>Le jeu "Flappy Covid 2023" a été remis sur pied sous un différent nom, "Flappy Virus 2023". Il est prévu de le rendre disponible sur le "Play Store", d'où le changement du nom afin de respecter les conditions de Google.</p>
+							</div>
+							<br>
+							<div class="px-10">
+								<p class="ml-auto w-fit bg-primary rounded-xl p-2 text-sm">2023-06-18</p>
+							</div>
+						</div>
+					</div>
+					<div class="relative w-full shrink-0 px-5 2xl:px-0">
+						<div class="bg-secondary py-5 mx-auto rounded-3xl">
+							<h2 class="px-10 text-2xl font-bold">Maintenance de 2023</h2>
+							<h3 class="px-10 text-xl">Maintenance des services</h3>
+							<br>
+							<div class="px-10 max-h-[50vh] xl:max-h-[30vh] overflow-y-auto">
+								<p>Les différents services proposés sont en maintenance pour une durée indéterminée. Ce nouveau site web est en pleine construction, et les services précédemments utilisés comme "Flappy Virus 2023" suivront leur restauration après mise en place officielle du site web "www.ruinformatique.ch".</p>
+								<br>
+								<h4 class="text-xl font-bold">Que s'est-il passé ?</h4>
+								<br>
+								<p>Suite à une migration de l'infrastructure, certains services publiques comme le site web et le jeu "Flappy Virus 2023" se sont retrouvés corrompus. Ont été récupérés et relancés des applications comme le bot Discord Goofyn. L'occasion a été saisie pour repenser le site web et son traffic entrant. Des services comme Cloudflare ont donc été mis en place pour protéger et réguler la connexion aux différents sites web.</p>
+							</div>
+							<br>
+							<div class="px-10">
+								<p class="ml-auto w-fit bg-primary rounded-xl p-2 text-sm">2023-03-12</p>
+							</div>
+						</div>
+					</div>
+				</aside>
+			</div>
+		</div>
+	</section>
+	<section id="projects" class="2xl:px-60 min-h-screen flex flex-col justify-center py-16">
+		<div>
+			<div class="container relative bg-secondary px-10 py-5 rounded-3xl mx-auto">
+				<h1 class="text-center text-4xl font-extrabold">Projets</h1>
+			</div>
+			<div class="rounded-3xl w-full xl:w-11/12 min-h-fit mx-auto my-10 flex items-stretch xl:items-start flex-row xl:justify-center justify-stretch xl:gap-x-20 h-fit overflow-x-auto xl:flex-wrap no-scrollbar">
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">Jikan.js</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-blue-500 rounded-3xl w-fit p-2">open-source</p>
+							<p class="bg-purple-700 rounded-3xl w-fit p-2">en développement</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="Jikan.js thumbnail" src="posts/media/jikanjs-thumbnail.svg">
+						<br>
+						<p>Une librairie Deno.js en TypeScript. Un wrapper pour utiliser l'API Jikan.</p>
+						<br>
+						<div class="w-full flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://rpdjf.github.io/Jikan.js/" target="_blank">Documentation</a>
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/jikan.js" target="_blank">Code source</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">Goofyn</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-blue-500 rounded-3xl w-fit p-2">open-source</p>
+							<p class="bg-orange-700 rounded-3xl w-fit p-2">Beta</p>
+							<p class="bg-purple-700 rounded-3xl w-fit p-2">en cours</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="Goofyn screenshot" src="posts/media/goofyn-thumbnail.png">
+						<br>
+						<p>Un bot IA sur Discord en JS, idéal pour animer et manager un serveur.</p>
+						<br>
+						<div class="w-full flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://goofyn.ruinformatique.ch" target="_blank">Site officiel</a>
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/Goofyn" target="_blank">Code source</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">Google IP Range</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-blue-500 rounded-3xl w-fit p-2">open-source</p>
+							<p class="bg-green-700 rounded-3xl w-fit p-2">finished</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="google ip range thumbnail" src="posts/media/google-ip-range-thumbnail.jpg">
+						<br>
+						<p>Outil de proxy permettant de fetch les <a target="_blank" class="text-purple-400 underline" href="https://www.gstatic.com/ipranges/goog.json">adresses IP de Google</a> en texte brut.</p>
+						<br>
+						<div class="w-full shrink-0 flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/google-ip-range" target="_blank">Code source</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">J42L Website V2</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-green-700 rounded-3xl w-fit p-2">finished</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="j42l website v2 screenshot" src="posts/media/j42l-website-v2-thumbnail.png">
+						<br>
+						<p>V2 du site développé à mon intégration à la Junior entreprise 42 Lausanne.</p>
+						<br>
+						<div class="w-full shrink-0 flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://www.j42l.ch/" target="_blank">Visiter</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">42-Repos</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-blue-500 rounded-3xl w-fit p-2">open-source</p>
+							<p class="bg-purple-700 rounded-3xl w-fit p-2">en cours</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="42 Repos screenshot" src="posts/media/42-repos-thumbnail.png">
+						<br>
+						<p>Repository github contenant mes projets de l'école 42 Lausanne.</p>
+						<br>
+						<div class="w-full flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/42-Repos" target="_blank">Code source</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">42-minishell</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-blue-500 rounded-3xl w-fit p-2">open-source</p>
+							<p class="bg-green-700 rounded-3xl w-fit p-2">finished</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="42-minishell gif preview" src="posts/media/42-minishell-thumbnail.gif">
+						<br>
+						<p>Un shell codé en C basé sur le fonctionnement du bash 5.2.</p>
+						<br>
+						<div class="w-full flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://github.com/RPDJF/42-minishell" target="_blank">Code source</a>
+						</div>
+					</div>
+				</div>
+				<div class="min-h-[460px] px-10 xl:px-0 my-5 w-full max-w-[600px] xl:w-96 relative shrink-0 self-stretch">
+					<div class="flex flex-col justify-between h-full mx-auto w-full max-w-96 bg-secondary px-10 py-5 rounded-3xl">
+						<h3 class="text-xl">Flappy Virus 2023</h3>
+						<div class="text-xs flex gap-2 mt-3 flex-wrap">
+							<p class="bg-yellow-700 rounded-3xl w-fit p-2">pause</p>
+						</div>
+						<br>
+						<img class="w-auto h-[175px] object-cover mx-auto" alt="flappy virus 2023 screenshot" src="posts/media/fv23-thumbnail.png">
+						<br>
+						<p>Projet jeu-vidéo qui m'a initié à l'utilisation d'ExpressJS, Firstore et anciennement PHP.</p>
+						<br>
+						<div class="w-full shrink-0 flex flex-wrap justify-center items-center gap-y-2 gap-x-5">
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://fv23.ruinformatique.ch/" target="_blank">Jouer</a>
+							<a class="hover:animate-sizeup w-32 text-center bg-interactive py-3 rounded-[2rem] duration-300 hover:bg-slate-600" href="https://play.google.com/store/apps/details?id=ch.ruinformatique.fv23" target="_blank">Télécharger</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<section id="about" class="2xl:px-60 min-h-screen flex flex-col justify-center py-16">
+		<div>
+			<div class="container relative bg-secondary px-10 py-5 rounded-3xl mx-auto">
+				<h1 class="text-center text-4xl font-extrabold">À propos</h1>
+			</div>
+			<div class="2xl:grid 2xl:grid-cols-5 w-11/12 mx-auto gap-10 h-[100%] overflow-hidden">
+				<div class="2xl:col-span-3 h-fit container relative bg-secondary px-10 py-5 rounded-3xl mx-auto my-10">
+					<h2 class="text-2xl font-bold">Qui suis-je ?</h2>
+					<br>
+					<p>Informaticien système et réseaux CFC, j'étudie aujourd'hui la programmation à l'école 42. Je fais également parti de l'association JE42L ou je m'occupe de développement web et de l'infra informatique<br><br>Je code quelques petites broutilles sur mon temps libre et les postes sur ce site pour que tout le monde puisse profiter. La plupart de mes projets sont open-source, à moins qu'il ne s'agisse de jeux vidéo.<br><br>Je développe ce site avec le ❤️, pas d'IA ou de CMS à l'horizon !<br></p>
+				</div>
+				<div class="2xl:col-span-2 h-fit container relative bg-secondary px-10 py-5 rounded-3xl mx-auto my-10">
+					<h2 class="text-2xl font-bold">Me soutenir</h2>
+					<br>
+					<p>Un simple 'suivre' sur mon compte github est un énorme soutien !</p>
+					<br>
+					<div class="hover:animate-sizeup w-fit mx-auto"><script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Buy Me a Coffee', '#29abe0', 'B0B8SSPKI');kofiwidget2.draw();</script></div>
+					<br>
+				</div>
+			</div>
+		</div>
+	</section>
+	<div id="background" class="z-[-1]"></div>
+	<div id="stars-interactive" class="z-[-1]">
+		<div class="landscape"></div>
+		<canvas id="canvas"></canvas>
+		<script	src="assets/js/stars-interactive.js"></script>
+	</div>
+</body>
+</html>
