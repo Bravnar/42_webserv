@@ -24,7 +24,6 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		old_pos = pos + 1;
 		iter++;
 	}
-	Logger::warning("hereeee '") << this->method_ << "' '" << this->httpVersion_ << "'" << std::endl;
 	if (this->method_ != "GET" && this->method_ != "POST") {
 		Logger::debug("request invalid method");
 		throw std::runtime_error(EXC_INVALID_RL);
