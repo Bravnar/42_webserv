@@ -48,6 +48,7 @@ class HttpRequest {
 		const unsigned char *getBody() const;
 		const std::string getStringBody() const;
 		const std::string& getUrl() const;
+		const std::string& getHttpVersion() const;
 		bool isValid() const;
 };
 

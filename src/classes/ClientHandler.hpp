@@ -22,24 +22,34 @@ class ClientHandler
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+		void loadHeaders_();
+		void buildBody_(int fileFd);
 		Runtime& runtime_;
 		ServerManager& server_;
 		const sockaddr_in addr_;
 		const socklen_t len_;
 		int socket_;
+		std::string *headers_;
+		std::string *fileBuffer_;
+		bool fetched_;
+		HttpRequest req_;
+		HttpResponse resp_;
+		std::string clientIp_;
 
 	public:
 		// Canonical
 
 		ClientHandler(Runtime&, ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
 		ClientHandler(const ClientHandler&);
-		ClientHandler& operator=(const ClientHandler&) {return *this;};
+		ClientHandler& operator=(const ClientHandler&);
 		~ClientHandler();
 		//Member functions
 
 		void handle();
 		int getSocket() const;
-
+		const HttpRequest& fetch();
+		const HttpResponse& getResponse() const;
+		const std::string& getClientIp() const;
 };
 
 #endif

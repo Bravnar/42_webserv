@@ -30,7 +30,6 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 	}
 	if ((this->method_ != "GET" && this->method_ != "POST") ||
 		this->httpVersion_ != "HTTP/1.1") {
-			std::cout << static_cast<int>(this->httpVersion_[this->httpVersion_.size() - 0]) << std::endl;
 			exception = 400;
 	}
 	return exception;
@@ -50,7 +49,7 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 		if (!idx) {
 			exception = parseRequestLine_(line);
 			if (exception) {
-				Logger::error("RequestLine not valid") << std::endl;
+				Logger::debug("RequestLine not valid") << std::endl;
 				delete request;
 				return exception;
 			}
@@ -161,4 +160,8 @@ bool HttpRequest::isValid() const {
 
 const std::string& HttpRequest::getUrl() const {
 	return this->url_;
+}
+
+const std::string& HttpRequest::getHttpVersion() const {
+	return this->httpVersion_;
 }

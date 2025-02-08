@@ -15,13 +15,12 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs) {
 		for(std::vector<ServerManager *>::iterator it = vservers.begin(); it != vservers.end(); it++) {
 			ServerManager *srv;
 			srv = *it;
-			
-			srv->init();
-			if (srv->isHealthy()) {
+			try {
+				srv->init();
 				this->servers_.insert(std::make_pair(srv->getSocket().fd, srv));
 				this->sockets_.push_back(srv->getSocket());
-			} else {
-				Logger::fatal("Runtime: ") << "couldn't bind server '" << srv->getConfig().getServerNames()[0] << "'" << std::endl;
+			} catch (const std::exception& e) {
+				this->fatal("couldn't bind host '") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 			}
 		}
 	}
@@ -86,7 +85,22 @@ void Runtime::runServers() {
 			for(size_t j = 0; j < this->sockets_.size(); j++) {
 				if (this->sockets_[j].fd == this->clients_[i]->getSocket()) {
 					if (this->sockets_[j].revents & POLLIN) {
-						this->clients_[i]->handle();
+						try {
+							const HttpRequest& req = this->clients_[i]->fetch();
+							std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+							if (req.isValid()) this->info("Client " + this->clients_[i]->getClientIp() + std::string(" requested ") + element) << std::endl;
+							const HttpResponse& resp = this->clients_[i]->getResponse();
+							try {
+								this->clients_[i]->handle();
+								this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+							} catch(const std::exception& httpError) {
+								this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+							}
+						}
+						catch (const std::exception& e) {
+							this->error(e.what()) << std::endl;
+						}
+						delete this->clients_[i];
 					}
 					break;
 				}
