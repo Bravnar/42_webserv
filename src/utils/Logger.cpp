@@ -1,5 +1,4 @@
 #include "./Logger.hpp"
-#include <sys/time.h>
 
 static std::string getCurrentDateTime() {
 	struct timeval tv;
@@ -89,9 +88,11 @@ std::ostream& Logger::info(const std::string& str) {
 	return Logger::baseLog(LINFO, str);
 }
 
+static std::ostream stream(0);
+
 std::ostream& Logger::debug(const std::string& str) {
 	if (LOGGER_DEBUG)
 		return Logger::baseLog(LDEBUG, str);
 	else
-		return std::cout;
+		return stream;
 }

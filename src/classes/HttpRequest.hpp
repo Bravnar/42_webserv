@@ -24,25 +24,31 @@
 class HttpRequest {
 	private:
 		int parseRequestLine_(const std::string&);
-		int parseBuffer_(char *buffer);
+		int parseBuffer_(const char *buffer);
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
+		bool isValid_;
 
 	public:
 		// canonical
-		HttpRequest(char *buffer);
+
+		HttpRequest();
+		HttpRequest(const char *buffer);
 		HttpRequest(const HttpRequest&);
 		HttpRequest& operator=(const HttpRequest&);
 		~HttpRequest();
 
 		// member functions
+	
 		const std::string& getMethod() const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const unsigned char *getBody() const;
 		const std::string getStringBody() const;
+		const std::string& getUrl() const;
+		bool isValid() const;
 };
 
 #endif

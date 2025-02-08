@@ -60,39 +60,66 @@ ClientHandler::~ClientHandler() {
 }
 
 //TODO: Refactor hanlde()
+//TODO: Inlude max client body size
 /**
  * handle: Handle the client request
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
 	char client_ip[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN); // TODO: May need to replace way of getting ip
+	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN);
 	this->debug("handling request from ") << client_ip << std::endl;
-	size_t buffer_size = this->server_.getConfig().getClientBodyLimit();
-	char *buffer = new char[buffer_size + 1];
-	ssize_t bytes = read(this->socket_, buffer, buffer_size);
-	if (bytes > 0) {
-		buffer[bytes] = 0;
-		this->debug("header:") << std::endl << C_YELLOW << buffer << C_RESET << std::endl;
+
+	char buffer[DF_MAX_BUFFER];
+	std::string *headers = new std::string("");
+	ssize_t bytesRead;
+	size_t totalBytesRead = 0;
+	while ((bytesRead = recv(this->socket_, buffer, DF_MAX_BUFFER, 0)) > 0) {
+		headers->append(buffer, bytesRead);
+		totalBytesRead += bytesRead;
+		if (bytesRead < DF_MAX_BUFFER)
+			break;
 	}
-	else
-		this->debug("no data to read") << std::endl;
-	std::string res = "HTTP/1.1 ";
-	std::string html_file = this->server_.getRouteConfig()[0].getRoot() + "/index.html";
-	int html_file_fd = open(html_file.c_str(), O_RDONLY);
-	if (html_file_fd <= 0) {
-		this->warning("Couldn't find " + html_file) << std::endl;
-		std::string content = "Couldn't find " + html_file;
-		res += "404 Not Found\nContent-Type: text/plain\nContent-Length:" + Convert::ToString(content.length()) + "\n\n" + content;
+	if (bytesRead < 0) {
+		this->fatal("Error reading from socket") << std::endl;
+		delete headers;
+		HttpResponse(400).sendResp(this->socket_);
+		delete this;
+		return;
+	}
+	this->debug("Request:") << std::endl << C_ORANGE << headers->data() << C_RESET << std::endl;
+	HttpRequest req(headers->data());
+	delete headers;
+
+	int fileFd = -1;
+	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + req.getUrl();
+	if (req.isValid() && (fileFd = open(fileName.c_str(), O_RDONLY)) > 0) {
+		std::string *content = new std::string("");
+
+		bytesRead = 0;
+		totalBytesRead = 0;
+		while ((bytesRead = read(fileFd, buffer, DF_MAX_BUFFER)) > 0) {
+			content->append(buffer, bytesRead);
+			totalBytesRead += bytesRead;
+		}
+		close(fileFd);
+		if (bytesRead < 0) {
+			this->fatal("Error reading file") << std::endl;
+			delete content;
+			HttpResponse(400).sendResp(this->socket_);
+			delete this;
+			return;
+		}
+		HttpResponse(200, content->data(), content->size(), req.getUrl()).sendResp(this->socket_);
+		delete content;
+	} else if (!req.isValid()){
+		Logger::error("Invalid request");
+		HttpResponse(400).sendResp(this->socket_);
 	} else {
-		// test
-		HttpRequest req(buffer);
-		char buffer_file[2048] = {0};
-		ssize_t file_bytes = read(html_file_fd, buffer_file, 2048);
-		res += "200 OK\nContent-Type: text/html\nContent-Length:" + Convert::ToString(file_bytes) + "\n\n" + buffer_file;
+		Logger::error("File not found");
+		HttpResponse(404).sendResp(this->socket_);
 	}
-	write(this->socket_, res.c_str(), res.length());
-	delete[] buffer;
+	
 	delete this;
 }
 

@@ -5,6 +5,7 @@
 # include <string>
 # include "./colors.h"
 # include <ctime>
+# include <sys/time.h>
 # include <sstream>
 # include <iomanip>
 # include <cstdio>
