@@ -120,14 +120,7 @@ const std::string HttpResponse::str() const {
 #include <unistd.h>
 
 void HttpResponse::sendResp(int socket_fd) const {
-	ssize_t sendBytes;
-
-	if ((sendBytes = send(socket_fd, this->str().data(), this->str().size(), 0)) > 0) {
-		Logger::info("sent ") << sendBytes << " bytes" << std::endl;
-	} else if (sendBytes < 0) {
+	if (send(socket_fd, this->str().data(), this->str().size(), 0) < 0) {
 		Logger::fatal("Error on sending data") << std::endl;
-	}
-	else {
-		Logger::error("Nothing sent") << std::endl;
 	}
 }
