@@ -1,17 +1,13 @@
 #include "./HttpRequest.hpp"
 
 int HttpRequest::parseRequestLine_(const std::string& line) {
-	int exception = 0;
-
 	int iter = 0;
 	size_t old_pos = 0;
 
 	while (iter < 3) {
 		size_t pos = line.find_first_of(' ', old_pos);
-		if ((iter != 2 && pos == line.npos) || (iter == 2 && pos != line.npos)) {
-			exception = 400;
-			break;
-		}
+		if ((iter != 2 && pos == line.npos) || (iter == 2 && pos != line.npos))
+			throw std::runtime_error(EXC_INVALID_RL);
 		switch(iter) {
 			case 0:
 				this->method_ = line.substr(old_pos, pos);
@@ -28,19 +24,19 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		old_pos = pos + 1;
 		iter++;
 	}
-	if ((this->method_ != "GET" && this->method_ != "POST") ||
-		this->httpVersion_ != "HTTP/1.1") {
-			std::cout << static_cast<int>(this->httpVersion_[this->httpVersion_.size() - 0]) << std::endl;
-			exception = 400;
+	if (this->method_ != "GET" && this->method_ != "POST") {
+		Logger::debug("request invalid method");
+		throw std::runtime_error(EXC_INVALID_RL);
+	} else if (this->httpVersion_ != "HTTP/1.1") {
+		Logger::debug("request invalid http version");
+		throw std::runtime_error(EXC_INVALID_RL);
 	}
-	return exception;
+	return 0;
 }
 
 int HttpRequest::parseBuffer_(const char *buffer) {
-	int exception = 0;
-
-	std::string *request = new std::string(buffer);
-	std::stringstream ss(*request);
+	this->buffer_str_ = new std::string(buffer);
+	std::stringstream ss(*this->buffer_str_);
 	std::string line;
 	bool isBody = false;
 
@@ -48,12 +44,7 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 	while (!isBody && std::getline(ss, line)) {
 		line = line.substr(0, line.size() - 1);
 		if (!idx) {
-			exception = parseRequestLine_(line);
-			if (exception) {
-				Logger::error("RequestLine not valid") << std::endl;
-				delete request;
-				return exception;
-			}
+			parseRequestLine_(line);
 		} else {
 			if (line.empty()) {
 				isBody = true;
@@ -68,55 +59,53 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 		}
 		idx++;
 	}
-	delete request;
+	delete this->buffer_str_;
+	this->buffer_str_ = 0;
 	if (isBody) {
 		std::map<std::string, std::string>::iterator it_contentlen = this->headers_.find(H_CONTENT_LENGTH);
 		if (it_contentlen != this->headers_.end()) {
 			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
 			if (bodySize) {
-				if (bodySize < 0) {
-					Logger::debug("Body size is negative");
-					return (exception = 400);
-				}
+				if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
 				this->body_ = new unsigned char[bodySize];
 				const char *bodySep = std::strstr(buffer, "\r\n\r\n");
-				if (!bodySep) {
-					Logger::debug("Request should contain body but delimiter '\\r\\n\\r\\n' was not found") << std::endl;
-					return (exception = 400);
-				} else {
+				if (!bodySep) { throw std::runtime_error(EXC_BODY_NOLIMITER); }
+				else {
 					const unsigned char *data = reinterpret_cast<const unsigned char *>(bodySep + 2);
-					try {
-						std::copy(data, data + bodySize, this->body_);
-					} catch(const std::exception& e) {
-						Logger::error("Couldn't copy data from http request body: ") << e.what() << std::endl;
-						return (exception = 400);
-					}
-					Logger::info("data: ") << this->getStringBody() << std::endl;	
+					try { std::copy(data, data + bodySize, this->body_); }
+					catch(const std::exception& e) { throw std::runtime_error(EXC_BODY_REQ_COPY); }
+					Logger::debug("data: ") << this->getStringBody() << std::endl;	
 				}
 			}
 		}
 	}
-	if (this->headers_.find(H_HOST) == this->headers_.end()) {
-		Logger::debug("No host") << std::endl;
-		return (exception = 400);
-	}
-	return exception;
+	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
+	return 0;
 }
 
-HttpRequest::HttpRequest(): method_(""), url_(""), httpVersion_(""), body_(0), isValid_(false) {
+HttpRequest::HttpRequest():
+	method_(""),
+	url_(""),
+	httpVersion_(""),
+	body_(0),
+	isValid_(false),
+	buffer_str_(0) {}
 
-}
-
-HttpRequest::HttpRequest(const char *buffer) {
+HttpRequest::HttpRequest(const char *buffer): buffer_str_(0) {
 	this->body_ = 0;
-	if (parseBuffer_(buffer))
-		this->isValid_ = false;
-	else
-		this->isValid_ = true;
+	parseBuffer_(buffer);
+	this->isValid_ = true;
 }
 
 // TODO: deep copy
-HttpRequest::HttpRequest(const HttpRequest& copy): method_(copy.method_), url_(copy.url_), httpVersion_(copy.httpVersion_), headers_(copy.headers_), body_(copy.body_), isValid_(copy.isValid_) {}
+HttpRequest::HttpRequest(const HttpRequest& copy):
+	method_(copy.method_),
+	url_(copy.url_),
+	httpVersion_(copy.httpVersion_),
+	headers_(copy.headers_),
+	body_(copy.body_),
+	isValid_(copy.isValid_),
+	buffer_str_(copy.buffer_str_) {}
 
 // TODO: deep copy
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
@@ -128,12 +117,15 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
 	this->isValid_ = assign.isValid_;
+	this->buffer_str_ = assign.buffer_str_;
 	return *this;
 }
 
 HttpRequest::~HttpRequest() {
 	if (body_)
 		delete[] body_;
+	if (buffer_str_)
+		delete this->buffer_str_;
 }
 
 const std::string& HttpRequest::getMethod() const {
@@ -161,4 +153,8 @@ bool HttpRequest::isValid() const {
 
 const std::string& HttpRequest::getUrl() const {
 	return this->url_;
+}
+
+const std::string& HttpRequest::getHttpVersion() const {
+	return this->httpVersion_;
 }

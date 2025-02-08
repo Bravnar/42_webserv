@@ -13,6 +13,9 @@ class Runtime {
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+		void checkServers_();
+		void checkClients_();
+		void checkFiles_();
 		std::map<int, ServerManager *> servers_;
 		std::vector<ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
