@@ -30,6 +30,8 @@ static std::string getType(const std::string& url) {
         contentType = "text/plain";
     } else if (url.find(".svg\0") != std::string::npos) {
 		contentType = "image/svg+xml";
+	} else if (url.find(".ico\0") != std::string::npos) {
+		contentType = "image/x-icon";
 	} else {
         contentType = "application/octet-stream";
     }
