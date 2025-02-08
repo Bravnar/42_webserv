@@ -21,7 +21,7 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int client
 	len_(len),
 	headers_(0),
 	fileBuffer_(0),
-	fetched_(false),
+	isFetched_(false),
 	isReading_(false) {
 		runtime.getSockets().push_back(makeClientSocket(client_socket));
 		this->socket_ = client_socket;
@@ -36,8 +36,8 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	socket_(copy.socket_),
 	headers_(copy.headers_),
 	fileBuffer_(copy.fileBuffer_),
-	fetched_(copy.fileBuffer_),
 	req_(copy.req_),
+	isFetched_(copy.fileBuffer_),
 	isReading_(copy.isReading_) {
 }
 
@@ -49,8 +49,8 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 	this->socket_ = assign.socket_;
 	this->headers_ = assign.headers_;
 	this->fileBuffer_ = assign.fileBuffer_;
-	this->fetched_ = assign.fileBuffer_;
 	this->req_ = assign.req_;
+	this->isFetched_ = assign.fileBuffer_;
 	this->isReading_ = assign.isReading_;
 	return *this;
 }
@@ -123,7 +123,7 @@ void ClientHandler::buildResBody_(std::ifstream& input) {
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
-	if (!this->isReading_ && !this->fetched_) {
+	if (!this->isReading_ && !this->isFetched_) {
 		this->fetch();
 		this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
 	} else if (this->isReading_) {
@@ -155,7 +155,7 @@ int ClientHandler::getSocket() const {
 }
 
 const HttpRequest& ClientHandler::fetch() {
-	if (this->fetched_)
+	if (this->isFetched_)
 		return this->req_;
 	if (this->isReading_) {
 		throw std::runtime_error("trying to fetch Client without finishing reading socket");
@@ -165,7 +165,7 @@ const HttpRequest& ClientHandler::fetch() {
 	this->clientIp_ = client_ip;
 	try {
 		this->req_ = HttpRequest(this->headers_->data());
-		this->fetched_ = true;
+		this->isFetched_ = true;
 	} catch(const std::exception& e) {
 		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
 		throw;
@@ -182,11 +182,11 @@ const std::string& ClientHandler::getClientIp() const {
 }
 
 bool ClientHandler::isFetched() const {
-	return this->fetched_;
+	return this->isFetched_;
 }
 
 int ClientHandler::readSocket() {
-	if (this->fetched_) {
+	if (this->isFetched_) {
 		this->isReading_ = false;
 		return 0;
 	}

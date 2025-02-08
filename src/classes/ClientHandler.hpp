@@ -1,5 +1,5 @@
 #ifndef CLIENTHANDLER_HPP
-#define CLIENTHANDLER_HPP
+# define CLIENTHANDLER_HPP
 
 # include <netinet/in.h>
 # include <unistd.h>
@@ -36,10 +36,10 @@ class ClientHandler
 		int socket_;
 		std::string *headers_;
 		std::string *fileBuffer_;
-		bool fetched_;
 		HttpRequest req_;
 		HttpResponse resp_;
 		std::string clientIp_;
+		bool isFetched_;
 		bool isReading_;
 
 	public:
@@ -54,10 +54,10 @@ class ClientHandler
 		void handle();
 		int getSocket() const;
 		const HttpRequest& fetch();
+		int readSocket();
 		const HttpResponse& getResponse() const;
 		const std::string& getClientIp() const;
 		bool isFetched() const;
-		int readSocket();
 		bool isReading() const;
 		void setReading(bool);
 };
