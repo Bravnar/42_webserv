@@ -40,6 +40,7 @@ class ClientHandler
 		HttpRequest req_;
 		HttpResponse resp_;
 		std::string clientIp_;
+		bool isReading_;
 
 	public:
 		// Canonical
@@ -55,6 +56,10 @@ class ClientHandler
 		const HttpRequest& fetch();
 		const HttpResponse& getResponse() const;
 		const std::string& getClientIp() const;
+		bool isFetched() const;
+		int readSocket();
+		bool isReading() const;
+		void setReading(bool);
 };
 
 #endif

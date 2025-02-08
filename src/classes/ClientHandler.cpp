@@ -21,7 +21,8 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int client
 	len_(len),
 	headers_(0),
 	fileBuffer_(0),
-	fetched_(false) {
+	fetched_(false),
+	isReading_(false) {
 		runtime.getSockets().push_back(makeClientSocket(client_socket));
 		this->socket_ = client_socket;
 		this->debug("New socket") << std::endl;
@@ -36,7 +37,8 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	headers_(copy.headers_),
 	fileBuffer_(copy.fileBuffer_),
 	fetched_(copy.fileBuffer_),
-	req_(copy.req_) {
+	req_(copy.req_),
+	isReading_(copy.isReading_) {
 }
 
 ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
@@ -49,6 +51,7 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 	this->fileBuffer_ = assign.fileBuffer_;
 	this->fetched_ = assign.fileBuffer_;
 	this->req_ = assign.req_;
+	this->isReading_ = assign.isReading_;
 	return *this;
 }
 
@@ -90,20 +93,13 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::loadHeaders_() {
+	this->isReading_ = true;
 	char buffer[DF_MAX_BUFFER];
-	this->headers_ = new std::string("");
+	if (!this->headers_)
+		this->headers_ = new std::string("");
 	ssize_t bytesRead;
-	size_t totalBytesRead = 0;
-	while ((bytesRead = recv(this->socket_, buffer, DF_MAX_BUFFER, 0)) > 0) {
+	if ((bytesRead = recv(this->socket_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->headers_->append(buffer, bytesRead);
-		totalBytesRead += bytesRead;
-	 if (bytesRead < DF_MAX_BUFFER)
-			break;
-	// TODO: better loader
-	// recv (une fois) if <= 0 sortir
-	// retourner poll
-	// vérifier si toujours read
-	// recv si oui
 	}
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
@@ -127,9 +123,12 @@ void ClientHandler::buildResBody_(std::ifstream& input) {
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
-	if (!this->fetched_)
+	if (!this->isReading_ && !this->fetched_) {
 		this->fetch();
-	this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
+		this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
+	} else if (this->isReading_) {
+		return ;
+	}
 
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + req_.getUrl();
 	std::ifstream input(fileName.c_str());
@@ -158,23 +157,19 @@ int ClientHandler::getSocket() const {
 const HttpRequest& ClientHandler::fetch() {
 	if (this->fetched_)
 		return this->req_;
+	if (this->isReading_) {
+		throw std::runtime_error("trying to fetch Client without finishing reading socket");
+	}
+	char client_ip[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN);
+	this->clientIp_ = client_ip;
 	try {
-		char client_ip[INET_ADDRSTRLEN];
-		inet_ntop(AF_INET, &(this->addr_.sin_addr), client_ip, INET_ADDRSTRLEN);
-		this->clientIp_ = client_ip;
-		loadHeaders_();
+		this->req_ = HttpRequest(this->headers_->data());
 		this->fetched_ = true;
 	} catch(const std::exception& e) {
 		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
 		throw;
 	}
-	try {
-		this->req_ = HttpRequest(this->headers_->data());
-	} catch(const std::exception& e) {
-		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
-		throw;
-	}
-	
 	return this->req_;
 }
 
@@ -185,3 +180,25 @@ const HttpResponse& ClientHandler::getResponse() const {
 const std::string& ClientHandler::getClientIp() const {
 	return this->clientIp_;
 }
+
+bool ClientHandler::isFetched() const {
+	return this->fetched_;
+}
+
+int ClientHandler::readSocket() {
+	if (this->fetched_) {
+		this->isReading_ = false;
+		return 0;
+	}
+	try {
+		loadHeaders_();
+		return (this->isReading_);
+	} catch(const std::exception& e) {
+		this->fatal(e.what()) << std::endl;
+		(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
+		return -1;
+	}
+}
+
+bool ClientHandler::isReading() const { return this->isReading_; }
+void ClientHandler::setReading(bool value) { this->isReading_ = value; }

@@ -74,26 +74,37 @@ void Runtime::checkServers_() {
 
 void Runtime::checkClients_() {
 	for(size_t i = 0; i < this->clients_.size(); i++) {
+		ClientHandler *client = this->clients_[i];
 		for(size_t j = 0; j < this->sockets_.size(); j++) { // only to find his socket
-			if (this->sockets_[j].fd == this->clients_[i]->getSocket()) {
+			if (this->sockets_[j].fd == client->getSocket()) {
 				if (this->sockets_[j].revents & POLLIN) {
-					try {
-						const HttpRequest& req = this->clients_[i]->fetch();
-						std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-						if (req.isValid()) this->info("Client " + this->clients_[i]->getClientIp() + std::string(" requested ") + element) << std::endl;
-						const HttpResponse& resp = this->clients_[i]->getResponse();
+					int readStatus = client->readSocket();
+					if (readStatus > 0) continue;
+					else if (readStatus < 0) {
+						this->fatal("throwing client ") << client->getClientIp() << std::endl;
+						delete client;
+						continue;
+					}
+				} else {
+					if (client->isReading()) {
+						client->setReading(false);
 						try {
-							this->clients_[i]->handle();
-							this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-						} catch(const std::exception& httpError) {
-							this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-							this->debug(httpError.what()) << std::endl;
+							const HttpRequest& req = client->fetch();
+							std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+							if (req.isValid()) this->info("Client " + client->getClientIp() + std::string(" requested ") + element) << std::endl;
+							const HttpResponse& resp = client->getResponse();
+							try {
+								client->handle();
+								this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+							} catch(const std::exception& httpError) {
+								this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+								this->debug(httpError.what()) << std::endl;
+							}
+						} catch (const std::exception& e) {
+							this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
 						}
+						delete client;
 					}
-					catch (const std::exception& e) {
-						this->error(e.what()) << " from client " << this->clients_[i]->getClientIp() << std::endl;
-					}
-					delete this->clients_[i];
 				}
 				break;
 			}
