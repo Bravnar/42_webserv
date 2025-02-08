@@ -112,10 +112,6 @@ void Runtime::checkClients_() {
 	}
 }
 
-void Runtime::checkFiles_() {
-	// need code
-}
-
 void Runtime::runServers() {
 	if (this->servers_.empty()) {
 		this->error("No binded servers to run") << std::endl;
@@ -134,7 +130,6 @@ void Runtime::runServers() {
 		}
 		this->checkServers_();
 		this->checkClients_();
-		this->checkFiles_();
 	}
 	return;
 }
