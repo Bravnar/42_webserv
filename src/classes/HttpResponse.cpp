@@ -52,6 +52,9 @@ static std::string checkStatus(int status) {
 		case 404:
 			return "Not Found";
 			break;
+		case 500:
+			return "Internal Server Error";
+			break;
 		default:
 			return "Unknown";
 	}

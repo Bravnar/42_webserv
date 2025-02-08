@@ -108,7 +108,7 @@ void ClientHandler::loadHeaders_() {
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
-void ClientHandler::buildBody_(std::ifstream& input) {
+void ClientHandler::buildResBody_(std::ifstream& input) {
 	this->fileBuffer_ = new std::string("");
 	std::string line;
 	while (std::getline(input, line)) {
@@ -127,7 +127,6 @@ void ClientHandler::buildBody_(std::ifstream& input) {
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
-	this->debug("handling request from ") << this->clientIp_ << std::endl;
 	if (!this->fetched_)
 		this->fetch();
 	this->debug("Request:") << std::endl << C_ORANGE << this->headers_->data() << C_RESET << std::endl;
@@ -136,9 +135,9 @@ void ClientHandler::handle() {
 	std::ifstream input(fileName.c_str());
 	if (input.is_open()) {
 		try {
-			buildBody_(input);
+			this->buildResBody_(input);
 		} catch (const std::exception& e) {
-			(this->resp_ = HttpResponse(400)).sendResp(this->socket_);
+			(this->resp_ = HttpResponse(500)).sendResp(this->socket_);
 			throw;
 		}
 		(this->resp_ = HttpResponse(200, this->fileBuffer_->data(), this->fileBuffer_->size(), req_.getUrl())).sendResp(this->socket_);

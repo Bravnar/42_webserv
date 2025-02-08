@@ -28,7 +28,7 @@ class ClientHandler
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 		void loadHeaders_();
-		void buildBody_(std::ifstream& input);
+		void buildResBody_(std::ifstream& input);
 		Runtime& runtime_;
 		ServerManager& server_;
 		const sockaddr_in addr_;
