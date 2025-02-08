@@ -93,7 +93,7 @@ void ClientHandler::handle() {
 
 	int fileFd = -1;
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + req.getUrl();
-	if (req.isValid() && (fileFd = open(fileName.c_str(), O_RDONLY))) {
+	if (req.isValid() && (fileFd = open(fileName.c_str(), O_RDONLY)) > 0) {
 		std::string *content = new std::string("");
 
 		bytesRead = 0;
@@ -104,7 +104,7 @@ void ClientHandler::handle() {
 		}
 		close(fileFd);
 		if (bytesRead < 0) {
-			this->fatal("Error reading file: ") << strerror(errno) << std::endl;
+			this->fatal("Error reading file") << std::endl;
 			delete content;
 			HttpResponse(400).sendResp(this->socket_);
 			delete this;
