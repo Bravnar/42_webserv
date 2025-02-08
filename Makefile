@@ -55,11 +55,14 @@ debug:  $(HEADERS) $(SRCS) $(OBJS)
 		@echo "\033[0;32m ✅ Compilation done (debug mode)! ✅ \033[0m"
 
 up: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
-		$(shell docker compose up -d)
+		@docker compose up --build -d
 		@echo "\033[0;32m ✅ WebservSIR and Nginx are up! ✅ \033[0m"
 
 down: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
-		$(shell docker compose down)
+		@docker compose down
 		@echo "\033[0;32m ✅ WebservSIR and Nginx are down! ✅ \033[0m"
 
-.PHONY: all clean fclean re debug up down
+logs: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
+		@docker logs 42_webserv-webserv-1
+
+.PHONY: all clean fclean re debug up down logs
