@@ -112,8 +112,6 @@ const std::string HttpResponse::str() const {
 	return resp;
 }
 
-#include <unistd.h>
-
 void HttpResponse::sendResp(int socket_fd) const {
 	if (send(socket_fd, this->str().data(), this->str().size(), 0) < 0) {
 		Logger::fatal("Error on sending data") << std::endl;
