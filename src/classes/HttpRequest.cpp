@@ -35,8 +35,8 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 }
 
 int HttpRequest::parseBuffer_(const char *buffer) {
-	this->buffer_str_ = new std::string(buffer);
-	std::stringstream ss(*this->buffer_str_);
+	this->body_buffer_ = new std::string(buffer);
+	std::stringstream ss(*this->body_buffer_);
 	std::string line;
 	bool isBody = false;
 
@@ -59,8 +59,8 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 		}
 		idx++;
 	}
-	delete this->buffer_str_;
-	this->buffer_str_ = 0;
+	delete this->body_buffer_;
+	this->body_buffer_ = 0;
 	if (isBody) {
 		std::map<std::string, std::string>::iterator it_contentlen = this->headers_.find(H_CONTENT_LENGTH);
 		if (it_contentlen != this->headers_.end()) {
@@ -89,9 +89,9 @@ HttpRequest::HttpRequest():
 	httpVersion_(""),
 	body_(0),
 	isValid_(false),
-	buffer_str_(0) {}
+	body_buffer_(0) {}
 
-HttpRequest::HttpRequest(const char *buffer): buffer_str_(0) {
+HttpRequest::HttpRequest(const char *buffer): body_buffer_(0) {
 	this->body_ = 0;
 	parseBuffer_(buffer);
 	this->isValid_ = true;
@@ -105,7 +105,7 @@ HttpRequest::HttpRequest(const HttpRequest& copy):
 	headers_(copy.headers_),
 	body_(copy.body_),
 	isValid_(copy.isValid_),
-	buffer_str_(copy.buffer_str_) {}
+	body_buffer_(copy.body_buffer_) {}
 
 // TODO: deep copy
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
@@ -117,15 +117,15 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
 	this->isValid_ = assign.isValid_;
-	this->buffer_str_ = assign.buffer_str_;
+	this->body_buffer_ = assign.body_buffer_;
 	return *this;
 }
 
 HttpRequest::~HttpRequest() {
 	if (body_)
 		delete[] body_;
-	if (buffer_str_)
-		delete this->buffer_str_;
+	if (body_buffer_)
+		delete this->body_buffer_;
 }
 
 const std::string& HttpRequest::getMethod() const {

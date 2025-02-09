@@ -37,7 +37,7 @@ class HttpRequest {
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
 		bool isValid_;
-		std::string *buffer_str_;
+		std::string *body_buffer_;
 
 	public:
 		// canonical
