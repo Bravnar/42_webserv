@@ -7,11 +7,11 @@ std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runti
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
 Runtime::Runtime(const std::vector<ServerConfig>& configs) {
-	pipe(this->updatePipe_);
-	this->updatePoll_.events = POLLIN | POLLOUT;
-	this->updatePoll_.revents = 0;
-	this->updatePoll_.fd = this->updatePipe_[0];
-	this->sockets_.push_back(this->updatePoll_);
+	pipe(this->syncPipe_);
+	this->syncPoll_.events = POLLIN | POLLOUT;
+	this->syncPoll_.revents = 0;
+	this->syncPoll_.fd = this->syncPipe_[0];
+	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
 	{
 		std::vector<ServerManager *> vservers;
@@ -58,7 +58,7 @@ Runtime::~Runtime() {
 	for(std::vector<pollfd>::iterator it = this->sockets_.begin(); it != this->sockets_.end(); it++) {
 		close(it->fd);
 	}
-	close(this->updatePipe_[1]);
+	close(this->syncPipe_[1]);
 	this->sockets_.clear();
 }
 
@@ -66,10 +66,11 @@ void Runtime::checkServers_() {
 	int client_socket = -1;
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-	for (size_t i = 0; i < this->servers_.size(); i++) {
-		if (this->sockets_[i + 1].revents & POLLIN) {
-			this->debug("Poll server '") << this->servers_[this->sockets_[i + 1].fd]->getConfig().getServerNames()[0] << std::endl;
-			client_socket = accept(this->sockets_[i + 1].fd, (sockaddr *)&client_addr, &client_len);
+	// starting at idx 1 since idx 0 is reserved to syncPipe
+	for (size_t i = 1; i < this->servers_.size() + 1; i++) {
+		if (this->sockets_[i].revents & POLLIN) {
+			this->debug("Poll server '") << this->servers_[this->sockets_[i].fd]->getConfig().getServerNames()[0] << std::endl;
+			client_socket = accept(this->sockets_[i].fd, (sockaddr *)&client_addr, &client_len);
 			if (client_socket < 0) {
 				this->error("error on request accept(): ") << strerror(errno) << std::endl;
 				continue;
@@ -82,42 +83,43 @@ void Runtime::checkServers_() {
 void Runtime::checkClients_() {
 	for(size_t i = 0; i < this->clients_.size(); i++) {
 		ClientHandler *client = this->clients_[i];
-		for(size_t j = 0; j < this->sockets_.size(); j++) { // only to find his socket
-			if (this->sockets_[j].fd == client->getSocket()) {
-				if (this->sockets_[j].revents & POLLIN) {
-					int readStatus = client->readSocket();
-					if (readStatus > 0) this->Sync();
-					else if (readStatus < 0) {
-						this->fatal("throwing client ") << client->getClientIp() << std::endl;
-						delete client;
-						continue;
+		pollfd *socket = this->getSocket(client->getSocket());
+		if (!socket) {
+			this->fatal("lost socket for client ") << client->getClientIp() << std::endl;
+			delete client;
+			continue;
+		}
+		if (socket->revents & POLLIN) {
+			int readStatus = client->readSocket();
+			if (readStatus > 0) this->Sync();
+			else if (readStatus < 0) {
+				this->fatal("throwing client ") << client->getClientIp() << std::endl;
+				delete client;
+				continue;
+			}
+		} else {
+			if (!(socket->events & POLLOUT)) {
+				Logger::error("client disconnected ") << client->getClientIp() << std::endl;
+				delete client;
+			}
+			else if (client->isReading()) {
+				client->setReading(false);
+				try {
+					const HttpRequest& req = client->fetch();
+					std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+					if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
+					const HttpResponse& resp = client->getResponse();
+					try {
+						client->handle();
+						this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+					} catch(const std::exception& httpError) {
+						this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+						this->debug(httpError.what()) << std::endl;
 					}
-				} else {
-					if (!(this->sockets_[j].events & POLLOUT)) {
-						Logger::error("client disconnected ") << client->getClientIp() << std::endl;
-						delete client;
-					}
-					else if (client->isReading()) {
-						client->setReading(false);
-						try {
-							const HttpRequest& req = client->fetch();
-							std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-							if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
-							const HttpResponse& resp = client->getResponse();
-							try {
-								client->handle();
-								this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-							} catch(const std::exception& httpError) {
-								this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-								this->debug(httpError.what()) << std::endl;
-							}
-						} catch (const std::exception& e) {
-							this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
-						}
-						delete client;
-					}
+				} catch (const std::exception& e) {
+					this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
 				}
-				break;
+				delete client;
 			}
 		}
 	}
@@ -141,7 +143,7 @@ void Runtime::runServers() {
 		}
 		if (this->sockets_[0].revents & POLLIN) {
 			char flush;
-			read (this->updatePipe_[0], &flush, 1);
+			read (this->syncPipe_[0], &flush, 1);
 			this->isSyncing_ = false;
 		}
 		this->checkServers_();
@@ -177,6 +179,15 @@ std::vector<ClientHandler *>& Runtime::getClients() {
 void Runtime::Sync() {
 	if (this->isSyncing_) return;
 	this->isSyncing_ = true;
-	write(this->updatePipe_[1], "\0", 1);
-	this->sockets_[0].fd = this->updatePipe_[0];
+	write(this->syncPipe_[1], "\0", 1);
+	this->sockets_[0].fd = this->syncPipe_[0];
+}
+
+pollfd *Runtime::getSocket(int socket_fd_) {
+	for(size_t i = 0; i < this->sockets_.size(); i++) {
+		if(socket_fd_ == this->sockets_[i].fd) {
+			return &this->sockets_[i];
+		}
+	}
+	return 0;
 }
