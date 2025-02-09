@@ -8,7 +8,7 @@ std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Run
 
 Runtime::Runtime(const std::vector<ServerConfig>& configs) {
 	pipe(this->updatePipe_);
-	this->updatePoll_.events = POLLIN;
+	this->updatePoll_.events = POLLIN | POLLOUT;
 	this->updatePoll_.revents = 0;
 	this->updatePoll_.fd = this->updatePipe_[0];
 	this->sockets_.push_back(this->updatePoll_);
@@ -93,7 +93,11 @@ void Runtime::checkClients_() {
 						continue;
 					}
 				} else {
-					if (client->isReading()) {
+					if (!(this->sockets_[j].events & POLLOUT)) {
+						Logger::error("client disconnected ") << client->getClientIp() << std::endl;
+						delete client;
+					}
+					else if (client->isReading()) {
 						client->setReading(false);
 						try {
 							const HttpRequest& req = client->fetch();
