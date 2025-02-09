@@ -142,13 +142,18 @@ const HttpRequest& ClientHandler::fetch() {
 	if (this->state_.isFetched)
 		return this->request_;
 	if (this->state_.isReading) {
-		throw std::runtime_error("trying to fetch Client without finishing reading socket");
+		throw std::runtime_error(EXC_FETCHING_BREFORE_READ);
 	}
 	try {
+		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 		this->request_ = HttpRequest(this->buffer_.requestBuffer->data());
 		this->state_.isFetched = true;
 	} catch(const std::exception& e) {
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		const std::string msg = e.what();
+		if (msg == EXC_BODY_NEG_SIZE || EXC_BODY_NOLIMITER || EXC_HEADER_NOHOST )
+			(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		else
+			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
 		throw;
 	}
 	return this->request_;
@@ -176,7 +181,7 @@ int ClientHandler::readSocket() {
 		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
 		return -1;
 	}
 }

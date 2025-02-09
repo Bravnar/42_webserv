@@ -16,6 +16,7 @@
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from socket"
 # define EXC_FILE_NF(file) file + " not found"
+# define EXC_FETCHING_BREFORE_READ "Client fetched before read"
 
 class Runtime;
 
