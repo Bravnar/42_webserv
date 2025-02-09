@@ -13,7 +13,7 @@ class HttpResponse {
 		const std::string version_;
 		int status_;
 		std::string status_msg_;
-		std::map<std::string, std::string> headers_;
+		std::map<std::string, std::string> headerBuffer_;
 		const unsigned char *body_;
 	public:
 		// Canonical

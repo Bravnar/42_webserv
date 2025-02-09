@@ -15,10 +15,12 @@ class Runtime {
 		std::ostream& debug(const std::string&);
 		void checkServers_();
 		void checkClients_();
-		void checkFiles_();
 		std::map<int, ServerManager *> servers_;
 		std::vector<ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
+		int syncPipe_[2];
+		pollfd syncPoll_;
+		bool isSyncing_;
 	public:
 		//TODO: Canonical
 
@@ -33,6 +35,8 @@ class Runtime {
 		void closeServers();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
+		void Sync();
+		pollfd *getSocket(int socket_fd_);
 };
 
 #endif

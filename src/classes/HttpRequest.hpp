@@ -30,14 +30,15 @@
 class HttpRequest {
 	private:
 		int parseRequestLine_(const std::string&);
-		int parseBuffer_(const char *buffer);
+		int buildFromBuffer_(const char *reqBuffer);
+
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
 		bool isValid_;
-		std::string *buffer_str_;
+		std::string *body_buffer_;
 
 	public:
 		// canonical
