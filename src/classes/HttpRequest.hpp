@@ -37,8 +37,8 @@ class HttpRequest {
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
-		bool isValid_;
 		std::string *body_buffer_;
+		std::string reqLine_;
 
 	public:
 		// canonical
@@ -57,7 +57,7 @@ class HttpRequest {
 		const std::string getStringBody() const;
 		const std::string& getUrl() const;
 		const std::string& getHttpVersion() const;
-		bool isValid() const;
+		const std::string& getReqLine() const;
 };
 
 #endif

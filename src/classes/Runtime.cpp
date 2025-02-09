@@ -106,20 +106,24 @@ void Runtime::checkClients_() {
 		} else if (client->isReading()) {
 			client->setReading(false);
 			const std::string serverContext = C_BLUE + client->getServer().getConfig().getServerNames()[0] + std::string(C_RESET) + ": ";
+			HttpRequest clientReq;
+			const HttpResponse& clientResp = client->getResponse();
 			try {
-				const HttpRequest& req = client->fetch();
-				const std::string elementStr = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-				if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + elementStr) << std::endl;
-				const HttpResponse& resp = client->getResponse();
 				try {
-					client->handle();
-					this->info(serverContext + "Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << elementStr << std::endl;
-				} catch(const std::exception& httpError) {
-					this->error(serverContext + "Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << elementStr << std::endl;
-					this->debug(serverContext + httpError.what()) << std::endl;
+					clientReq = client->fetch();
+					this->info(serverContext) << "Request '" << clientReq.getReqLine() << "' from " << client->getClientIp() << std::endl;
+				} catch (const std::exception& e) {
+					this->error(serverContext) << "Request invalid from " << client->getClientIp() << std::endl;
+					throw;
 				}
+				client->handle();
+				this->info(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
 			} catch (const std::exception& e) {
-				this->error(serverContext) << e.what() << " from client " << client->getClientIp() << std::endl;
+				if(clientResp.getStatus() == 400)
+					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << std::endl;
+				else
+					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
+				this->debug(serverContext) << e.what() << std::endl;
 			}
 			delete client;
 		}

@@ -106,13 +106,14 @@ void ClientHandler::fillFileBuffer_(std::ifstream& input) {
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
-	if (!this->state_.isReading && !this->state_.isFetched) {
+	if (this->state_.isReading)
+		throw std::runtime_error("Cannot handle a client in isReading_ state");
+	if (!this->state_.isFetched) {
 		this->fetch();
 		this->debug("Request:") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
-	} else if (this->state_.isReading) {
-		return ;
 	}
-
+	
+	// generating response
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + request_.getUrl();
 	std::ifstream input(fileName.c_str());
 	if (input.is_open()) {
