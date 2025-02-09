@@ -34,7 +34,6 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 	if (this == &assign)
 		return *this;
 	this->socket_fd_ = -1;
-	this->runtime_ = assign.runtime_;
 	this->server_ = assign.server_;
 	Logger::fatal("A client was assigned (operator=). Client assignments aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 	return *this;
