@@ -75,7 +75,7 @@ void Runtime::checkServers_() {
 				this->error("error on request accept(): ") << strerror(errno) << std::endl;
 				continue;
 			}
-			this->clients_.push_back(new ClientHandler(*this, *this->servers_[this->sockets_[i + 1].fd], client_socket, client_addr, client_len));
+			this->clients_.push_back(new ClientHandler(*this, *this->servers_[this->sockets_[i].fd], client_socket, client_addr, client_len));
 		}
 	}
 }
@@ -89,38 +89,34 @@ void Runtime::checkClients_() {
 			delete client;
 			continue;
 		}
-		if (socket->revents & POLLIN) {
+		if (!(socket->events & POLLOUT)) {
+			this->error("client disconnected ") << client->getClientIp() << std::endl;
+			delete client;
+		} else if (socket->revents & POLLIN) {
 			int readStatus = client->readSocket();
 			if (readStatus > 0) this->Sync();
 			else if (readStatus < 0) {
 				this->fatal("throwing client ") << client->getClientIp() << std::endl;
 				delete client;
-				continue;
 			}
-		} else {
-			if (!(socket->events & POLLOUT)) {
-				Logger::error("client disconnected ") << client->getClientIp() << std::endl;
-				delete client;
-			}
-			else if (client->isReading()) {
-				client->setReading(false);
+		} else if (client->isReading()) {
+			client->setReading(false);
+			try {
+				const HttpRequest& req = client->fetch();
+				std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+				if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
+				const HttpResponse& resp = client->getResponse();
 				try {
-					const HttpRequest& req = client->fetch();
-					std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-					if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
-					const HttpResponse& resp = client->getResponse();
-					try {
-						client->handle();
-						this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-					} catch(const std::exception& httpError) {
-						this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-						this->debug(httpError.what()) << std::endl;
-					}
-				} catch (const std::exception& e) {
-					this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
+					client->handle();
+					this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+				} catch(const std::exception& httpError) {
+					this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+					this->debug(httpError.what()) << std::endl;
 				}
-				delete client;
+			} catch (const std::exception& e) {
+				this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
 			}
+			delete client;
 		}
 	}
 }
