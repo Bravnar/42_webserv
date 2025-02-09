@@ -1,10 +1,10 @@
 #include "./ClientHandler.hpp"
 
-std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_) + "): " + msg); }
-std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_) + "): " + msg); }
-std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_) + "): " + msg); }
-std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_) + "): " + msg); }
-std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_) + "): " + msg); }
+std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (" + Convert::ToString(this->socket_fd_) + "): " + msg); }
 
 static pollfd createPollfd(int fd) {
 	pollfd out;
@@ -14,17 +14,17 @@ static pollfd createPollfd(int fd) {
 	return out;
 }
 
-ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int client_socket, sockaddr_in client_addr, socklen_t len):	
-	socket_(client_socket),
+ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket_fd, sockaddr_in addr, socklen_t addrlen):	
+	socket_fd_(socket_fd),
 	runtime_(runtime),
 	server_(server),
-	address_(client_addr, len) {
-		runtime.getSockets().push_back(createPollfd(client_socket));
+	address_(addr, addrlen) {
+		this->runtime_.getSockets().push_back(createPollfd(this->socket_fd_));
 		this->debug("New socket") << std::endl;
 }
 
 ClientHandler::ClientHandler(const ClientHandler& copy):
-	socket_(-1),	
+	socket_fd_(-1),	
 	runtime_(copy.runtime_),
 	server_(copy.server_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
@@ -33,7 +33,7 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 	if (this == &assign)
 		return *this;
-	this->socket_ = -1;
+	this->socket_fd_ = -1;
 	this->runtime_ = assign.runtime_;
 	this->server_ = assign.server_;
 	Logger::fatal("A client was assigned (operator=). Client assignments aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
@@ -42,7 +42,7 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 
 ClientHandler::~ClientHandler() {
 	this->debug("Client request deconstructor") << std::endl;
-	close(this->socket_);
+	close(this->socket_fd_);
 	delete this->buffer_.headerBuffer;
 	delete this->buffer_.fileBuffer;
 	{
@@ -50,7 +50,7 @@ ClientHandler::~ClientHandler() {
 		std::vector<pollfd>& sockets_ = this->runtime_.getSockets();
 		std::vector<pollfd>::iterator it_sockets = sockets_.begin();
 		while (it_sockets != sockets_.end()) {
-			if (it_sockets->fd == this->socket_) {
+			if (it_sockets->fd == this->socket_fd_) {
 				sockets_.erase(it_sockets);
 				trigger = true;
 				break;
@@ -83,7 +83,7 @@ void ClientHandler::fillHeaderBuffer_() {
 	if (!this->buffer_.headerBuffer)
 		this->buffer_.headerBuffer = new std::string("");
 	ssize_t bytesRead;
-	if ((bytesRead = recv(this->socket_, buffer, DF_MAX_BUFFER, 0)) > 0) {
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->buffer_.headerBuffer->append(buffer, bytesRead);
 	}
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
@@ -121,12 +121,12 @@ void ClientHandler::handle() {
 		try {
 			this->fillFileBuffer_(input);
 		} catch (const std::exception& e) {
-			(this->response_ = HttpResponse(500)).sendResp(this->socket_);
+			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
 			throw;
 		}
-		(this->response_ = HttpResponse(200, this->buffer_.fileBuffer->data(), this->buffer_.fileBuffer->size() - 1, request_.getUrl())).sendResp(this->socket_);
+		(this->response_ = HttpResponse(200, this->buffer_.fileBuffer->data(), this->buffer_.fileBuffer->size() - 1, request_.getUrl())).sendResp(this->socket_fd_);
 	} else {
-		(this->response_ = HttpResponse(404)).sendResp(this->socket_);
+		(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
 		throw std::runtime_error(EXC_FILE_NF(fileName));
 	}
 }
@@ -136,7 +136,7 @@ void ClientHandler::handle() {
  * @return `int` fd socket reference
  */
 int ClientHandler::getSocket() const {
-	return this->socket_;
+	return this->socket_fd_;
 }
 
 const HttpRequest& ClientHandler::fetch() {
@@ -149,7 +149,7 @@ const HttpRequest& ClientHandler::fetch() {
 		this->request_ = HttpRequest(this->buffer_.headerBuffer->data());
 		this->state_.isFetched = true;
 	} catch(const std::exception& e) {
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_);
+		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
 		throw;
 	}
 	return this->request_;
@@ -177,7 +177,7 @@ int ClientHandler::readSocket() {
 		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_);
+		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
 		return -1;
 	}
 }

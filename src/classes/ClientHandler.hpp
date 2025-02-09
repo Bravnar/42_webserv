@@ -62,7 +62,7 @@ class ClientHandler
 		void fillHeaderBuffer_();
 		void fillFileBuffer_(std::ifstream& input);
 
-		int socket_; // Unique client socket indentifier
+		int socket_fd_; // Unique client socket indentifier
 		Runtime& runtime_;
 		ServerManager& server_;
 		s_clientAddress address_;
@@ -74,7 +74,7 @@ class ClientHandler
 	public:
 		// Canonical
 
-		ClientHandler(Runtime&, ServerManager&, int client_socket, sockaddr_in client_addr, socklen_t len);
+		ClientHandler(Runtime&, ServerManager&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
 		~ClientHandler();
 		//Member functions
 
