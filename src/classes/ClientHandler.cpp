@@ -139,7 +139,7 @@ void ClientHandler::handle() {
 			(this->resp_ = HttpResponse(500)).sendResp(this->socket_);
 			throw;
 		}
-		(this->resp_ = HttpResponse(200, this->fileBuffer_->data(), this->fileBuffer_->size(), req_.getUrl())).sendResp(this->socket_);
+		(this->resp_ = HttpResponse(200, this->fileBuffer_->data(), this->fileBuffer_->size() - 1, req_.getUrl())).sendResp(this->socket_);
 	} else {
 		(this->resp_ = HttpResponse(404)).sendResp(this->socket_);
 		throw std::runtime_error(EXC_FILE_NF(fileName));
