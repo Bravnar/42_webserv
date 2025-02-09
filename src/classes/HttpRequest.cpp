@@ -54,7 +54,7 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 			if (sep != line.npos) {
 				std::string key = line.substr(0, sep);
 				std::string value = line.substr(sep + 2, line.size() - sep - 2);
-				this->headerBuffer_.insert(std::make_pair(key, value));
+				this->headers_.insert(std::make_pair(key, value));
 			}
 		}
 		idx++;
@@ -62,9 +62,9 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 	delete this->buffer_str_;
 	this->buffer_str_ = 0;
 	if (isBody) {
-		std::map<std::string, std::string>::iterator it_contentlen = this->headerBuffer_.find(H_CONTENT_LENGTH);
-		if (it_contentlen != this->headerBuffer_.end()) {
-			long long bodySize = Convert::ToInt(this->headerBuffer_[H_CONTENT_LENGTH]);
+		std::map<std::string, std::string>::iterator it_contentlen = this->headers_.find(H_CONTENT_LENGTH);
+		if (it_contentlen != this->headers_.end()) {
+			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
 			if (bodySize) {
 				if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
 				this->body_ = new unsigned char[bodySize];
@@ -79,7 +79,7 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 			}
 		}
 	}
-	if (this->headerBuffer_.find(H_HOST) == this->headerBuffer_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
+	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;
 }
 
@@ -102,7 +102,7 @@ HttpRequest::HttpRequest(const HttpRequest& copy):
 	method_(copy.method_),
 	url_(copy.url_),
 	httpVersion_(copy.httpVersion_),
-	headerBuffer_(copy.headerBuffer_),
+	headers_(copy.headers_),
 	body_(copy.body_),
 	isValid_(copy.isValid_),
 	buffer_str_(copy.buffer_str_) {}
@@ -114,7 +114,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->method_ = assign.method_;
 	this->url_ = assign.url_;
 	this->httpVersion_ = assign.httpVersion_;
-	this->headerBuffer_ = assign.headerBuffer_;
+	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
 	this->isValid_ = assign.isValid_;
 	this->buffer_str_ = assign.buffer_str_;
@@ -133,7 +133,7 @@ const std::string& HttpRequest::getMethod() const {
 }
 
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {
-	return this->headerBuffer_;
+	return this->headers_;
 }
 
 const unsigned char * HttpRequest::getBody() const {
@@ -142,7 +142,7 @@ const unsigned char * HttpRequest::getBody() const {
 
 const std::string HttpRequest::getStringBody() const {
 	if (this->body_) {
-		return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headerBuffer_.at(H_CONTENT_LENGTH)));
+		return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headers_.at(H_CONTENT_LENGTH)));
 	}
 	return "";
 }
