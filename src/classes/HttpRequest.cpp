@@ -10,7 +10,7 @@ HttpRequest::HttpRequest():
 
 HttpRequest::HttpRequest(const char *reqBuffer): body_buffer_(0) {
 	this->body_ = 0;
-	parseBuffer_(reqBuffer);
+	buildFromBuffer_(reqBuffer);
 	this->isValid_ = true;
 }
 
@@ -79,7 +79,7 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 	return 0;
 }
 
-int HttpRequest::parseBuffer_(const char *buffer) {
+int HttpRequest::buildFromBuffer_(const char *buffer) {
 	this->body_buffer_ = new std::string(buffer);
 	std::stringstream ss(*this->body_buffer_);
 	std::string line;

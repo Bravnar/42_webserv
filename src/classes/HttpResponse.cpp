@@ -43,20 +43,16 @@ HttpResponse::HttpResponse(): version_("HTTP/1.1"), status_(0), body_(0) {
 
 static std::string checkStatus(int status) {
 	switch (status) {
-		case 200:
-			return "OK";
-			break;
-		case 400:
-			return "Bad Request";
-			break;
-		case 404:
-			return "Not Found";
-			break;
-		case 500:
-			return "Internal Server Error";
-			break;
-		default:
-			return "Unknown";
+		case 100: return "Continue";
+		case 200: return "OK";
+		case 201: return "Created";
+		case 400: return "Bad Request";
+		case 405: return "Method Not Allowed";
+		case 408: return "Request Timeout";
+		case 404: return "Not Found";
+		case 500: return "Internal Server Error";
+		case 503: return "Service Unavailable";
+		default: return "Unknown";
 	}
 }
 
