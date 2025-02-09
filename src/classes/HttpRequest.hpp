@@ -34,7 +34,7 @@ class HttpRequest {
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
-		std::map<std::string, std::string> headers_;
+		std::map<std::string, std::string> headerBuffer_;
 		unsigned char *body_;
 		bool isValid_;
 		std::string *buffer_str_;

@@ -102,7 +102,7 @@ void Runtime::checkClients_() {
 						try {
 							const HttpRequest& req = client->fetch();
 							std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-							if (req.isValid()) this->info("Client " + client->getClientIp() + std::string(" requested ") + element) << std::endl;
+							if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
 							const HttpResponse& resp = client->getResponse();
 							try {
 								client->handle();
