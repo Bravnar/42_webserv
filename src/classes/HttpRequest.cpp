@@ -1,5 +1,50 @@
 #include "./HttpRequest.hpp"
 
+HttpRequest::HttpRequest():
+	method_(""),
+	url_(""),
+	httpVersion_(""),
+	body_(0),
+	isValid_(false),
+	body_buffer_(0) {}
+
+HttpRequest::HttpRequest(const char *reqBuffer): body_buffer_(0) {
+	this->body_ = 0;
+	parseBuffer_(reqBuffer);
+	this->isValid_ = true;
+}
+
+// TODO: deep copy
+HttpRequest::HttpRequest(const HttpRequest& copy):
+	method_(copy.method_),
+	url_(copy.url_),
+	httpVersion_(copy.httpVersion_),
+	headers_(copy.headers_),
+	body_(copy.body_),
+	isValid_(copy.isValid_),
+	body_buffer_(copy.body_buffer_) {}
+
+// TODO: deep copy
+HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
+	if (this == &assign)
+		return *this;
+	this->method_ = assign.method_;
+	this->url_ = assign.url_;
+	this->httpVersion_ = assign.httpVersion_;
+	this->headers_ = assign.headers_;
+	this->body_ = assign.body_;
+	this->isValid_ = assign.isValid_;
+	this->body_buffer_ = assign.body_buffer_;
+	return *this;
+}
+
+HttpRequest::~HttpRequest() {
+	if (body_)
+		delete[] body_;
+	if (body_buffer_)
+		delete this->body_buffer_;
+}
+
 int HttpRequest::parseRequestLine_(const std::string& line) {
 	int iter = 0;
 	size_t old_pos = 0;
@@ -81,51 +126,6 @@ int HttpRequest::parseBuffer_(const char *buffer) {
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;
-}
-
-HttpRequest::HttpRequest():
-	method_(""),
-	url_(""),
-	httpVersion_(""),
-	body_(0),
-	isValid_(false),
-	body_buffer_(0) {}
-
-HttpRequest::HttpRequest(const char *buffer): body_buffer_(0) {
-	this->body_ = 0;
-	parseBuffer_(buffer);
-	this->isValid_ = true;
-}
-
-// TODO: deep copy
-HttpRequest::HttpRequest(const HttpRequest& copy):
-	method_(copy.method_),
-	url_(copy.url_),
-	httpVersion_(copy.httpVersion_),
-	headers_(copy.headers_),
-	body_(copy.body_),
-	isValid_(copy.isValid_),
-	body_buffer_(copy.body_buffer_) {}
-
-// TODO: deep copy
-HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
-	if (this == &assign)
-		return *this;
-	this->method_ = assign.method_;
-	this->url_ = assign.url_;
-	this->httpVersion_ = assign.httpVersion_;
-	this->headers_ = assign.headers_;
-	this->body_ = assign.body_;
-	this->isValid_ = assign.isValid_;
-	this->body_buffer_ = assign.body_buffer_;
-	return *this;
-}
-
-HttpRequest::~HttpRequest() {
-	if (body_)
-		delete[] body_;
-	if (body_buffer_)
-		delete this->body_buffer_;
 }
 
 const std::string& HttpRequest::getMethod() const {

@@ -21,9 +21,9 @@ class Runtime;
 
 // Unique temporary data
 struct s_clientBuffer {
-	std::string *headerBuffer;
+	std::string *requestBuffer;
 	std::string *fileBuffer;
-	s_clientBuffer(): headerBuffer(0), fileBuffer(0) {}
+	s_clientBuffer(): requestBuffer(0), fileBuffer(0) {}
 };
 
 // Unique client address identifier
@@ -59,7 +59,7 @@ class ClientHandler
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
-		void fillHeaderBuffer_();
+		void fillRequestBuffer_();
 		void fillFileBuffer_(std::ifstream& input);
 
 		int socket_fd_; // Unique client socket indentifier

@@ -43,7 +43,7 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 ClientHandler::~ClientHandler() {
 	this->debug("Client request deconstructor") << std::endl;
 	close(this->socket_fd_);
-	delete this->buffer_.headerBuffer;
+	delete this->buffer_.requestBuffer;
 	delete this->buffer_.fileBuffer;
 	{
 		bool trigger = false;
@@ -77,14 +77,14 @@ ClientHandler::~ClientHandler() {
 	}
 }
 
-void ClientHandler::fillHeaderBuffer_() {
+void ClientHandler::fillRequestBuffer_() {
 	this->state_.isReading = true;
 	char buffer[DF_MAX_BUFFER];
-	if (!this->buffer_.headerBuffer)
-		this->buffer_.headerBuffer = new std::string("");
+	if (!this->buffer_.requestBuffer)
+		this->buffer_.requestBuffer = new std::string("");
 	ssize_t bytesRead;
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		this->buffer_.headerBuffer->append(buffer, bytesRead);
+		this->buffer_.requestBuffer->append(buffer, bytesRead);
 	}
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
@@ -110,7 +110,7 @@ void ClientHandler::fillFileBuffer_(std::ifstream& input) {
 void ClientHandler::handle() {
 	if (!this->state_.isReading && !this->state_.isFetched) {
 		this->fetch();
-		this->debug("Request:") << std::endl << C_ORANGE << this->buffer_.headerBuffer->data() << C_RESET << std::endl;
+		this->debug("Request:") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	} else if (this->state_.isReading) {
 		return ;
 	}
@@ -146,7 +146,7 @@ const HttpRequest& ClientHandler::fetch() {
 		throw std::runtime_error("trying to fetch Client without finishing reading socket");
 	}
 	try {
-		this->request_ = HttpRequest(this->buffer_.headerBuffer->data());
+		this->request_ = HttpRequest(this->buffer_.requestBuffer->data());
 		this->state_.isFetched = true;
 	} catch(const std::exception& e) {
 		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
@@ -173,7 +173,7 @@ int ClientHandler::readSocket() {
 		return 0;
 	}
 	try {
-		fillHeaderBuffer_();
+		fillRequestBuffer_();
 		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;

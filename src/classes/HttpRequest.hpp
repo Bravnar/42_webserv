@@ -30,7 +30,8 @@
 class HttpRequest {
 	private:
 		int parseRequestLine_(const std::string&);
-		int parseBuffer_(const char *buffer);
+		int parseBuffer_(const char *reqBuffer);
+
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
