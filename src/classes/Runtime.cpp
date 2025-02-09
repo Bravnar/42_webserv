@@ -101,20 +101,21 @@ void Runtime::checkClients_() {
 			}
 		} else if (client->isReading()) {
 			client->setReading(false);
+			const std::string serverContext = C_BLUE + client->getServer().getConfig().getServerNames()[0] + std::string(C_RESET) + ": ";
 			try {
 				const HttpRequest& req = client->fetch();
-				std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-				if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
+				const std::string elementStr = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
+				if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + elementStr) << std::endl;
 				const HttpResponse& resp = client->getResponse();
 				try {
 					client->handle();
-					this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
+					this->info(serverContext + "Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << elementStr << std::endl;
 				} catch(const std::exception& httpError) {
-					this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-					this->debug(httpError.what()) << std::endl;
+					this->error(serverContext + "Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << elementStr << std::endl;
+					this->debug(serverContext + httpError.what()) << std::endl;
 				}
 			} catch (const std::exception& e) {
-				this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
+				this->error(serverContext) << e.what() << " from client " << client->getClientIp() << std::endl;
 			}
 			delete client;
 		}

@@ -87,6 +87,7 @@ class ClientHandler
 		bool isFetched() const;
 		bool isReading() const;
 		void setReading(bool);
+		const ServerManager& getServer() const;
 };
 
 #endif

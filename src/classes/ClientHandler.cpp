@@ -184,3 +184,4 @@ int ClientHandler::readSocket() {
 
 bool ClientHandler::isReading() const { return this->state_.isReading; }
 void ClientHandler::setReading(bool value) { this->state_.isReading = value; }
+const ServerManager& ClientHandler::getServer() const { return this->server_; };
