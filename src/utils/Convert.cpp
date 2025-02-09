@@ -1,6 +1,6 @@
 #include "./Convert.hpp"
 
-std::string Convert::ToString(int i) {
+std::string Convert::ToString(unsigned long long i) {
 	std::ostringstream oss;
 
 	oss << i;

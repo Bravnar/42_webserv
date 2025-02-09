@@ -11,7 +11,7 @@ class Convert {
 		Convert& operator=(const Convert&) {return *this;};
 		~Convert() {};
 	public:
-		static std::string ToString(int);
+		static std::string ToString(unsigned long long i);
 		static long long ToInt(const std::string&);
 };
 

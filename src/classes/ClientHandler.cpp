@@ -42,7 +42,6 @@ ClientHandler::~ClientHandler() {
 	this->debug("Client request deconstructor") << std::endl;
 	close(this->socket_fd_);
 	delete this->buffer_.requestBuffer;
-	delete this->buffer_.fileBuffer;
 	{
 		bool trigger = false;
 		std::vector<pollfd>& sockets_ = this->runtime_.getSockets();
@@ -87,18 +86,6 @@ void ClientHandler::fillRequestBuffer_() {
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
-void ClientHandler::fillFileBuffer_(std::ifstream& input) {
-	this->buffer_.fileBuffer = new std::string("");
-	std::string line;
-	while (std::getline(input, line)) {
-		this->buffer_.fileBuffer->append(line.append("\n"));
-	}
-	if (input.bad()) {
-		throw std::runtime_error(EXC_FILE_READ);
-	}
-	input.close();
-}
-
 //TODO: Refactor hanlde()
 //TODO: Inlude max client body size
 /**
@@ -115,18 +102,16 @@ void ClientHandler::handle() {
 	
 	// generating response
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + request_.getUrl();
-	std::ifstream input(fileName.c_str());
-	if (input.is_open()) {
-		try {
-			this->fillFileBuffer_(input);
-		} catch (const std::exception& e) {
+	try {
+		(this->response_ = HttpResponse(200, fileName, request_.getUrl())).sendResp(this->socket_fd_);
+	} catch(const std::exception& e) {
+		if (e.what() == EXC_FILE_NOT_FOUND(fileName))
+			(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
+		else if (std::string(e.what()) == EXC_SEND_ERROR)
+			throw; // throwing client
+		else
 			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
-			throw;
-		}
-		(this->response_ = HttpResponse(200, this->buffer_.fileBuffer->data(), this->buffer_.fileBuffer->size() - 1, request_.getUrl())).sendResp(this->socket_fd_);
-	} else {
-		(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
-		throw std::runtime_error(EXC_FILE_NF(fileName));
+		throw;
 	}
 }
 

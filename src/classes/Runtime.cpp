@@ -119,7 +119,10 @@ void Runtime::checkClients_() {
 				client->handle();
 				this->info(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
 			} catch (const std::exception& e) {
-				if(clientResp.getStatus() == 400)
+				if (std::string(e.what()) == EXC_SEND_ERROR) {
+					this->fatal(e.what()) << std::endl;
+				}
+				else if(clientResp.getStatus() == 400)
 					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << std::endl;
 				else
 					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
