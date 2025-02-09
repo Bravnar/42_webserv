@@ -42,7 +42,7 @@ int ServerManager::init() {
 		throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno)));
 	}
 	// TODO: define connections from config
-	if (listen(this->server_fd_, 500)) {
+	if (listen(this->server_fd_, this->maxClients_)) {
 		this->status_.isHealthy = false;
 		throw std::logic_error("error on listen: " + std::string(strerror(errno)));
 	}
@@ -55,14 +55,24 @@ int ServerManager::init() {
 	return 0;
 }
 
-ServerManager::ServerManager(const ServerConfig& config): config_(config), addrv4_(newAddr(config.getPort(), config.getHost())), address_((sockaddr *)&this->addrv4_), routeconfig_(config.getRoutes()) {
-	this->server_fd_ = 0;
-	std::memset(&this->status_, 0, sizeof(t_status));
+ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
+	config_(config),
+	addrv4_(newAddr(config.getPort(),
+	config.getHost())),
+	address_((sockaddr *)&this->addrv4_),
+	routeconfig_(config.getRoutes()),
+	maxClients_(maxClients) {
+		this->server_fd_ = 0;
+		std::memset(&this->status_, 0, sizeof(t_status));
 }
 
-ServerManager::ServerManager(const ServerManager& copy): config_(copy.config_), addrv4_(copy.addrv4_), address_((sockaddr *)&this->addrv4_), routeconfig_(copy.routeconfig_) {
-	this->server_fd_ = 0;
-	std::memset(&this->status_, 0, sizeof(t_status));
+ServerManager::ServerManager(const ServerManager& copy):
+	config_(copy.config_), addrv4_(copy.addrv4_),
+	address_((sockaddr *)&this->addrv4_),
+	routeconfig_(copy.routeconfig_),
+	maxClients_(copy.maxClients_) {
+		this->server_fd_ = 0;
+		std::memset(&this->status_, 0, sizeof(t_status));
 }
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {

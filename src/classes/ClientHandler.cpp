@@ -34,8 +34,6 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 	if (this == &assign)
 		return *this;
 	this->socket_fd_ = -1;
-	this->runtime_ = assign.runtime_;
-	this->server_ = assign.server_;
 	Logger::fatal("A client was assigned (operator=). Client assignments aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 	return *this;
 }
@@ -44,7 +42,6 @@ ClientHandler::~ClientHandler() {
 	this->debug("Client request deconstructor") << std::endl;
 	close(this->socket_fd_);
 	delete this->buffer_.requestBuffer;
-	delete this->buffer_.fileBuffer;
 	{
 		bool trigger = false;
 		std::vector<pollfd>& sockets_ = this->runtime_.getSockets();
@@ -89,18 +86,6 @@ void ClientHandler::fillRequestBuffer_() {
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
-void ClientHandler::fillFileBuffer_(std::ifstream& input) {
-	this->buffer_.fileBuffer = new std::string("");
-	std::string line;
-	while (std::getline(input, line)) {
-		this->buffer_.fileBuffer->append(line.append("\n"));
-	}
-	if (input.bad()) {
-		throw std::runtime_error(EXC_FILE_READ);
-	}
-	input.close();
-}
-
 //TODO: Refactor hanlde()
 //TODO: Inlude max client body size
 /**
@@ -108,26 +93,25 @@ void ClientHandler::fillFileBuffer_(std::ifstream& input) {
  * @attention Nasty code! Needs refactor
  */
 void ClientHandler::handle() {
-	if (!this->state_.isReading && !this->state_.isFetched) {
+	if (this->state_.isReading)
+		throw std::runtime_error("Cannot handle a client in isReading_ state");
+	if (!this->state_.isFetched) {
 		this->fetch();
 		this->debug("Request:") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
-	} else if (this->state_.isReading) {
-		return ;
 	}
-
+	
+	// generating response
 	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + request_.getUrl();
-	std::ifstream input(fileName.c_str());
-	if (input.is_open()) {
-		try {
-			this->fillFileBuffer_(input);
-		} catch (const std::exception& e) {
+	try {
+		(this->response_ = HttpResponse(200, fileName, request_.getUrl())).sendResp(this->socket_fd_);
+	} catch(const std::exception& e) {
+		if (e.what() == EXC_FILE_NOT_FOUND(fileName))
+			(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
+		else if (std::string(e.what()) == EXC_SEND_ERROR)
+			throw; // throwing client
+		else
 			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
-			throw;
-		}
-		(this->response_ = HttpResponse(200, this->buffer_.fileBuffer->data(), this->buffer_.fileBuffer->size() - 1, request_.getUrl())).sendResp(this->socket_fd_);
-	} else {
-		(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
-		throw std::runtime_error(EXC_FILE_NF(fileName));
+		throw;
 	}
 }
 
@@ -143,13 +127,18 @@ const HttpRequest& ClientHandler::fetch() {
 	if (this->state_.isFetched)
 		return this->request_;
 	if (this->state_.isReading) {
-		throw std::runtime_error("trying to fetch Client without finishing reading socket");
+		throw std::runtime_error(EXC_FETCHING_BREFORE_READ);
 	}
 	try {
+		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 		this->request_ = HttpRequest(this->buffer_.requestBuffer->data());
 		this->state_.isFetched = true;
 	} catch(const std::exception& e) {
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		const std::string msg = e.what();
+		if (msg == EXC_BODY_NEG_SIZE || EXC_BODY_NOLIMITER || EXC_HEADER_NOHOST )
+			(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		else
+			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
 		throw;
 	}
 	return this->request_;
@@ -177,10 +166,11 @@ int ClientHandler::readSocket() {
 		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
-		(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+		(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
 		return -1;
 	}
 }
 
 bool ClientHandler::isReading() const { return this->state_.isReading; }
 void ClientHandler::setReading(bool value) { this->state_.isReading = value; }
+const ServerManager& ClientHandler::getServer() const { return this->server_; };

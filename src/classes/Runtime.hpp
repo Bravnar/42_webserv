@@ -8,11 +8,15 @@ class ClientHandler;
 
 class Runtime {
 	private:
+		Runtime(const Runtime&);
+		Runtime& operator=(const Runtime&);
+
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+
 		void checkServers_();
 		void checkClients_();
 		std::map<int, ServerManager *> servers_;
@@ -24,9 +28,7 @@ class Runtime {
 	public:
 		//TODO: Canonical
 
-		Runtime(const std::vector<ServerConfig>&);
-		Runtime(const Runtime&);
-		Runtime& operator=(const Runtime&);
+		Runtime(const std::vector<ServerConfig>&, size_t maxClients);
 		~Runtime();
 
 		// Member functions

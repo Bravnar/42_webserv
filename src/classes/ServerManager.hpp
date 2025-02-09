@@ -24,6 +24,9 @@ typedef struct s_status {
 
 class ServerManager {
 	private:
+		ServerManager(const ServerManager&);
+		ServerManager& operator=(const ServerManager&);
+
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
@@ -36,13 +39,12 @@ class ServerManager {
 		t_status status_;
 		int server_fd_;
 		pollfd socket_;
+		size_t maxClients_;
 
 	public:
 		// Canonical
 
-		ServerManager(const ServerConfig&);
-		ServerManager(const ServerManager&);
-		ServerManager& operator=(const ServerManager&);
+		ServerManager(const ServerConfig&, size_t maxClients);
 		~ServerManager();
 		// Member functions
 

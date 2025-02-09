@@ -14,16 +14,15 @@
 # include <fstream>
 
 # define EXC_SOCKET_READ "Error reading from socket"
-# define EXC_FILE_READ "Error reading from socket"
-# define EXC_FILE_NF(file) file + " not found"
+# define EXC_FILE_READ "Error reading from file"
+# define EXC_FETCHING_BREFORE_READ "Client fetched before read"
 
 class Runtime;
 
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
-	std::string *fileBuffer;
-	s_clientBuffer(): requestBuffer(0), fileBuffer(0) {}
+	s_clientBuffer(): requestBuffer(0) {}
 };
 
 // Unique client address identifier
@@ -60,7 +59,6 @@ class ClientHandler
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 		void fillRequestBuffer_();
-		void fillFileBuffer_(std::ifstream& input);
 
 		int socket_fd_; // Unique client socket indentifier
 		Runtime& runtime_;
@@ -87,6 +85,7 @@ class ClientHandler
 		bool isFetched() const;
 		bool isReading() const;
 		void setReading(bool);
+		const ServerManager& getServer() const;
 };
 
 #endif

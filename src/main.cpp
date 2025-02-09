@@ -19,7 +19,7 @@ int	main( int ac, char **av ) {
 	}
 
 	manager.printConfig();
-	Runtime runtime = Runtime(manager.getServers());
+	Runtime runtime(manager.getServers(), 500);
 	runtime.runServers();
 	return 0;
 }

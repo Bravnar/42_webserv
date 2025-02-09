@@ -38,7 +38,9 @@ static std::string getType(const std::string& url) {
     return contentType;
 }
 
-HttpResponse::HttpResponse(): version_("HTTP/1.1"), status_(0), body_(0) {
+HttpResponse::HttpResponse():
+	version_("HTTP/1.1"),
+	status_(0) {
 }
 
 static std::string checkStatus(int status) {
@@ -57,38 +59,38 @@ static std::string checkStatus(int status) {
 }
 
 // TODO: use default errors when possible
-HttpResponse::HttpResponse(int status): version_("HTTP/1.1"), status_(status), body_(0) {
-	this->status_msg_ = checkStatus(status);
-	this->headerBuffer_.insert(std::make_pair("Date", getHttpDate()));
-	this->headerBuffer_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
+HttpResponse::HttpResponse(int status):
+	version_("HTTP/1.1"),
+	status_(status) {
+		this->status_msg_ = checkStatus(status);
+		this->headers_.insert(std::make_pair("Date", getHttpDate()));
+		this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
 }
 
-HttpResponse::HttpResponse(int status, const char *body, size_t bodySize, const std::string& url): version_("HTTP/1.1"), status_(status), body_(reinterpret_cast<const unsigned char *>(body)) {
-	this->status_msg_ = checkStatus(status);
-	this->headerBuffer_.insert(std::make_pair("Date", getHttpDate()));
-	this->headerBuffer_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-	this->headerBuffer_.insert(std::make_pair("Content-Length", Convert::ToString(bodySize)));
-	this->headerBuffer_.insert(std::make_pair("Content-Type", getType(url)));
+HttpResponse::HttpResponse(int status, const std::string& fileName, const std::string& url):
+	version_("HTTP/1.1"),
+	status_(status),
+	fileName_(fileName) {
+		this->status_msg_ = checkStatus(status);
+		this->headers_.insert(std::make_pair("Date", getHttpDate()));
+		this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
+		this->headers_.insert(std::make_pair("Content-Type", getType(url)));
 }
 
-HttpResponse::HttpResponse(int status, const unsigned char *body, size_t bodySize, const std::string& url): version_("HTTP/1.1"), status_(status), body_(body) {
-	this->status_msg_ = checkStatus(status);
-	this->headerBuffer_.insert(std::make_pair("Date", getHttpDate()));
-	this->headerBuffer_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-	this->headerBuffer_.insert(std::make_pair("Content-Length", Convert::ToString(bodySize)));
-	this->headerBuffer_.insert(std::make_pair("Content-Type", getType(url)));
-}
-
-HttpResponse::HttpResponse(const HttpResponse& copy): version_(copy.version_), status_(copy.status_), status_msg_(copy.status_msg_), headerBuffer_(copy.headerBuffer_), body_(copy.body_) {
-}
+HttpResponse::HttpResponse(const HttpResponse& copy):
+	version_(copy.version_),
+	status_(copy.status_),
+	status_msg_(copy.status_msg_),
+	headers_(copy.headers_),
+	fileName_(copy.fileName_) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	if (this == &assign)
 		return *this;
 	this->status_ = assign.status_;
 	this->status_msg_ = assign.status_msg_;
-	this->headerBuffer_ = assign.headerBuffer_;
-	this->body_ = assign.body_;
+	this->headers_ = assign.headers_;
+	this->fileName_ = assign.fileName_;
 	return *this;
 }
 
@@ -101,20 +103,35 @@ const std::string HttpResponse::str() const {
 	std::ostringstream oss;
 
 	oss	<< this->version_ << " " << this->status_ << " " << this->status_msg_ << "\r\n";
-	for(std::map<std::string, std::string>::const_iterator it = this->headerBuffer_.begin(); it != this->headerBuffer_.end(); it++) {
+	for(std::map<std::string, std::string>::const_iterator it = this->headers_.begin(); it != this->headers_.end(); it++) {
 		oss << it->first << ": " << it->second << "\r\n";
 	}
-	if (this->body_)
+	if (!this->fileName_.empty())
 		oss << "\r\n";
 	resp = oss.str();
-	if (this->body_)
-		resp.append(reinterpret_cast<const char*>(this->body_), Convert::ToInt(this->headerBuffer_.at("Content-Length")));
 	return resp;
 }
 
-void HttpResponse::sendResp(int socket_fd) const {
+void HttpResponse::sendResp(int socket_fd) {
+	std::ifstream file(this->fileName_.c_str());
+
+	if (!this->fileName_.empty()) {
+		if (!file.good()) { throw std::runtime_error(EXC_FILE_NOT_FOUND(this->fileName_)); }
+		file.seekg(0, std::ios::end);
+		this->headers_.insert(std::make_pair("Content-Length", Convert::ToString(file.tellg())));
+		file.seekg(0, std::ios::beg);
+	}
 	if (send(socket_fd, this->str().data(), this->str().size(), 0) < 0) {
-		Logger::fatal("Error on sending data") << std::endl;
+		throw std::runtime_error(EXC_SEND_ERROR);
+	}
+	if(!this->fileName_.empty()) {
+		char buffer[DF_MAX_BUFFER];
+		while (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
+			if(send(socket_fd, buffer, file.gcount(), 0) < 0) {
+				throw std::runtime_error(EXC_SEND_ERROR);
+			}
+		}
+		file.close();
 	}
 }
 
@@ -127,5 +144,5 @@ const std::string& HttpResponse::getStatusMsg() const {
 }
 
 const std::map<std::string, std::string>& HttpResponse::getHeaders() const {
-	return this->headerBuffer_;
+	return this->headers_;
 }

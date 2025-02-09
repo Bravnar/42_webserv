@@ -5,13 +5,11 @@ HttpRequest::HttpRequest():
 	url_(""),
 	httpVersion_(""),
 	body_(0),
-	isValid_(false),
 	body_buffer_(0) {}
 
 HttpRequest::HttpRequest(const char *reqBuffer): body_buffer_(0) {
 	this->body_ = 0;
 	buildFromBuffer_(reqBuffer);
-	this->isValid_ = true;
 }
 
 // TODO: deep copy
@@ -21,8 +19,8 @@ HttpRequest::HttpRequest(const HttpRequest& copy):
 	httpVersion_(copy.httpVersion_),
 	headers_(copy.headers_),
 	body_(copy.body_),
-	isValid_(copy.isValid_),
-	body_buffer_(copy.body_buffer_) {}
+	body_buffer_(copy.body_buffer_),
+	reqLine_(copy.reqLine_) {}
 
 // TODO: deep copy
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
@@ -33,8 +31,8 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->httpVersion_ = assign.httpVersion_;
 	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
-	this->isValid_ = assign.isValid_;
 	this->body_buffer_ = assign.body_buffer_;
+	this->reqLine_ = assign.reqLine_;
 	return *this;
 }
 
@@ -76,6 +74,7 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		Logger::debug("request invalid http version") << std::endl;
 		throw std::runtime_error(EXC_INVALID_RL);
 	}
+	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
 	return 0;
 }
 
@@ -147,14 +146,14 @@ const std::string HttpRequest::getStringBody() const {
 	return "";
 }
 
-bool HttpRequest::isValid() const {
-	return this->isValid_;
-}
-
 const std::string& HttpRequest::getUrl() const {
 	return this->url_;
 }
 
 const std::string& HttpRequest::getHttpVersion() const {
 	return this->httpVersion_;
+}
+
+const std::string& HttpRequest::getReqLine() const {
+	return this->reqLine_;
 }

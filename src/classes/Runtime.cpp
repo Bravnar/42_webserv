@@ -6,17 +6,21 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const std::vector<ServerConfig>& configs) {
+Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 	pipe(this->syncPipe_);
 	this->syncPoll_.events = POLLIN | POLLOUT;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
+	
+	// reserve for: syncPipe, serverFds + serverFds * maxClients (serverFds is not calculated; using configs.size() instead)
+	this->sockets_.reserve(sizeof(pollfd) * (1 + configs.size() * (1 + maxClients)));
+
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
 	{
 		std::vector<ServerManager *> vservers;
 		for(std::vector<ServerConfig>::const_iterator it = configs.begin(); it != configs.end(); it++) {
-			vservers.push_back(new ServerManager(*it));
+			vservers.push_back(new ServerManager(*it, maxClients));
 		}
 		for(std::vector<ServerManager *>::iterator it = vservers.begin(); it != vservers.end(); it++) {
 			ServerManager *srv;
@@ -101,20 +105,28 @@ void Runtime::checkClients_() {
 			}
 		} else if (client->isReading()) {
 			client->setReading(false);
+			const std::string serverContext = C_BLUE + client->getServer().getConfig().getServerNames()[0] + std::string(C_RESET) + ": ";
+			HttpRequest clientReq;
+			const HttpResponse& clientResp = client->getResponse();
 			try {
-				const HttpRequest& req = client->fetch();
-				std::string element = req.getMethod() + " " + req.getUrl() + " " + req.getHttpVersion();
-				if (req.isValid()) this->info("Client " + std::string(client->getClientIp()) + std::string(" requested ") + element) << std::endl;
-				const HttpResponse& resp = client->getResponse();
 				try {
-					client->handle();
-					this->info("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-				} catch(const std::exception& httpError) {
-					this->error("Response ") << resp.getStatus() << " " << resp.getStatusMsg() << " for " << element << std::endl;
-					this->debug(httpError.what()) << std::endl;
+					clientReq = client->fetch();
+					this->info(serverContext) << "Request '" << clientReq.getReqLine() << "' from " << client->getClientIp() << std::endl;
+				} catch (const std::exception& e) {
+					this->error(serverContext) << "Request invalid from " << client->getClientIp() << std::endl;
+					throw;
 				}
+				client->handle();
+				this->info(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
 			} catch (const std::exception& e) {
-				this->error(e.what()) << " from client " << client->getClientIp() << std::endl;
+				if (std::string(e.what()) == EXC_SEND_ERROR) {
+					this->fatal(e.what()) << std::endl;
+				}
+				else if(clientResp.getStatus() == 400)
+					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << std::endl;
+				else
+					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
+				this->debug(serverContext) << e.what() << std::endl;
 			}
 			delete client;
 		}
