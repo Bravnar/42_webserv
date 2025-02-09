@@ -59,8 +59,8 @@ class ClientHandler
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
-		void loadHeaders_();
-		void buildResBody_(std::ifstream& input);
+		void fillHeaderBuffer_();
+		void fillFileBuffer_(std::ifstream& input);
 
 		int socket_; // Unique client socket indentifier
 		Runtime& runtime_;

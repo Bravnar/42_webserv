@@ -77,7 +77,7 @@ ClientHandler::~ClientHandler() {
 	}
 }
 
-void ClientHandler::loadHeaders_() {
+void ClientHandler::fillHeaderBuffer_() {
 	this->state_.isReading = true;
 	char buffer[DF_MAX_BUFFER];
 	if (!this->buffer_.headerBuffer)
@@ -89,7 +89,7 @@ void ClientHandler::loadHeaders_() {
 	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
 }
 
-void ClientHandler::buildResBody_(std::ifstream& input) {
+void ClientHandler::fillFileBuffer_(std::ifstream& input) {
 	this->buffer_.fileBuffer = new std::string("");
 	std::string line;
 	while (std::getline(input, line)) {
@@ -119,7 +119,7 @@ void ClientHandler::handle() {
 	std::ifstream input(fileName.c_str());
 	if (input.is_open()) {
 		try {
-			this->buildResBody_(input);
+			this->fillFileBuffer_(input);
 		} catch (const std::exception& e) {
 			(this->response_ = HttpResponse(500)).sendResp(this->socket_);
 			throw;
@@ -173,7 +173,7 @@ int ClientHandler::readSocket() {
 		return 0;
 	}
 	try {
-		loadHeaders_();
+		fillHeaderBuffer_();
 		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
