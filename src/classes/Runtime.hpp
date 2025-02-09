@@ -18,6 +18,9 @@ class Runtime {
 		std::map<int, ServerManager *> servers_;
 		std::vector<ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
+		int updatePipe_[2];
+		pollfd updatePoll_;
+		bool isSyncing_;
 	public:
 		//TODO: Canonical
 
@@ -32,6 +35,7 @@ class Runtime {
 		void closeServers();
 		std::vector<pollfd>& getSockets();
 		std::vector<ClientHandler *>& getClients();
+		void Sync();
 };
 
 #endif
