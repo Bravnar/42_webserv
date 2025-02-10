@@ -8,7 +8,7 @@ std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Run
 
 Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 	pipe(this->syncPipe_);
-	this->syncPoll_.events = POLLIN | POLLOUT;
+	this->syncPoll_.events = POLLIN;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	
@@ -158,6 +158,10 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
+			if (std::string(e.what()) == EXC_POLLIN_END) {
+				delete client;
+				return -1;
+			}
 			client->buildResponse(HttpResponse(500));
 			#if LOGGER_DEBUG > 0
 				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
@@ -192,18 +196,21 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			#endif
 			return 1;
 		}
+		socket->events = POLLOUT;
 	}
 	return 0;
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->events & POLLOUT && client->isFetched()) {
+	if (socket->revents & POLLOUT && client->isFetched()) {
+		Logger::info("here") << std::endl;
 		#if LOGGER_DEBUG > 0
 			this->debug("pollout client (fd: ") << client->getSocket() << ")" << std::endl;
 		#endif
 		if (!client->hasResponse() && !client->isSending()) {
 			client->buildResponse(HttpResponse(client->getRequest()));
 		}
+		signal(SIGPIPE, SIG_IGN);
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {
@@ -211,6 +218,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			delete client;
 			return -1;
 		}
+		signal(SIGPIPE, SIG_DFL);
 		if (client->isSent()) {
 			std::ostream *stream = 0;
 			if (client->getResponse().getStatus() < 300) { stream = &this->info(""); }
@@ -226,13 +234,14 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 					*stream << " (fd: " << client->getSocket() << ")";
 			#endif
 			*stream << std::endl;
-			delete client;
+			const std::map<std::string, std::string>& headers = client->getRequest().getHeaders();
+			if (headers.find(H_CONNECTION) == headers.end() || headers.at(H_CONNECTION) != "keep-alive") {
+				delete client;
+			}
+			client->flush();
+			socket->events = POLLIN;
 			return 1;
 		}
-	} else if (!(socket->events & POLLOUT)) {
-		this->error("lost client ") << client->getClientIp() << " (fd: " << client->getSocket() << ")" << std::endl;
-		delete client;
-		return -1;
 	}
 	return 0;
 }

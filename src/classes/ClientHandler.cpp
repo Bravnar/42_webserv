@@ -9,7 +9,7 @@ std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debu
 static pollfd createPollfd(int fd) {
 	pollfd out;
 	out.fd = fd;
-	out.events = POLLIN | POLLOUT;
+	out.events = POLLIN;
 	out.revents = 0;
 	return out;
 }
@@ -89,7 +89,8 @@ void ClientHandler::fillRequestBuffer_() {
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->buffer_.requestBuffer->append(buffer, bytesRead);
 	}
-	if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
+	else if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
+	else throw std::runtime_error(EXC_POLLIN_END);
 }
 
 std::string ClientHandler::buildDirlist_() {
@@ -163,7 +164,8 @@ void ClientHandler::sendResponse() {
 	if (!this->state_.isSending) {
 		this->sendHeader_();
 	}
-	sendPlayload_();
+	if (this->buffer_.fileStream)
+		sendPlayload_();
 	return;
 }
 
@@ -206,6 +208,21 @@ const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
 	fileStream->seekg(0, std::ios::beg);
 	this->state_.hasResponse = true;
 	return this->response_;
+}
+
+void ClientHandler::flush() {
+	if (this->buffer_.fileStream) {
+		this->buffer_.fileStream->close();
+		delete this->buffer_.fileStream;
+		this->buffer_.fileStream = 0;
+	}
+	if (this->buffer_.requestBuffer) {
+		delete this->buffer_.requestBuffer;
+		this->buffer_.requestBuffer = 0;
+	}
+	this->request_ = HttpRequest();
+	this->response_ = HttpResponse();
+	this->state_ = s_clientState();
 }
 
 const HttpResponse& ClientHandler::getResponse() const { return this->response_; }

@@ -16,6 +16,7 @@
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
+# define EXC_POLLIN_END "No more data"
 
 class Runtime;
 
@@ -126,7 +127,8 @@ class ClientHandler
 		const HttpRequest& buildRequest();
 		// Build client response from `const HttpResponse&` template
 		const HttpResponse& buildResponse(const HttpResponse&);
-		// Get current response
+		// Flush client state
+		void flush();
 
 		// Getters
 		const HttpRequest& getRequest() const;

@@ -3,6 +3,7 @@
 
 # include "./ClientHandler.hpp"
 # include "./ServerManager.hpp"
+# include <csignal>
 
 class ClientHandler;
 
@@ -29,12 +30,12 @@ class Runtime {
 		// Handle polling Clients
 		void checkClients_();
 		// Return 0 on success
-		// Return -1 on fatal error: client is deleted
+		// Return -1 on handled error: client is deleted
 		// Return 1 on handled error: client should still receive a response
 		int handleClientPollin_(ClientHandler *, pollfd *);
 		// Return 0 on success
 		// Return 1 on success: client is deleted
-		// Return -1 on fatal error: client is deleted
+		// Return -1 on handled error: client is deleted
 		int handleClientPollout_(ClientHandler *, pollfd *);
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);

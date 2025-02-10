@@ -67,7 +67,7 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
-		this->headers_[H_CONNECTION] = "close";
+		this->headers_[H_CONNECTION] = httpRequest.getHeaders().at(H_CONNECTION);
 }
 
 HttpResponse::HttpResponse(int errorPage):
