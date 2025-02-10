@@ -47,7 +47,9 @@ Runtime& Runtime::operator=(const Runtime& assign) {
 }
 
 Runtime::~Runtime() {
-	this->debug("deconstructor") << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("deconstructor") << std::endl;
+	#endif
 	this->handleExit_();
 }
 
@@ -139,7 +141,9 @@ void Runtime::checkServers_() {
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
-		this->debug("pollin client (fd: ") << client->getSocket() << ")" << std::endl;
+		#if LOGGER_DEBUG > 0
+			this->debug("pollin client (fd: ") << client->getSocket() << ")" << std::endl;
+		#endif
 		if (client->isFetched()) {
 			this->warning("throwing sticky client") << std::endl;
 			delete client;
@@ -151,7 +155,9 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			client->readSocket();
 		} catch (const std::exception& e) {
 			client->buildResponse(HttpResponse(500));
-			this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
+			#if LOGGER_DEBUG > 0
+				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
+			#endif
 			return 1;
 		}
 		if (client->isDead()) {
@@ -160,7 +166,9 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return -1;
 		}
 	} else if (client->isReading()) {
-		this->debug("pollin end client (fd: ") << client->getSocket() << ")" << std::endl;
+		#if LOGGER_DEBUG > 0
+			this->debug("pollin end client (fd: ") << client->getSocket() << ")" << std::endl;
+		#endif
 		try {
 			client->buildRequest();
 			std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
@@ -175,7 +183,9 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 				client->buildResponse(HttpResponse(400));
 			else
 				client->buildResponse(HttpResponse(500));
-			this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
+			#if LOGGER_DEBUG > 0
+				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
+			#endif
 			return 1;
 		}
 	}
@@ -184,7 +194,9 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 	if (socket->events & POLLOUT && client->isFetched()) {
-		this->debug("pollout client (fd: ") << client->getSocket() << ")" << std::endl;
+		#if LOGGER_DEBUG > 0
+			this->debug("pollout client (fd: ") << client->getSocket() << ")" << std::endl;
+		#endif
 		if (!client->hasResponse() && !client->isSending()) {
 			client->buildResponse(HttpResponse(client->getRequest()));
 		}

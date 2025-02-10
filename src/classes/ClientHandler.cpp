@@ -20,7 +20,9 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	server_(server),
 	address_(addr, addrlen) {
 		this->runtime_.getSockets().push_back(createPollfd(this->socket_fd_));
-		this->debug("New socket") << std::endl;
+		#if LOGGER_DEBUG > 0
+			this->debug("New socket") << std::endl;
+		#endif
 }
 
 ClientHandler::ClientHandler(const ClientHandler& copy):
@@ -38,7 +40,9 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 }
 
 ClientHandler::~ClientHandler() {
-	this->debug("Client request deconstructor") << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("Client request deconstructor") << std::endl;
+	#endif
 	close(this->socket_fd_);
 	if (this->buffer_.fileStream) {
 		this->buffer_.fileStream->close();
@@ -101,7 +105,9 @@ std::string ClientHandler::buildDirlist_() {
 }
 
 void ClientHandler::sendHeader_() {
-	this->debug("sending header") << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("sending header") << std::endl;
+	#endif
 	std::string header;
 	std::ostringstream oss;
 	oss << this->getResponse().str();
@@ -116,12 +122,19 @@ void ClientHandler::sendHeader_() {
 	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
-	if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
-		this->debug("sended: ") << header << std::endl;
+	#if LOGGER_DEBUG > 0
+		if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
+			this->debug("sended: ") << header << std::endl;
+	#endif
 }
 
 void ClientHandler::sendPlayload_() {
-	this->debug("sending playload") << std::endl;
+	#if LOGGER_DEBUG > 0
+		std::ostream& stream = this->debug("sending playload ");
+		if (!this->getRequest().getReqLine().empty())
+			stream << this->getRequest().getUrl();
+		stream << std::endl;
+	#endif
 	std::ifstream *file = this->buffer_.fileStream;
 	char buffer[DF_MAX_BUFFER] = {0};
 	if (file->read(buffer, DF_MAX_BUFFER) || file->gcount() > 0) {
@@ -135,13 +148,17 @@ void ClientHandler::sendPlayload_() {
 		this->buffer_.fileStream = 0;
 		this->state_.isSent = true;
 	}
-	if (this->request_.getUrl().find(".html") != std::string::npos) {
-		this->debug("sended: ") << buffer << std::endl;
-	}
+	#if LOGGER_DEBUG > 0
+		if (this->request_.getUrl().find(".html") != std::string::npos) {
+			this->debug("sended: ") << buffer << std::endl;
+		}
+	#endif
 }
 
 void ClientHandler::sendResponse() {
-	this->debug("sending response") << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("sending response") << std::endl;
+	#endif
 	if (this->state_.isSent) return;
 	if (!this->state_.isSending) {
 		this->sendHeader_();
@@ -159,7 +176,9 @@ const HttpRequest& ClientHandler::buildRequest() {
 		return this->request_;
 	this->state_.isReading = false;
 	this->state_.isFetched = true;
-	this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
+	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
 	this->state_.isFetched = true;
 	return this->request_;
@@ -174,7 +193,9 @@ const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
 	std::ifstream *fileStream = this->buffer_.fileStream;
 
 	if (!fileStream->good()) {
-		Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
+		#if LOGGER_DEBUG > 0
+			Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
+		#endif
 		this->response_ = HttpResponse(404);
 		this->state_.hasResponse = true;
 		return this->response_;
@@ -192,7 +213,9 @@ const char *ClientHandler::getClientIp() const { return this->address_.clientIp;
 
 void ClientHandler::readSocket() {
 	fillRequestBuffer_();
-	this->debug("Syncing") << std::endl;
+	#if LOGGER_DEBUG > 0
+		this->debug("Syncing") << std::endl;
+	#endif
 	this->runtime_.Sync();
 }
 
