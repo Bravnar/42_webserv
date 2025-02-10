@@ -10,7 +10,7 @@
 # include "./HttpRequest.hpp"
 # include "./HttpInclude.hpp"
 
-# define DF_H_SERVER = "WebserverSIR/1.0"
+# define DF_H_SERVER "WebserverSIR/1.0"
 
 # define EXC_FILE_NOT_FOUND(file) file + " not found"
 # define EXC_SEND_ERROR "Error on sending data to socket"

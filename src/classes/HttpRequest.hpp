@@ -26,7 +26,7 @@ class HttpRequest {
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
-		unsigned char *body_;
+		const unsigned char *body_;
 		std::string reqLine_;
 
 	public:

@@ -32,8 +32,6 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 }
 
 HttpRequest::~HttpRequest() {
-	if (body_)
-		delete[] body_;
 }
 
 void HttpRequest::parseRequestLine_(const std::string& line) {
@@ -100,14 +98,11 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
 			if (bodySize) {
 				if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
-				this->body_ = new unsigned char[bodySize];
 				const char *bodySep = std::strstr(buffer->data(), "\r\n\r\n");
 				if (!bodySep) { throw std::runtime_error(EXC_BODY_NOLIMITER); }
 				else {
-					const unsigned char *data = reinterpret_cast<const unsigned char *>(bodySep + 2);
-					try { std::copy(data, data + bodySize, this->body_); }
-					catch(const std::exception& e) { throw std::runtime_error(EXC_BODY_REQ_COPY); }
-					Logger::debug("data: ") << this->getStringBody() << std::endl;	
+					this->body_ = reinterpret_cast<const unsigned char *>(bodySep + 2);
+					Logger::debug("data: ") << this->getStringBody() << std::endl;
 				}
 			}
 		}
