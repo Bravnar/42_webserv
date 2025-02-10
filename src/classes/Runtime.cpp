@@ -85,9 +85,6 @@ void Runtime::checkServers_() {
 	}
 }
 
-bool stop = false;
-int ix = 0;
-
 void Runtime::checkClients_() {
 	for(size_t i = 0; i < this->clients_.size(); i++) {
 		ClientHandler *client = this->clients_[i];
@@ -124,9 +121,6 @@ void Runtime::checkClients_() {
 			client->sendResponse();
 			if (client->isSent()) {
 				delete client;
-				ix++;
-				if (ix > 1)
-					stop = true;
 			}
 			continue;
 		}
@@ -138,7 +132,7 @@ void Runtime::runServers() {
 		this->error("No binded servers to run") << std::endl;
 		return;
 	}
-	while (true && !stop) {
+	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;

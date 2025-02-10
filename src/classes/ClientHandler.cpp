@@ -168,9 +168,9 @@ const HttpRequest& ClientHandler::buildRequest() {
 	} catch(const std::exception& e) {
 		const std::string msg = e.what();
 		if (msg == EXC_BODY_NEG_SIZE || EXC_BODY_NOLIMITER || EXC_HEADER_NOHOST )
-			(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
+			this->warning("NOT HANDLING THROWINGS") << std::endl;
 		else
-			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
+			this->warning("NOT HANDLING THROWINGS") << std::endl;
 		throw;
 	}
 	return this->request_;
@@ -197,7 +197,6 @@ const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
 }
 
 const HttpResponse& ClientHandler::getResponse() const { return this->response_; }
-const HttpResponse& ClientHandler::getResponse() const { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 void ClientHandler::readSocket() {
@@ -205,7 +204,7 @@ void ClientHandler::readSocket() {
 		fillRequestBuffer_();
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
-		(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
+		this->warning("NOT HANDLING THROWINGS") << std::endl;
 		this->state_.isDead = true;
 	}
 	this->debug("Syncing") << std::endl;

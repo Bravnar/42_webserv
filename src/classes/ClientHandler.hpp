@@ -81,7 +81,6 @@ class ClientHandler
 		s_clientBuffer buffer_;
 		HttpRequest request_;
 		HttpResponse response_;
-		HttpResponse response_;
 		s_clientState state_;
 
 	public:
@@ -97,8 +96,6 @@ class ClientHandler
 		const HttpRequest& buildRequest();
 		const HttpRequest& getRequest() const;
 		const HttpResponse& buildResponse(const HttpResponse& response);
-		const HttpResponse& getResponse() const;
-		//int readSocket();
 		const HttpResponse& getResponse() const;
 		const char *getClientIp() const;
 		bool isFetched() const;
