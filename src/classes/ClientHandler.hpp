@@ -73,6 +73,7 @@ class ClientHandler
 		void fillRequestBuffer_();
 		void sendHeader_();
 		void sendPlayload_();
+		std::string buildDirlist_();
 
 		int socket_fd_; // Unique client socket indentifier
 		Runtime& runtime_;
