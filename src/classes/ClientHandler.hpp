@@ -51,12 +51,14 @@ struct s_clientState {
 	bool isSent;
 	bool isSending;
 	bool isDead;
+	bool hasResponse;
 	s_clientState():
 		isFetched(false),
 		isReading(false),
 		isSent(false),
 		isSending(false),
-		isDead(false) {}
+		isDead(false),
+		hasResponse(false) {}
 };
 
 class ClientHandler
@@ -106,6 +108,7 @@ class ClientHandler
 		bool isSending() const;
 		bool isSent() const;
 		bool isDead() const;
+		bool hasResponse() const;
 		const ServerManager& getServer() const;
 		std::ifstream *getFileStream();
 };

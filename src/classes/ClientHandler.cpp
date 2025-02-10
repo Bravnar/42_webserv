@@ -154,7 +154,6 @@ void ClientHandler::sendResponse() {
 	if (this->state_.isSent) return;
 	if (!this->state_.isSending) {
 		this->sendHeader_();
-		return;
 	}
 	sendPlayload_();
 	return;
@@ -178,11 +177,6 @@ const HttpRequest& ClientHandler::buildRequest() {
 		this->request_ = HttpRequest(this->buffer_.requestBuffer->data());
 		this->state_.isFetched = true;
 	} catch(const std::exception& e) {
-		const std::string msg = e.what();
-		if (msg == EXC_BODY_NEG_SIZE || EXC_BODY_NOLIMITER || EXC_HEADER_NOHOST )
-			this->warning("NOT HANDLING THROWINGS") << std::endl;
-		else
-			this->warning("NOT HANDLING THROWINGS") << std::endl;
 		throw;
 	}
 	return this->request_;
@@ -199,12 +193,14 @@ const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
 	if (!fileStream->good()) {
 		Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
 		this->response_ = HttpResponse(404);
+		this->state_.hasResponse = true;
 		return this->response_;
 	}
 	this->response_ = response;
 	fileStream->seekg(0, std::ios::end);
 	this->response_.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream->tellg());
 	fileStream->seekg(0, std::ios::beg);
+	this->state_.hasResponse = true;
 	return this->response_;
 }
 
@@ -212,13 +208,7 @@ const HttpResponse& ClientHandler::getResponse() const { return this->response_;
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 void ClientHandler::readSocket() {
-	try {
-		fillRequestBuffer_();
-	} catch(const std::exception& e) {
-		this->fatal(e.what()) << std::endl;
-		this->warning("NOT HANDLING THROWINGS") << std::endl;
-		this->state_.isDead = true;
-	}
+	fillRequestBuffer_();
 	this->debug("Syncing") << std::endl;
 	this->runtime_.Sync();
 }
@@ -231,4 +221,5 @@ bool ClientHandler::isSending() const { return this->state_.isSending; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
 bool ClientHandler::isSent() const { return this->state_.isSent; }
 bool ClientHandler::isDead() const { return this->state_.isDead; }
+bool ClientHandler::hasResponse() const { return this->state_.hasResponse; }
 std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }
