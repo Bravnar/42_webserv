@@ -229,8 +229,8 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 					*stream << " (fd: " << client->getSocket() << ")";
 			#endif
 			*stream << std::endl;
-			const std::map<std::string, std::string>& headers = client->getRequest().getHeaders();
-			if (headers.find(H_CONNECTION) == headers.end() || headers.at(H_CONNECTION) != "keep-alive") {
+			std::map<std::string, std::string>& headers = client->getResponse().getHeaders();
+			if (headers.find(H_CONNECTION) == headers.end() || headers[H_CONNECTION] != "keep-alive") {
 				delete client;
 				return -1;
 			}

@@ -45,6 +45,7 @@ static std::string checkStatus(int status) {
 		case 201: return "Created";
 		case 400: return "Bad Request";
 		case 405: return "Method Not Allowed";
+		case 406: return "Not Acceptable";
 		case 408: return "Request Timeout";
 		case 404: return "Not Found";
 		case 500: return "Internal Server Error";
@@ -54,7 +55,8 @@ static std::string checkStatus(int status) {
 }
 
 HttpResponse::HttpResponse():
-	version_("HTTP/1.1") {
+	version_("HTTP/1.1"),
+	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		this->headers_[H_CONNECTION] = "close";
@@ -63,17 +65,34 @@ HttpResponse::HttpResponse():
 HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	version_("HTTP/1.1"),
 	status_(200),
-	status_msg_(checkStatus(status_)) {
+	status_msg_(checkStatus(status_)),
+	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
-		this->headers_[H_CONNECTION] = httpRequest.getHeaders().at(H_CONNECTION);
+		this->url_ = &httpRequest.getUrl();
+		if (httpRequest.getHeaders().find(H_CONNECTION) != httpRequest.getHeaders().end())
+			this->headers_[H_CONNECTION] = httpRequest.getHeaders().at(H_CONNECTION);
+		else
+			this->headers_[H_CONNECTION] = "close";
+
+		if (httpRequest.getHeaders().find(H_ACCEPT) != httpRequest.getHeaders().end()) {
+			const std::string& accept = httpRequest.getHeaders().at(H_ACCEPT);
+			const std::string& type = this->headers_[H_CONTENT_TYPE];
+			if(accept.find("*/*") == std::string::npos
+				&& (type.find('/') != std::string::npos
+					&& accept.find(type.substr(0, type.find('/') + 1) + "*") == std::string::npos)
+				&& accept.find(type) == std::string::npos) {
+					*this = HttpResponse(406);
+			}
+		}
 }
 
 HttpResponse::HttpResponse(int errorPage):
 	version_("HTTP/1.1"),
 	status_(errorPage),
-	status_msg_(checkStatus(status_)) {
+	status_msg_(checkStatus(status_)),
+	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		this->headers_[H_CONNECTION] = "close";
@@ -84,7 +103,8 @@ HttpResponse::HttpResponse(const HttpResponse& copy):
 	version_(copy.version_),
 	status_(copy.status_),
 	status_msg_(copy.status_msg_),
-	headers_(copy.headers_) {}
+	headers_(copy.headers_),
+	url_(copy.url_) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	if (this == &assign)
@@ -92,6 +112,7 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	this->status_ = assign.status_;
 	this->status_msg_ = assign.status_msg_;
 	this->headers_ = assign.headers_;
+	this->url_ = assign.url_;
 	return *this;
 }
 
@@ -113,3 +134,4 @@ const std::string& HttpResponse::getStatusMsg() const { return this->status_msg_
 std::map<std::string, std::string>& HttpResponse::getHeaders() { return this->headers_; }
 const std::string& HttpResponse::getVersion() const { return this->version_; }
 const std::string HttpResponse::getResLine() const { return "Response " + Convert::ToString(this->status_) + " " + this->status_msg_; }
+const std::string *HttpResponse::getUrl() const { return this->url_; }

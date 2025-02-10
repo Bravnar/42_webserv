@@ -101,7 +101,7 @@ void ClientHandler::sendHeader_() {
 	std::ostringstream oss;
 	oss << this->getResponse().str();
 
-	if (this->buffer_.fileStream) {
+	if (this->response_.getUrl()) {
 		oss << "\r\n";	
 		this->state_.isSending = true;
 	} else {
@@ -152,7 +152,7 @@ void ClientHandler::sendResponse() {
 	if (!this->state_.isSending) {
 		this->sendHeader_();
 	}
-	if (this->buffer_.fileStream)
+	if (this->response_.getUrl())
 		sendPlayload_();
 	return;
 }
@@ -177,6 +177,11 @@ const HttpRequest& ClientHandler::buildRequest() {
 const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 
 const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
+	if (!response.getUrl()) {
+		this->response_ = response;
+		this->state_.hasResponse = true;
+		return this->response_;
+	}
 	std::string rootFile = this->server_.getRouteConfig()[0].getRoot() + this->request_.getUrl();
 
 	this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
@@ -213,7 +218,7 @@ void ClientHandler::flush() {
 	this->state_ = s_clientState();
 }
 
-const HttpResponse& ClientHandler::getResponse() const { return this->response_; }
+HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 void ClientHandler::readSocket() {

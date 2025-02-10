@@ -21,6 +21,7 @@ class HttpResponse {
 		int status_;
 		std::string status_msg_;
 		std::map<std::string, std::string> headers_;
+		const std::string *url_;
 	public:
 		// Canonical
 
@@ -45,6 +46,7 @@ class HttpResponse {
 		std::map<std::string, std::string>& getHeaders();
 		const std::string& getVersion() const;
 		const std::string getResLine() const;
+		const std::string *getUrl() const;
 
 };
 

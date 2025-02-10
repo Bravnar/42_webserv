@@ -128,7 +128,7 @@ class ClientHandler
 
 		// Getters
 		const HttpRequest& getRequest() const;
-		const HttpResponse& getResponse() const;
+		HttpResponse& getResponse();
 		const char *getClientIp() const;
 		bool isFetched() const;
 		bool isReading() const;
