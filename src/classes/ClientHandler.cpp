@@ -97,6 +97,18 @@ void ClientHandler::fillRequestBuffer_() {
  */
 
 
+std::string ClientHandler::buildDirlist_() {
+	std::ostringstream oss;
+
+	oss	<< "<!DOCTYPE html>\n"
+		<< "<html>\n"
+		<< "<head></head>\n"
+		<< "<body>\n"
+		<< "<h1>Directory Listing</h1>\n"
+		<< "</body>\n";
+	return oss.str();
+}
+
 void ClientHandler::sendHeader_() {
 	this->debug("sending header") << std::endl;
 	std::string header;
@@ -191,7 +203,7 @@ const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
 	}
 	this->response_ = response;
 	fileStream->seekg(0, std::ios::end);
-	this->response_.getHeaders().insert(std::make_pair(H_CONTENT_LENGTH, Convert::ToString(this->buffer_.fileStream->tellg())));
+	this->response_.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream->tellg());
 	fileStream->seekg(0, std::ios::beg);
 	return this->response_;
 }
