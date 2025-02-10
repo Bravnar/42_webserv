@@ -56,7 +56,7 @@ static std::string checkStatus(int status) {
 HttpResponse::HttpResponse():
 	version_("HTTP/1.1") {
 		this->headers_[H_DATE] = getHttpDate();
-		this->headers_[H_SERVER] = "SIR Webserver/1.0";
+		this->headers_[H_SERVER] = DF_H_SERVER;
 }
 
 HttpResponse::HttpResponse(const HttpRequest& httpRequest):
@@ -64,7 +64,7 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	status_(200),
 	status_msg_(checkStatus(status_)) {
 		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = "SIR Webserver/1.0";
+		this->headers_["Server"] = DF_H_SERVER;
 		this->headers_["Content-Type"] = getType(httpRequest.getUrl());
 }
 
@@ -73,8 +73,7 @@ HttpResponse::HttpResponse(int errorPage):
 	status_(errorPage),
 	status_msg_(checkStatus(status_)) {
 		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = "SIR Webserver/1.0";
-		this->headers_["Content-Type"] = "text/html";
+		this->headers_["Server"] = DF_H_SERVER;
 	(void)errorPage;
 }
 
@@ -110,3 +109,4 @@ void HttpResponse::setStatus(int status) { this->status_ = status; this->status_
 const std::string& HttpResponse::getStatusMsg() const { return this->status_msg_; }
 std::map<std::string, std::string>& HttpResponse::getHeaders() { return this->headers_; }
 const std::string& HttpResponse::getVersion() const { return this->version_; }
+const std::string HttpResponse::getResLine() const { return "Response " + Convert::ToString(this->status_) + " " + this->status_msg_; }

@@ -17,28 +17,31 @@
 
 class HttpRequest {
 	private:
-		int parseRequestLine_(const std::string&);
-		int buildFromBuffer_(const char *reqBuffer);
+		// Parse request line
+		// @throws `EXC_INVALID_RL`
+		void parseRequestLine_(const std::string&);
+		int buildFromBuffer_(const std::string *);
 
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
 		unsigned char *body_;
-		std::string *body_buffer_;
 		std::string reqLine_;
 
 	public:
 		// canonical
 
+		// @throws `EXC_INVALID_RL`
 		HttpRequest();
-		HttpRequest(const char *buffer);
+		HttpRequest(const std::string *);
 		HttpRequest(const HttpRequest&);
 		HttpRequest& operator=(const HttpRequest&);
 		~HttpRequest();
 
 		// member functions
 	
+		// Getters
 		const std::string& getMethod() const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const unsigned char *getBody() const;

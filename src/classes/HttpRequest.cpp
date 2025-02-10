@@ -4,25 +4,21 @@ HttpRequest::HttpRequest():
 	method_(""),
 	url_(""),
 	httpVersion_(""),
-	body_(0),
-	body_buffer_(0) {}
+	body_(0) {}
 
-HttpRequest::HttpRequest(const char *reqBuffer): body_buffer_(0) {
+HttpRequest::HttpRequest(const std::string *buffer) {
 	this->body_ = 0;
-	buildFromBuffer_(reqBuffer);
+	buildFromBuffer_(buffer);
 }
 
-// TODO: deep copy
 HttpRequest::HttpRequest(const HttpRequest& copy):
 	method_(copy.method_),
 	url_(copy.url_),
 	httpVersion_(copy.httpVersion_),
 	headers_(copy.headers_),
 	body_(copy.body_),
-	body_buffer_(copy.body_buffer_),
 	reqLine_(copy.reqLine_) {}
 
-// TODO: deep copy
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	if (this == &assign)
 		return *this;
@@ -31,7 +27,6 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	this->httpVersion_ = assign.httpVersion_;
 	this->headers_ = assign.headers_;
 	this->body_ = assign.body_;
-	this->body_buffer_ = assign.body_buffer_;
 	this->reqLine_ = assign.reqLine_;
 	return *this;
 }
@@ -39,11 +34,9 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 HttpRequest::~HttpRequest() {
 	if (body_)
 		delete[] body_;
-	if (body_buffer_)
-		delete this->body_buffer_;
 }
 
-int HttpRequest::parseRequestLine_(const std::string& line) {
+void HttpRequest::parseRequestLine_(const std::string& line) {
 	int iter = 0;
 	size_t old_pos = 0;
 
@@ -75,12 +68,10 @@ int HttpRequest::parseRequestLine_(const std::string& line) {
 		throw std::runtime_error(EXC_INVALID_RL);
 	}
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
-	return 0;
 }
 
-int HttpRequest::buildFromBuffer_(const char *buffer) {
-	this->body_buffer_ = new std::string(buffer);
-	std::stringstream ss(*this->body_buffer_);
+int HttpRequest::buildFromBuffer_(const std::string *buffer) {
+	std::stringstream ss(*buffer);
 	std::string line;
 	bool isBody = false;
 
@@ -103,8 +94,6 @@ int HttpRequest::buildFromBuffer_(const char *buffer) {
 		}
 		idx++;
 	}
-	delete this->body_buffer_;
-	this->body_buffer_ = 0;
 	if (isBody) {
 		std::map<std::string, std::string>::iterator it_contentlen = this->headers_.find(H_CONTENT_LENGTH);
 		if (it_contentlen != this->headers_.end()) {
@@ -112,7 +101,7 @@ int HttpRequest::buildFromBuffer_(const char *buffer) {
 			if (bodySize) {
 				if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
 				this->body_ = new unsigned char[bodySize];
-				const char *bodySep = std::strstr(buffer, "\r\n\r\n");
+				const char *bodySep = std::strstr(buffer->data(), "\r\n\r\n");
 				if (!bodySep) { throw std::runtime_error(EXC_BODY_NOLIMITER); }
 				else {
 					const unsigned char *data = reinterpret_cast<const unsigned char *>(bodySep + 2);

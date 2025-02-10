@@ -12,7 +12,6 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	
-	// reserve for: syncPipe, serverFds + serverFds * maxClients (serverFds is not calculated; using configs.size() instead)
 	this->sockets_.reserve(sizeof(pollfd) * (1 + configs.size() * (1 + maxClients)));
 
 	this->sockets_.push_back(this->syncPoll_);
@@ -31,6 +30,7 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 				this->sockets_.push_back(srv->getSocket());
 			} catch (const std::exception& e) {
 				this->fatal("'") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
+				delete *it;
 			}
 		}
 	}
@@ -38,14 +38,12 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 
 Runtime::Runtime(const Runtime& copy){
 	(void)copy;
-	// A runtime is unique
 }
 
 Runtime& Runtime::operator=(const Runtime& assign) {
 	if (this == &assign)
 		return *this;
 	return *this;
-	// A runtime is unique
 }
 
 Runtime::~Runtime() {
@@ -110,7 +108,7 @@ void Runtime::checkClients_() {
 		ClientHandler *client = this->clients_[i];
 		pollfd *socket = this->getSocket_(client->getSocket());
 		if (!socket) {
-			this->fatal("lost socket for client ") << client->getClientIp() << std::endl;
+			this->fatal("lost socket for client ") << client->getClientIp() << " (fd: " << client->getSocket() << ")" << std::endl;
 			delete client;
 			continue;
 		}
@@ -141,7 +139,7 @@ void Runtime::checkServers_() {
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
-		this->debug("pollin client (") << client->getSocket() << ")" << std::endl;
+		this->debug("pollin client (fd: ") << client->getSocket() << ")" << std::endl;
 		if (client->isFetched()) {
 			this->warning("throwing sticky client") << std::endl;
 			delete client;
@@ -153,28 +151,31 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			client->readSocket();
 		} catch (const std::exception& e) {
 			client->buildResponse(HttpResponse(500));
-			this->debug("throw: ") << e.what() << std::endl;
+			this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
 			return 1;
 		}
 		if (client->isDead()) {
-			this->fatal("throwing client ") << client->getClientIp() << std::endl;
+			this->fatal("throwing client ") << client->getClientIp() << " (fd: " << client->getSocket() << ")" << std::endl;
 			delete client;
 			return -1;
 		}
 	} else if (client->isReading()) {
-		this->debug("pollin end client (") << client->getSocket() << ")" << std::endl;
+		this->debug("pollin end client (fd: ") << client->getSocket() << ")" << std::endl;
 		try {
 			client->buildRequest();
-			this->info("Client ")
-				<< client->getClientIp()
-				<< " requested " << client->getRequest().getMethod() << " " << client->getRequest().getUrl() << std::endl;
+			std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
+				<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
+				<< " client " << client->getClientIp();
+			if (LOGGER_DEBUG)
+				stream << " (fd: " << client->getSocket() << ")";
+			stream << std::endl;
 		} catch (const std::exception& e) {
 			std::string msg(e.what());
 			if (msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
 				client->buildResponse(HttpResponse(400));
 			else
 				client->buildResponse(HttpResponse(500));
-			this->debug("throw: ") << e.what() << std::endl;
+			this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
 			return 1;
 		}
 	}
@@ -183,7 +184,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 	if (socket->events & POLLOUT && client->isFetched()) {
-		this->debug("pollout client (") << client->getSocket() << ")" << std::endl;
+		this->debug("pollout client (fd: ") << client->getSocket() << ")" << std::endl;
 		if (!client->hasResponse() && !client->isSending()) {
 			client->buildResponse(HttpResponse(client->getRequest()));
 		}
@@ -200,13 +201,18 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			else if (client->getResponse().getStatus() < 400) { stream = &this->warning(""); }
 			else if (client->getResponse().getStatus() < 500) { stream = &this->error(""); }
 			else { stream = &this->fatal(""); }
-			*stream	<< client->getResponse().getStatus() << " " << client->getResponse().getStatusMsg() <<
-					" for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl() << std::endl;
+			*stream << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
+			if (!client->getRequest().getReqLine().empty())
+					*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
+			*stream << " client " << client->getClientIp();
+			if (LOGGER_DEBUG)
+				*stream << " (fd: " << client->getSocket() << ")";
+			*stream << std::endl;
 			delete client;
 			return 1;
 		}
 	} else if (!(socket->events & POLLOUT)) {
-		this->error("lost client ") << client->getClientIp() << std::endl;
+		this->error("lost client ") << client->getClientIp() << " (fd: " << client->getSocket() << ")" << std::endl;
 		delete client;
 		return -1;
 	}

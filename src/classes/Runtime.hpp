@@ -8,6 +8,9 @@ class ClientHandler;
 
 class Runtime {
 	private:
+		// Forbidden Canonical
+		// (A runtime is unique, obviously)
+
 		Runtime(const Runtime&);
 		Runtime& operator=(const Runtime&);
 
@@ -42,8 +45,6 @@ class Runtime {
 		pollfd syncPoll_;
 		bool isSyncing_;
 	public:
-		//TODO: Canonical
-
 		Runtime(const std::vector<ServerConfig>&, size_t maxClients);
 		~Runtime();
 

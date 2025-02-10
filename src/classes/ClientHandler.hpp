@@ -64,23 +64,42 @@ struct s_clientState {
 class ClientHandler
 {
 	private:
+		// Forbidden Canonical
+		// (ClientHandler is unique and interacts with runtime at construction)
+
 		ClientHandler(const ClientHandler&);
 		ClientHandler& operator=(const ClientHandler&);
-		
+	
+		// Internal logs
+
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+
+		// Internal functions
+	
+		// Fill client request buffer
+		// @throw `EXC_SOCKET_READ`
 		void fillRequestBuffer_();
+		// Send response header to client
+		// @throw `EXC_SEND_ERROR`
 		void sendHeader_();
+		// Send playload to client
+		// @throw `EXC_SEND_ERROR`
 		void sendPlayload_();
+		// TODO: Replace with proper Builder class
+		// Build a directory list page
 		std::string buildDirlist_();
 
-		int socket_fd_; // Unique client socket indentifier
+
+		// Properties
+
+		const int socket_fd_;
 		Runtime& runtime_;
-		ServerManager& server_;
-		s_clientAddress address_;
+		const ServerManager& server_;
+		const s_clientAddress address_;
 		s_clientBuffer buffer_;
 		HttpRequest request_;
 		HttpResponse response_;
@@ -91,26 +110,42 @@ class ClientHandler
 
 		ClientHandler(Runtime&, ServerManager&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
 		~ClientHandler();
+
 		//Member functions
 
+		// Send full response to client (header and chunks of playload)
+		// @throw `EXC_SEND_ERROR`
 		void sendResponse();
+		// Get client socket fd
 		int getSocket() const;
+		// Read socket and fill requestBuffer by chunks until no more to read
+		// @throw `EXC_SOCKET_READ`
 		void readSocket();
+		// Build request from request buffer
+		// Returns the request if already fetched
+		// @throw `HttpRequest(const std::string*)` constructor exceptions
 		const HttpRequest& buildRequest();
+		// Build client response from `const HttpResponse&` template
+		const HttpResponse& buildResponse(const HttpResponse&);
+		// Get current response
+
+		// Getters
 		const HttpRequest& getRequest() const;
-		const HttpResponse& buildResponse(const HttpResponse& response);
 		const HttpResponse& getResponse() const;
 		const char *getClientIp() const;
 		bool isFetched() const;
-		void setFetched(bool);
 		bool isReading() const;
-		void setReading(bool);
 		bool isSending() const;
 		bool isSent() const;
 		bool isDead() const;
 		bool hasResponse() const;
 		const ServerManager& getServer() const;
 		std::ifstream *getFileStream();
+
+		// Setters
+	
+		void setFetched(bool);
+		void setReading(bool);
 };
 
 #endif
