@@ -41,6 +41,10 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 ClientHandler::~ClientHandler() {
 	this->debug("Client request deconstructor") << std::endl;
 	close(this->socket_fd_);
+	if (this->buffer_.fileStream) {
+		this->buffer_.fileStream->close();
+		delete this->buffer_.fileStream;
+	}
 	delete this->buffer_.requestBuffer;
 	{
 		bool trigger = false;
@@ -75,7 +79,6 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::fillRequestBuffer_() {
-	this->state_.isReading = true;
 	char buffer[DF_MAX_BUFFER];
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
@@ -92,27 +95,57 @@ void ClientHandler::fillRequestBuffer_() {
  * handle: Handle the client request
  * @attention Nasty code! Needs refactor
  */
-void ClientHandler::handle() {
-	if (this->state_.isReading)
-		throw std::runtime_error("Cannot handle a client in isReading_ state");
-	if (!this->state_.isFetched) {
-		this->fetch();
-		this->debug("Request:") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
+
+
+void ClientHandler::sendHeader_() {
+	this->debug("sending header") << std::endl;
+	std::string header;
+	std::ostringstream oss;
+	oss << this->getResponse().str();
+
+	if (this->buffer_.fileStream) {
+		oss << "\r\n";	
+		this->state_.isSending = true;
+	} else {
+		this->state_.isSent = true;
 	}
-	
-	// generating response
-	std::string fileName = this->server_.getConfig().getRoutes()[0].getRoot() + request_.getUrl();
-	try {
-		(this->response_ = HttpResponse(200, fileName, request_.getUrl())).sendResp(this->socket_fd_);
-	} catch(const std::exception& e) {
-		if (e.what() == EXC_FILE_NOT_FOUND(fileName))
-			(this->response_ = HttpResponse(404)).sendResp(this->socket_fd_);
-		else if (std::string(e.what()) == EXC_SEND_ERROR)
-			throw; // throwing client
-		else
-			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
-		throw;
+	header = oss.str();
+	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
+		throw std::runtime_error(EXC_SEND_ERROR);
 	}
+	if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
+		this->debug("sended: ") << header << std::endl;
+}
+
+void ClientHandler::sendPlayload_() {
+	this->debug("sending playload") << std::endl;
+	std::ifstream *file = this->buffer_.fileStream;
+	char buffer[DF_MAX_BUFFER] = {0};
+	if (file->read(buffer, DF_MAX_BUFFER) || file->gcount() > 0) {
+		if (send(this->socket_fd_, buffer, file->gcount(), 0) < 0) {
+			throw std::runtime_error(EXC_SEND_ERROR);
+		}
+	}
+	if (!*file) {
+		file->close();
+		delete file;
+		this->buffer_.fileStream = 0;
+		this->state_.isSent = true;
+	}
+	if (this->request_.getUrl().find(".html") != std::string::npos) {
+		this->debug("sended: ") << buffer << std::endl;
+	}
+}
+
+void ClientHandler::sendResponse() {
+	this->debug("sending response") << std::endl;
+	if (this->state_.isSent) return;
+	if (!this->state_.isSending) {
+		this->sendHeader_();
+		return;
+	}
+	sendPlayload_();
+	return;
 }
 
 /**
@@ -123,12 +156,11 @@ int ClientHandler::getSocket() const {
 	return this->socket_fd_;
 }
 
-const HttpRequest& ClientHandler::fetch() {
+const HttpRequest& ClientHandler::buildRequest() {
 	if (this->state_.isFetched)
 		return this->request_;
-	if (this->state_.isReading) {
-		throw std::runtime_error(EXC_FETCHING_BREFORE_READ);
-	}
+	this->state_.isReading = false;
+	this->state_.isFetched = true;
 	try {
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 		this->request_ = HttpRequest(this->buffer_.requestBuffer->data());
@@ -136,41 +168,56 @@ const HttpRequest& ClientHandler::fetch() {
 	} catch(const std::exception& e) {
 		const std::string msg = e.what();
 		if (msg == EXC_BODY_NEG_SIZE || EXC_BODY_NOLIMITER || EXC_HEADER_NOHOST )
-			(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_);
+			(this->response_ = HttpResponse(400)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
 		else
-			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
+			(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
 		throw;
 	}
 	return this->request_;
 }
 
-const HttpResponse& ClientHandler::getResponse() const {
+const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
+
+const HttpResponse& ClientHandler::buildResponse(const HttpResponse& response) {
+	std::string rootFile = this->server_.getRouteConfig()[0].getRoot() + this->request_.getUrl();
+
+	this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
+	std::ifstream *fileStream = this->buffer_.fileStream;
+
+	if (!fileStream->good()) {
+		Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
+		this->response_ = HttpResponse(404);
+		return this->response_;
+	}
+	this->response_ = response;
+	fileStream->seekg(0, std::ios::end);
+	this->response_.getHeaders().insert(std::make_pair(H_CONTENT_LENGTH, Convert::ToString(this->buffer_.fileStream->tellg())));
+	fileStream->seekg(0, std::ios::beg);
 	return this->response_;
 }
 
-const char *ClientHandler::getClientIp() const {
-	return this->address_.clientIp;
-}
+const HttpResponse& ClientHandler::getResponse() const { return this->response_; }
+const HttpResponse& ClientHandler::getResponse() const { return this->response_; }
+const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
-bool ClientHandler::isFetched() const {
-	return this->state_.isFetched;
-}
-
-int ClientHandler::readSocket() {
-	if (this->state_.isFetched) {
-		this->state_.isReading = false;
-		return 0;
-	}
+void ClientHandler::readSocket() {
 	try {
 		fillRequestBuffer_();
-		return (this->state_.isReading);
 	} catch(const std::exception& e) {
 		this->fatal(e.what()) << std::endl;
-		(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_);
-		return -1;
+		(this->response_ = HttpResponse(500)).sendResp(this->socket_fd_, this->state_.isSending, this->buffer_.fileStream);
+		this->state_.isDead = true;
 	}
+	this->debug("Syncing") << std::endl;
+	this->runtime_.Sync();
 }
 
+bool ClientHandler::isFetched() const { return this->state_.isFetched; }
+void ClientHandler::setFetched(bool value) { this->state_.isFetched = value; }
 bool ClientHandler::isReading() const { return this->state_.isReading; }
 void ClientHandler::setReading(bool value) { this->state_.isReading = value; }
-const ServerManager& ClientHandler::getServer() const { return this->server_; };
+bool ClientHandler::isSending() const { return this->state_.isSending; }
+const ServerManager& ClientHandler::getServer() const { return this->server_; }
+bool ClientHandler::isSent() const { return this->state_.isSent; }
+bool ClientHandler::isDead() const { return this->state_.isDead; }
+std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }

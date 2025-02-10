@@ -51,8 +51,9 @@ Runtime& Runtime::operator=(const Runtime& assign) {
 Runtime::~Runtime() {
 	this->debug("deconstructor") << std::endl;
 
-	for(std::vector<ClientHandler *>::iterator it = this->clients_.begin(); it != this->clients_.end(); it++) {
-		delete *it;
+	while (this->clients_.size()) {
+		this->debug("destroying ") << this->clients_[0]->getSocket() << std::endl;
+		delete this->clients_[0];
 	}
 	this->clients_.clear();
 	for(std::map<int, ServerManager *>::iterator it = this->servers_.begin(); it != this->servers_.end(); it++) {
@@ -84,6 +85,9 @@ void Runtime::checkServers_() {
 	}
 }
 
+bool stop = false;
+int ix = 0;
+
 void Runtime::checkClients_() {
 	for(size_t i = 0; i < this->clients_.size(); i++) {
 		ClientHandler *client = this->clients_[i];
@@ -94,41 +98,37 @@ void Runtime::checkClients_() {
 			continue;
 		}
 		if (!(socket->events & POLLOUT)) {
-			this->error("client disconnected ") << client->getClientIp() << std::endl;
+			this->error("lost client ") << client->getClientIp() << std::endl;
 			delete client;
-		} else if (socket->revents & POLLIN) {
-			int readStatus = client->readSocket();
-			if (readStatus > 0) this->Sync();
-			else if (readStatus < 0) {
+			continue;
+		}
+		if (socket->revents & POLLIN) {
+			this->debug("pollin client (") << client->getSocket() << ")" << std::endl;
+			if(!client->isReading()) client->setReading(true);
+			client->readSocket();
+			if (client->isDead()) {
 				this->fatal("throwing client ") << client->getClientIp() << std::endl;
 				delete client;
 			}
+			continue;
 		} else if (client->isReading()) {
-			client->setReading(false);
-			const std::string serverContext = C_BLUE + client->getServer().getConfig().getServerNames()[0] + std::string(C_RESET) + ": ";
-			HttpRequest clientReq;
-			const HttpResponse& clientResp = client->getResponse();
-			try {
-				try {
-					clientReq = client->fetch();
-					this->info(serverContext) << "Request '" << clientReq.getReqLine() << "' from " << client->getClientIp() << std::endl;
-				} catch (const std::exception& e) {
-					this->error(serverContext) << "Request invalid from " << client->getClientIp() << std::endl;
-					throw;
-				}
-				client->handle();
-				this->info(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
-			} catch (const std::exception& e) {
-				if (std::string(e.what()) == EXC_SEND_ERROR) {
-					this->fatal(e.what()) << std::endl;
-				}
-				else if(clientResp.getStatus() == 400)
-					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << std::endl;
-				else
-					this->error(serverContext + "Response ") << clientResp.getStatus() << " " << clientResp.getStatusMsg() << " for '" << clientReq.getReqLine() << "'" << std::endl;
-				this->debug(serverContext) << e.what() << std::endl;
+			this->debug("pollin end client (") << client->getSocket() << ")" << std::endl;
+			client->buildRequest();
+			continue;
+		}
+		if (socket->events & POLLOUT && client->isFetched()) {
+			this->debug("pollout client (") << client->getSocket() << ")" << std::endl;
+			if (!client->isSending()) {
+				client->buildResponse(HttpResponse(client->getRequest()));
+			}				
+			client->sendResponse();
+			if (client->isSent()) {
+				delete client;
+				ix++;
+				if (ix > 1)
+					stop = true;
 			}
-			delete client;
+			continue;
 		}
 	}
 }
@@ -138,7 +138,7 @@ void Runtime::runServers() {
 		this->error("No binded servers to run") << std::endl;
 		return;
 	}
-	while (true) {
+	while (true && !stop) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;

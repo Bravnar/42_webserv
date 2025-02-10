@@ -12,6 +12,7 @@
 # include "./Runtime.hpp"
 # include "./ServerManager.hpp"
 # include <fstream>
+# include "./HttpResponse.hpp"
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
@@ -22,7 +23,10 @@ class Runtime;
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
-	s_clientBuffer(): requestBuffer(0) {}
+	std::ifstream *fileStream;
+	s_clientBuffer():
+		requestBuffer(0),
+		fileStream(0) {}
 };
 
 // Unique client address identifier
@@ -44,7 +48,15 @@ struct s_clientAddress {
 struct s_clientState {
 	bool isFetched;
 	bool isReading;
-	s_clientState(): isFetched(false), isReading(false) {}
+	bool isSent;
+	bool isSending;
+	bool isDead;
+	s_clientState():
+		isFetched(false),
+		isReading(false),
+		isSent(false),
+		isSending(false),
+		isDead(false) {}
 };
 
 class ClientHandler
@@ -59,6 +71,8 @@ class ClientHandler
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 		void fillRequestBuffer_();
+		void sendHeader_();
+		void sendPlayload_();
 
 		int socket_fd_; // Unique client socket indentifier
 		Runtime& runtime_;
@@ -66,6 +80,7 @@ class ClientHandler
 		s_clientAddress address_;
 		s_clientBuffer buffer_;
 		HttpRequest request_;
+		HttpResponse response_;
 		HttpResponse response_;
 		s_clientState state_;
 
@@ -76,16 +91,25 @@ class ClientHandler
 		~ClientHandler();
 		//Member functions
 
-		void handle();
+		void sendResponse();
 		int getSocket() const;
-		const HttpRequest& fetch();
-		int readSocket();
+		void readSocket();
+		const HttpRequest& buildRequest();
+		const HttpRequest& getRequest() const;
+		const HttpResponse& buildResponse(const HttpResponse& response);
+		const HttpResponse& getResponse() const;
+		//int readSocket();
 		const HttpResponse& getResponse() const;
 		const char *getClientIp() const;
 		bool isFetched() const;
+		void setFetched(bool);
 		bool isReading() const;
 		void setReading(bool);
+		bool isSending() const;
+		bool isSent() const;
+		bool isDead() const;
 		const ServerManager& getServer() const;
+		std::ifstream *getFileStream();
 };
 
 #endif
