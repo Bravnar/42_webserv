@@ -145,7 +145,11 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			this->debug("pollin client (fd: ") << client->getSocket() << ")" << std::endl;
 		#endif
 		if (client->isFetched()) {
-			this->warning("throwing sticky client") << std::endl;
+			std::ostream& stream = this->warning("throwing sticky client");
+			#if LOGGER_DEBUG > 0
+				stream << " (fd: " << client->getSocket() << ")" << client->getRequest().getReqLine();
+			#endif
+			stream << std::endl;
 			delete client;
 			return -1;
 		}
@@ -217,8 +221,10 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			if (!client->getRequest().getReqLine().empty())
 					*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
 			*stream << " client " << client->getClientIp();
-			if (LOGGER_DEBUG)
-				*stream << " (fd: " << client->getSocket() << ")";
+			#if LOGGER_DEBUG > 0
+				if (LOGGER_DEBUG)
+					*stream << " (fd: " << client->getSocket() << ")";
+			#endif
 			*stream << std::endl;
 			delete client;
 			return 1;
