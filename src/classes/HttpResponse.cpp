@@ -57,23 +57,26 @@ HttpResponse::HttpResponse():
 	version_("HTTP/1.1") {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONNECTION] = "close";
 }
 
 HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	version_("HTTP/1.1"),
 	status_(200),
 	status_msg_(checkStatus(status_)) {
-		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = DF_H_SERVER;
-		this->headers_["Content-Type"] = getType(httpRequest.getUrl());
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
+		this->headers_[H_CONNECTION] = "close";
 }
 
 HttpResponse::HttpResponse(int errorPage):
 	version_("HTTP/1.1"),
 	status_(errorPage),
 	status_msg_(checkStatus(status_)) {
-		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = DF_H_SERVER;
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONNECTION] = "close";
 	(void)errorPage;
 }
 
