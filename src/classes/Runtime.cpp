@@ -101,6 +101,12 @@ void Runtime::checkClients_() {
 		}
 		if (socket->revents & POLLIN) {
 			this->debug("pollin client (") << client->getSocket() << ")" << std::endl;
+			if (client->isFetched()) {
+				this->warning("throwing sticky client") << std::endl;
+				delete client;
+				continue;
+			}
+			client->setFetched(false);
 			if(!client->isReading()) client->setReading(true);
 			client->readSocket();
 			if (client->isDead()) {
