@@ -12,7 +12,6 @@
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_BODY_NEG_SIZE "Negative body size"
 # define EXC_BODY_NOLIMITER "No body delimiter"
-# define EXC_BODY_REQ_COPY "Error on http request body copy"
 # define EXC_HEADER_NOHOST "No host header"
 
 class HttpRequest {
