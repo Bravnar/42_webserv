@@ -158,10 +158,6 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
-			if (std::string(e.what()) == EXC_POLLIN_END) {
-				delete client;
-				return -1;
-			}
 			client->buildResponse(HttpResponse(500));
 			#if LOGGER_DEBUG > 0
 				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
@@ -203,7 +199,6 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLOUT && client->isFetched()) {
-		Logger::info("here") << std::endl;
 		#if LOGGER_DEBUG > 0
 			this->debug("pollout client (fd: ") << client->getSocket() << ")" << std::endl;
 		#endif
@@ -237,6 +232,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			const std::map<std::string, std::string>& headers = client->getRequest().getHeaders();
 			if (headers.find(H_CONNECTION) == headers.end() || headers.at(H_CONNECTION) != "keep-alive") {
 				delete client;
+				return -1;
 			}
 			client->flush();
 			socket->events = POLLIN;

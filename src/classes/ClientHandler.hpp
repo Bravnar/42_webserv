@@ -16,7 +16,6 @@
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
-# define EXC_POLLIN_END "No more data"
 
 class Runtime;
 
@@ -80,9 +79,6 @@ class ClientHandler
 
 		// Internal functions
 	
-		// Fill client request buffer
-		// @throw `EXC_SOCKET_READ`
-		void fillRequestBuffer_();
 		// Send response header to client
 		// @throw `EXC_SEND_ERROR`
 		void sendHeader_();

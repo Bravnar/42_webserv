@@ -81,18 +81,6 @@ ClientHandler::~ClientHandler() {
 	}
 }
 
-void ClientHandler::fillRequestBuffer_() {
-	char buffer[DF_MAX_BUFFER];
-	if (!this->buffer_.requestBuffer)
-		this->buffer_.requestBuffer = new std::string("");
-	ssize_t bytesRead;
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		this->buffer_.requestBuffer->append(buffer, bytesRead);
-	}
-	else if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
-	else throw std::runtime_error(EXC_POLLIN_END);
-}
-
 std::string ClientHandler::buildDirlist_() {
 	std::ostringstream oss;
 
@@ -229,11 +217,19 @@ const HttpResponse& ClientHandler::getResponse() const { return this->response_;
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 void ClientHandler::readSocket() {
-	fillRequestBuffer_();
-	#if LOGGER_DEBUG > 0
-		this->debug("Syncing") << std::endl;
-	#endif
-	this->runtime_.Sync();
+	char buffer[DF_MAX_BUFFER];
+	if (!this->buffer_.requestBuffer)
+		this->buffer_.requestBuffer = new std::string("");
+	ssize_t bytesRead;
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
+		this->buffer_.requestBuffer->append(buffer, bytesRead);
+		#if LOGGER_LEVEL > 0
+			this->debug("Syncing") << std::endl;
+		#endif
+		this->runtime_.Sync();
+	}
+	else if (bytesRead < 0) { throw std::runtime_error(EXC_SOCKET_READ); }
+	else { this->buildRequest(); }
 }
 
 bool ClientHandler::isFetched() const { return this->state_.isFetched; }
