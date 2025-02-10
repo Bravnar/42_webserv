@@ -147,7 +147,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		if (client->isFetched()) {
 			std::ostream& stream = this->warning("throwing sticky client");
 			#if LOGGER_DEBUG > 0
-				stream << " (fd: " << client->getSocket() << ")" << client->getRequest().getReqLine();
+				stream << " (fd: " << client->getSocket() << ")";
 			#endif
 			stream << std::endl;
 			delete client;
