@@ -7,25 +7,13 @@
 # include <algorithm>
 # include "./../utils/Convert.hpp"
 # include <cstring>
+# include "./HttpInclude.hpp"
 
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_BODY_NEG_SIZE "Negative body size"
 # define EXC_BODY_NOLIMITER "No body delimiter"
 # define EXC_BODY_REQ_COPY "Error on http request body copy"
 # define EXC_HEADER_NOHOST "No host header"
-
-# define H_HOST "Host"
-# define H_USERAGENT "User-Agent"
-# define H_ACCEPT "Accept"
-# define H_ACCEPT_LANGUAGE "Accept-Language"
-# define H_ACCEPT_ENCODING "Accept-Encoding"
-# define H_CONNECTION "Connection"
-# define H_CONTENT_TYPE "Content-Type"
-# define H_CONTENT_LENGTH "Content-Length"
-# define H_AUTHORIZATION "Authorization"
-# define H_REFERER "Referer"
-# define H_COOKIE "Cookie"
-# define H_CACHE_CONTROL "Cache-Control"
 
 class HttpRequest {
 	private:

@@ -27,7 +27,7 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 			srv = *it;
 			try {
 				srv->init();
-				this->servers_.insert(std::make_pair(srv->getSocket().fd, srv));
+				this->servers_[srv->getSocket().fd] =  srv;
 				this->sockets_.push_back(srv->getSocket());
 			} catch (const std::exception& e) {
 				this->fatal("'") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;

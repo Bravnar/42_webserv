@@ -98,7 +98,7 @@ int HttpRequest::buildFromBuffer_(const char *buffer) {
 			if (sep != line.npos) {
 				std::string key = line.substr(0, sep);
 				std::string value = line.substr(sep + 2, line.size() - sep - 2);
-				this->headers_.insert(std::make_pair(key, value));
+				this->headers_[key] = value;
 			}
 		}
 		idx++;

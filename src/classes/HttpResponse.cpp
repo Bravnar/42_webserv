@@ -55,26 +55,26 @@ static std::string checkStatus(int status) {
 
 HttpResponse::HttpResponse():
 	version_("HTTP/1.1") {
-		this->headers_.insert(std::make_pair("Date", getHttpDate()));
-		this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = "SIR Webserver/1.0";
 }
 
 HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	version_("HTTP/1.1"),
 	status_(200),
 	status_msg_(checkStatus(status_)) {
-		this->headers_.insert(std::make_pair("Date", getHttpDate()));
-		this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-		this->headers_.insert(std::make_pair("Content-Type", getType(httpRequest.getUrl())));
+		this->headers_["Date"] = getHttpDate();
+		this->headers_["Server"] = "SIR Webserver/1.0";
+		this->headers_["Content-Type"] = getType(httpRequest.getUrl());
 }
 
 HttpResponse::HttpResponse(int errorPage):
 	version_("HTTP/1.1"),
 	status_(errorPage),
 	status_msg_(checkStatus(status_)) {
-		this->headers_.insert(std::make_pair("Date", getHttpDate()));
-		this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-		this->headers_.insert(std::make_pair("Content-Type", getType(".html")));
+		this->headers_["Date"] = getHttpDate();
+		this->headers_["Server"] = "SIR Webserver/1.0";
+		this->headers_["Content-Type"] = "text/html";
 	(void)errorPage;
 }
 
@@ -106,6 +106,7 @@ const std::string HttpResponse::str() const {
 }
 
 int HttpResponse::getStatus() const { return this->status_; }
+void HttpResponse::setStatus(int status) { this->status_ = status; this->status_msg_ = checkStatus(status); }
 const std::string& HttpResponse::getStatusMsg() const { return this->status_msg_; }
 std::map<std::string, std::string>& HttpResponse::getHeaders() { return this->headers_; }
 const std::string& HttpResponse::getVersion() const { return this->version_; }

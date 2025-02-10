@@ -8,6 +8,7 @@
 # include "../utils/Logger.hpp"
 # include <sys/socket.h>
 # include "./HttpRequest.hpp"
+# include "./HttpInclude.hpp"
 
 # define EXC_FILE_NOT_FOUND(file) file + " not found"
 # define EXC_SEND_ERROR "Error on sending data to socket"
@@ -32,6 +33,7 @@ class HttpResponse {
 
 		const std::string str() const;
 		int getStatus() const;
+		void setStatus(int status);
 		const std::string& getStatusMsg() const;
 		std::map<std::string, std::string>& getHeaders();
 		const std::string& getVersion() const;
