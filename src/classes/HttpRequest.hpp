@@ -7,50 +7,40 @@
 # include <algorithm>
 # include "./../utils/Convert.hpp"
 # include <cstring>
+# include "./HttpInclude.hpp"
 
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_BODY_NEG_SIZE "Negative body size"
 # define EXC_BODY_NOLIMITER "No body delimiter"
-# define EXC_BODY_REQ_COPY "Error on http request body copy"
 # define EXC_HEADER_NOHOST "No host header"
-
-# define H_HOST "Host"
-# define H_USERAGENT "User-Agent"
-# define H_ACCEPT "Accept"
-# define H_ACCEPT_LANGUAGE "Accept-Language"
-# define H_ACCEPT_ENCODING "Accept-Encoding"
-# define H_CONNECTION "Connection"
-# define H_CONTENT_TYPE "Content-Type"
-# define H_CONTENT_LENGTH "Content-Length"
-# define H_AUTHORIZATION "Authorization"
-# define H_REFERER "Referer"
-# define H_COOKIE "Cookie"
-# define H_CACHE_CONTROL "Cache-Control"
 
 class HttpRequest {
 	private:
-		int parseRequestLine_(const std::string&);
-		int buildFromBuffer_(const char *reqBuffer);
+		// Parse request line
+		// @throws `EXC_INVALID_RL`
+		void parseRequestLine_(const std::string&);
+		int buildFromBuffer_(const std::string *);
 
 		std::string method_;
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
-		unsigned char *body_;
-		std::string *body_buffer_;
+		const unsigned char *body_;
 		std::string reqLine_;
 
 	public:
 		// canonical
 
+		// @throws `EXC_INVALID_RL`
 		HttpRequest();
-		HttpRequest(const char *buffer);
+		HttpRequest(const std::string *);
 		HttpRequest(const HttpRequest&);
 		HttpRequest& operator=(const HttpRequest&);
 		~HttpRequest();
 
 		// member functions
 	
+		// Getters
 		const std::string& getMethod() const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const unsigned char *getBody() const;

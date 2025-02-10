@@ -24,14 +24,20 @@ typedef struct s_status {
 
 class ServerManager {
 	private:
+		// Forbidden canonical
+		// (A server is unique obviously)
+
 		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
+
+		// Internal logs
 
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+
 		const ServerConfig& config_;
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
@@ -46,9 +52,14 @@ class ServerManager {
 
 		ServerManager(const ServerConfig&, size_t maxClients);
 		~ServerManager();
+
 		// Member functions
 
+		// Init server binding
 		int init();
+
+		// Getters
+	
 		bool isHealthy() const;
 		const pollfd& getSocket() const;
 		const ServerConfig& getConfig() const;

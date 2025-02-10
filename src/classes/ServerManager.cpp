@@ -57,8 +57,7 @@ int ServerManager::init() {
 
 ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
 	config_(config),
-	addrv4_(newAddr(config.getPort(),
-	config.getHost())),
+	addrv4_(newAddr(config.getPort(), config.getHost())),
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(config.getRoutes()),
 	maxClients_(maxClients) {
