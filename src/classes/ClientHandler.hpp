@@ -49,14 +49,12 @@ struct s_clientState {
 	bool isReading;
 	bool isSent;
 	bool isSending;
-	bool isDead;
 	bool hasResponse;
 	s_clientState():
 		isFetched(false),
 		isReading(false),
 		isSent(false),
 		isSending(false),
-		isDead(false),
 		hasResponse(false) {}
 };
 
@@ -79,9 +77,6 @@ class ClientHandler
 
 		// Internal functions
 	
-		// Fill client request buffer
-		// @throw `EXC_SOCKET_READ`
-		void fillRequestBuffer_();
 		// Send response header to client
 		// @throw `EXC_SEND_ERROR`
 		void sendHeader_();
@@ -115,8 +110,6 @@ class ClientHandler
 		// Send full response to client (header and chunks of playload)
 		// @throw `EXC_SEND_ERROR`
 		void sendResponse();
-		// Get client socket fd
-		int getSocket() const;
 		// Read socket and fill requestBuffer by chunks until no more to read
 		// @throw `EXC_SOCKET_READ`
 		void readSocket();
@@ -124,22 +117,23 @@ class ClientHandler
 		// Returns the request if already fetched
 		// @throw `HttpRequest(const std::string*)` constructor exceptions
 		const HttpRequest& buildRequest();
-		// Build client response from `const HttpResponse&` template
-		const HttpResponse& buildResponse(const HttpResponse&);
-		// Get current response
+		// Build client response from `HttpResponse` template
+		const HttpResponse& buildResponse(HttpResponse);
+		// Flush client state
+		void flush();
 
 		// Getters
 		const HttpRequest& getRequest() const;
-		const HttpResponse& getResponse() const;
+		HttpResponse& getResponse();
 		const char *getClientIp() const;
 		bool isFetched() const;
 		bool isReading() const;
 		bool isSending() const;
 		bool isSent() const;
-		bool isDead() const;
 		bool hasResponse() const;
 		const ServerManager& getServer() const;
 		std::ifstream *getFileStream();
+		int getFd() const;
 
 		// Setters
 	

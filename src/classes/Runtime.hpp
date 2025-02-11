@@ -3,6 +3,7 @@
 
 # include "./ClientHandler.hpp"
 # include "./ServerManager.hpp"
+# include <csignal>
 
 class ClientHandler;
 
@@ -20,25 +21,34 @@ class Runtime {
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 
+		// Initializes server
+		void initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients);
 		// Properly handle exit
 		void handleExit_();
 		// Handle polling SyncPipe
-		void checkSyncPipe_();
+		void checkSyncPipeSocket_();
 		// Handle polling Servers
-		void checkServers_();
+		void checkServersSocket_();
 		// Handle polling Clients
-		void checkClients_();
+		void checkClientsSockets_();
 		// Return 0 on success
-		// Return -1 on fatal error: client is deleted
+		// Return -1 on handled error: client is deleted
 		// Return 1 on handled error: client should still receive a response
 		int handleClientPollin_(ClientHandler *, pollfd *);
 		// Return 0 on success
 		// Return 1 on success: client is deleted
-		// Return -1 on fatal error: client is deleted
+		// Return -1 on handled error: client is deleted
 		int handleClientPollout_(ClientHandler *, pollfd *);
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);
-		std::map<int, ServerManager *> servers_;
+		// Log request status
+		void handleRequest_(ClientHandler *);
+		// Log request status
+		void handleRequest_(ClientHandler *, const std::exception *);
+		// Log response status
+		void logResponse_(ClientHandler *);
+		std::vector<ServerManager> servers_;
+		std::map<int, ServerManager *> servers_map_;
 		std::vector<ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
 		int syncPipe_[2];

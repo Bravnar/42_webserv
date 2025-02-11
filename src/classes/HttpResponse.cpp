@@ -8,7 +8,7 @@ static std::string getHttpDate() {
     return std::string(buf);
 }
 
-static std::string getType(const std::string& url) {
+const std::string HttpResponse::getType(const std::string& url) {
     std::string contentType;
     if (url.find(".html\0") != std::string::npos) {
         contentType = "text/html";
@@ -38,7 +38,7 @@ static std::string getType(const std::string& url) {
     return contentType;
 }
 
-static std::string checkStatus(int status) {
+const std::string HttpResponse::checkStatus(int status) {
 	switch (status) {
 		case 100: return "Continue";
 		case 200: return "OK";
@@ -54,34 +54,49 @@ static std::string checkStatus(int status) {
 }
 
 HttpResponse::HttpResponse():
-	version_("HTTP/1.1") {
+	version_("HTTP/1.1"),
+	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONNECTION] = "close";
 }
 
 HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	version_("HTTP/1.1"),
 	status_(200),
-	status_msg_(checkStatus(status_)) {
-		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = DF_H_SERVER;
-		this->headers_["Content-Type"] = getType(httpRequest.getUrl());
+	status_msg_(checkStatus(status_)),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
+		this->url_ = &httpRequest.getUrl();
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
 }
 
-HttpResponse::HttpResponse(int errorPage):
+HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
 	version_("HTTP/1.1"),
 	status_(errorPage),
-	status_msg_(checkStatus(status_)) {
-		this->headers_["Date"] = getHttpDate();
-		this->headers_["Server"] = DF_H_SERVER;
-	(void)errorPage;
+	status_msg_(checkStatus(status_)),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
 }
 
 HttpResponse::HttpResponse(const HttpResponse& copy):
 	version_(copy.version_),
 	status_(copy.status_),
 	status_msg_(copy.status_msg_),
-	headers_(copy.headers_) {}
+	headers_(copy.headers_),
+	url_(copy.url_) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	if (this == &assign)
@@ -89,6 +104,7 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	this->status_ = assign.status_;
 	this->status_msg_ = assign.status_msg_;
 	this->headers_ = assign.headers_;
+	this->url_ = assign.url_;
 	return *this;
 }
 
@@ -110,3 +126,4 @@ const std::string& HttpResponse::getStatusMsg() const { return this->status_msg_
 std::map<std::string, std::string>& HttpResponse::getHeaders() { return this->headers_; }
 const std::string& HttpResponse::getVersion() const { return this->version_; }
 const std::string HttpResponse::getResLine() const { return "Response " + Convert::ToString(this->status_) + " " + this->status_msg_; }
+const std::string *HttpResponse::getUrl() const { return this->url_; }
