@@ -139,6 +139,27 @@ void Runtime::checkServers_() {
 	}
 }
 
+void Runtime::logRequest_(ClientHandler *client) {
+	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
+		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
+		<< " client " << client->getClientIp();
+	#if LOGGER_DEBUG > 0
+		stream << " (fd: " << client->getSocket() << ")";
+	#endif
+	stream << std::endl;
+}
+
+void Runtime::logRequest_(ClientHandler *client, const std::exception *e) {
+	std::string msg(e->what());
+	if (msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
+		client->buildResponse(HttpResponse(400));
+	else
+		client->buildResponse(HttpResponse(500));
+	#if LOGGER_DEBUG > 0
+		this->debug("client ") << client->getSocket() << ": " << e->what() << std::endl;
+	#endif
+}
+
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
 		if(!client->isReading()) client->setReading(true);
@@ -167,26 +188,31 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		#endif
 		try {
 			client->buildRequest();
-			std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
-				<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
-				<< " client " << client->getClientIp();
-			if (LOGGER_DEBUG)
-				stream << " (fd: " << client->getSocket() << ")";
-			stream << std::endl;
+			this->logRequest_(client);
 		} catch (const std::exception& e) {
-			std::string msg(e.what());
-			if (msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
-				client->buildResponse(HttpResponse(400));
-			else
-				client->buildResponse(HttpResponse(500));
-			#if LOGGER_DEBUG > 0
-				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
-			#endif
+			this->logRequest_(client, &e);
 			return 1;
 		}
 		socket->events = POLLOUT;
 	}
 	return 0;
+}
+
+void Runtime::logResponse_(ClientHandler *client) {
+	std::ostream *stream = 0;
+	if (client->getResponse().getStatus() < 300) { stream = &this->info(""); }
+	else if (client->getResponse().getStatus() < 400) { stream = &this->warning(""); }
+	else if (client->getResponse().getStatus() < 500) { stream = &this->error(""); }
+	else { stream = &this->fatal(""); }
+	*stream << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
+	if (!client->getRequest().getReqLine().empty())
+			*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
+	*stream << " client " << client->getClientIp();
+	#if LOGGER_DEBUG > 0
+		if (LOGGER_DEBUG)
+			*stream << " (fd: " << client->getSocket() << ")";
+	#endif
+	*stream << std::endl;
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
@@ -207,20 +233,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 		}
 		signal(SIGPIPE, SIG_DFL);
 		if (client->isSent()) {
-			std::ostream *stream = 0;
-			if (client->getResponse().getStatus() < 300) { stream = &this->info(""); }
-			else if (client->getResponse().getStatus() < 400) { stream = &this->warning(""); }
-			else if (client->getResponse().getStatus() < 500) { stream = &this->error(""); }
-			else { stream = &this->fatal(""); }
-			*stream << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
-			if (!client->getRequest().getReqLine().empty())
-					*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
-			*stream << " client " << client->getClientIp();
-			#if LOGGER_DEBUG > 0
-				if (LOGGER_DEBUG)
-					*stream << " (fd: " << client->getSocket() << ")";
-			#endif
-			*stream << std::endl;
+			this->logResponse_(client);
 			std::map<std::string, std::string>& headers = client->getResponse().getHeaders();
 			if (headers.find(H_CONNECTION) == headers.end() || headers[H_CONNECTION] != "keep-alive") {
 				delete client;
