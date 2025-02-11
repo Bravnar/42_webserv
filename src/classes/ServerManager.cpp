@@ -26,31 +26,18 @@ static sockaddr_in newAddr(int port, std::string interface) {
  * @return `1` if the server couldn't init
  */
 int ServerManager::init() {
-	this->status_.isHealthy = true;
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-	if (this->server_fd_ < 0) {
-		this->status_.isHealthy = false;
-		throw std::logic_error("server_fd_ socket: " + std::string(strerror(errno)));
-	}
+
+	if (this->server_fd_ < 0) { throw std::logic_error("server_fd_ socket: " + std::string(strerror(errno))); }
 	int opt = 1;
-	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-		this->status_.isHealthy = false;
-		throw std::logic_error("setsockopt: " + std::string(strerror(errno)));
-	}
-	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) {
-		this->status_.isHealthy = false;
-		throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno)));
-	}
-	if (listen(this->server_fd_, this->maxClients_)) {
-		this->status_.isHealthy = false;
-		throw std::logic_error("error on listen: " + std::string(strerror(errno)));
-	}
+	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) { throw std::logic_error("setsockopt: " + std::string(strerror(errno))); }
+	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) { throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno))); }
+	if (listen(this->server_fd_, this->maxClients_)) { throw std::logic_error("error on listen: " + std::string(strerror(errno))); }
 
 	this->socket_.fd = this->server_fd_;
 	this->socket_.events = POLLIN;
 	this->socket_.revents = 0;
 	this->info("Virtual host listening on: http://" + (this->config_.getHost() == "0.0.0.0" ? "127.0.0.1" : this->config_.getHost()) + ":" + std::string(Convert::ToString(this->config_.getPort()))) << std::endl;
-	this->status_.isRunning = true;
 	return 0;
 }
 
@@ -60,9 +47,7 @@ ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(config.getRoutes()),
 	server_fd_(-1),
-	maxClients_(maxClients) {
-		std::memset(&this->status_, 0, sizeof(t_status));
-}
+	maxClients_(maxClients) {}
 
 ServerManager::ServerManager(const ServerManager& copy):
 	config_(copy.config_),
@@ -71,9 +56,7 @@ ServerManager::ServerManager(const ServerManager& copy):
 	routeconfig_(copy.routeconfig_),
 	server_fd_(copy.server_fd_),
 	socket_(copy.socket_),
-	maxClients_(copy.maxClients_) {
-		std::memset(&this->status_, 0, sizeof(t_status));
-}
+	maxClients_(copy.maxClients_) {}
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
 	if (this == &assign)
@@ -87,14 +70,6 @@ ServerManager::~ServerManager() {
 	#endif
 	if (this->server_fd_ > 0)
 		close(this->server_fd_);
-}
-
-/**
- * isHealthy: Check if the server is healthy
- * @return Health status
- */
-bool ServerManager::isHealthy() const {
-	return this->status_.isHealthy;
 }
 
 /**
