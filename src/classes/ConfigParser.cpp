@@ -88,7 +88,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 
 		if (line == "server {") {
 			if (inServerBlock) throw std::runtime_error("Error: Indented server blocks are not allowed.") ;
-			std::cout << "IDENTIFIED SERVER BLOCK !" << std::endl ;
+			// std::cout << "IDENTIFIED SERVER BLOCK !" << std::endl ;
 			servers.push_back(ServerConfig()) ;
 			currentServer = &servers[servers.size() - 1] ;
 			inServerBlock = true ;
@@ -105,7 +105,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		if (line == "errors {") {
 			if (inErrorBlock) throw std::runtime_error("Error: Indented error blocks are not allowed.") ;
 			if (currentServer) {
-				std::cout << "IDENTIFIED ERROR LOCATION !" << std::endl ;
+				// std::cout << "IDENTIFIED ERROR LOCATION !" << std::endl ;
 				inErrorBlock = true ; 
 			}
 			continue ;
@@ -116,7 +116,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 			if (currentServer) {
 				RouteConfig route ;
 				route.setPath(trim(line.substr(9, line.size() - 10))) ;
-				std::cout << "IDENTIFIED LOCATION " << route.getPath() << " !"<< std::endl ;
+				// std::cout << "IDENTIFIED LOCATION " << route.getPath() << " !"<< std::endl ;
 				currentServer->addRoute(route) ;
 				inLocationBlock = true ;
 			}
