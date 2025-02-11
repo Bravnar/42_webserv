@@ -46,13 +46,6 @@ Runtime& Runtime::operator=(const Runtime& assign) {
 	return *this;
 }
 
-Runtime::~Runtime() {
-	#if LOGGER_DEBUG > 0
-		this->debug("deconstructor") << std::endl;
-	#endif
-	this->handleExit_();
-}
-
 void Runtime::runServers() {
 	if (this->servers_map_.empty()) {
 		this->error("No binded servers to run") << std::endl;
