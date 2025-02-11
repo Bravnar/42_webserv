@@ -21,11 +21,7 @@ static sockaddr_in newAddr(int port, std::string interface) {
 	return addrv4;
 }
 
-/**
- * init_: Initialize the server by binding it's address and setting internal variable
- * @return `1` if the server couldn't init
- */
-int ServerManager::init() {
+void ServerManager::init() {
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (this->server_fd_ < 0) { throw std::logic_error("server_fd_ socket: " + std::string(strerror(errno))); }
@@ -38,7 +34,6 @@ int ServerManager::init() {
 	this->socket_.events = POLLIN;
 	this->socket_.revents = 0;
 	this->info("Virtual host listening on: http://" + (this->config_.getHost() == "0.0.0.0" ? "127.0.0.1" : this->config_.getHost()) + ":" + std::string(Convert::ToString(this->config_.getPort()))) << std::endl;
-	return 0;
 }
 
 ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
@@ -72,26 +67,6 @@ ServerManager::~ServerManager() {
 		close(this->server_fd_);
 }
 
-/**
- * getSockets: Get server sockets, including `server socket` at position `0`
- * @return A `<pollfd>` socket vector reference
- */
-const pollfd& ServerManager::getSocket() const {
-	return this->socket_;
-}
-
-/**
- * getConfig: Get the current server configuration
- * @return A `ServerConfig` const reference
- */
-const ServerConfig& ServerManager::getConfig() const {
-	return this->config_;
-}
-
-/**
- * getRouteConfig: Get the current server routing configuration
- * @return A `std::vector<RouteConfig>` const reference
- */
-const std::vector<RouteConfig>& ServerManager::getRouteConfig() const {
-	return this->routeconfig_;
-}
+const pollfd& ServerManager::getSocket() const { return this->socket_; }
+const ServerConfig& ServerManager::getConfig() const { return this->config_; }
+const std::vector<RouteConfig>& ServerManager::getRouteConfig() const { return this->routeconfig_; }

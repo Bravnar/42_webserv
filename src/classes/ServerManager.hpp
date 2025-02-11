@@ -50,7 +50,7 @@ class ServerManager {
 		// Member functions
 
 		// Init server binding
-		int init();
+		void init();
 
 		// Getters
 	
