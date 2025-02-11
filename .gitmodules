@@ -1,0 +1,3 @@
+[submodule "www/ddance.party"]
+	path = www/ddance.party
+	url = git@github.com:ezshine/AwesomeSites-dddance.party.git
