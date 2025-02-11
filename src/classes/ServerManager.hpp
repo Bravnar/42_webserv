@@ -17,37 +17,43 @@
 # define DF_INTERFACE "0.0.0.0"
 # define DF_MAX_BUFFER 8192
 
-typedef struct s_status {
-	bool isHealthy;
-	bool isRunning;
-} t_status;
-
 class ServerManager {
 	private:
+		// Forbidden canonical
+		// (A server is unique obviously)
+
+		ServerManager& operator=(const ServerManager&);
+
+		// Internal logs
+
 		std::ostream& fatal(const std::string&);
 		std::ostream& error(const std::string&);
 		std::ostream& warning(const std::string&);
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
+
 		const ServerConfig& config_;
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
 		const std::vector<RouteConfig>& routeconfig_;
-		t_status status_;
 		int server_fd_;
 		pollfd socket_;
+		size_t maxClients_;
 
 	public:
 		// Canonical
 
-		ServerManager(const ServerConfig&);
+		ServerManager(const ServerConfig&, size_t maxClients);
 		ServerManager(const ServerManager&);
-		ServerManager& operator=(const ServerManager&);
 		~ServerManager();
+
 		// Member functions
 
-		int init();
-		bool isHealthy() const;
+		// Init server binding
+		void init();
+
+		// Getters
+	
 		const pollfd& getSocket() const;
 		const ServerConfig& getConfig() const;
 		const std::vector<RouteConfig>& getRouteConfig() const;

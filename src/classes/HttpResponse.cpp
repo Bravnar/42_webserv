@@ -8,7 +8,7 @@ static std::string getHttpDate() {
     return std::string(buf);
 }
 
-static std::string getType(const std::string& url) {
+const std::string HttpResponse::getType(const std::string& url) {
     std::string contentType;
     if (url.find(".html\0") != std::string::npos) {
         contentType = "text/html";
@@ -30,97 +30,100 @@ static std::string getType(const std::string& url) {
         contentType = "text/plain";
     } else if (url.find(".svg\0") != std::string::npos) {
 		contentType = "image/svg+xml";
+	} else if (url.find(".ico\0") != std::string::npos) {
+		contentType = "image/x-icon";
 	} else {
         contentType = "application/octet-stream";
     }
     return contentType;
 }
 
-// TODO: use default errors when possible
-HttpResponse::HttpResponse(int status): version_("HTTP/1.1"), status_(status), body_(0) {
+const std::string HttpResponse::checkStatus(int status) {
 	switch (status) {
-		case 200:
-			this->status_msg_ = "OK";
-			break;
-		case 400:
-			this->status_msg_ = "Bad Request";
-			break;
+		case 100: return "Continue";
+		case 200: return "OK";
+		case 201: return "Created";
+		case 400: return "Bad Request";
+		case 405: return "Method Not Allowed";
+		case 408: return "Request Timeout";
+		case 404: return "Not Found";
+		case 500: return "Internal Server Error";
+		case 503: return "Service Unavailable";
+		default: return "Unknown";
 	}
-	this->headers_.insert(std::make_pair("Date", getHttpDate()));
-	this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
 }
 
-HttpResponse::HttpResponse(int status, const char *body, size_t bodySize, const std::string& url): version_("HTTP/1.1"), status_(status), body_(reinterpret_cast<const unsigned char *>(body)) {
-	switch (status) {
-		case 200:
-			this->status_msg_ = "OK";
-			break;
-		case 400:
-			this->status_msg_ = "Bad Request";
-			break;
-		case 404:
-			this->status_msg_ = "Not Found";
-	}
-	this->headers_.insert(std::make_pair("Date", getHttpDate()));
-	this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-	this->headers_.insert(std::make_pair("Content-Length", Convert::ToString(bodySize)));
-	this->headers_.insert(std::make_pair("Content-Type", getType(url)));
+HttpResponse::HttpResponse():
+	version_("HTTP/1.1"),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONNECTION] = "close";
 }
 
-HttpResponse::HttpResponse(int status, const unsigned char *body, size_t bodySize, const std::string& url): version_("HTTP/1.1"), status_(status), body_(body) {
-	switch (status) {
-		case 200:
-			this->status_msg_ = "OK";
-			break;
-		case 400:
-			this->status_msg_ = "Bad Request";
-			break;
-		case 404:
-			this->status_msg_ = "Not Found";
-	}
-	this->headers_.insert(std::make_pair("Date", getHttpDate()));
-	this->headers_.insert(std::make_pair("Server", "SIR Webserver/1.0"));
-	this->headers_.insert(std::make_pair("Content-Length", Convert::ToString(bodySize)));
-	this->headers_.insert(std::make_pair("Content-Type", getType(url)));
+HttpResponse::HttpResponse(const HttpRequest& httpRequest):
+	version_("HTTP/1.1"),
+	status_(200),
+	status_msg_(checkStatus(status_)),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
+		this->url_ = &httpRequest.getUrl();
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
 }
 
-HttpResponse::HttpResponse(const HttpResponse& copy): version_(copy.version_), status_(copy.status_), status_msg_(copy.status_msg_), headers_(copy.headers_), body_(copy.body_) {
+HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
+	version_("HTTP/1.1"),
+	status_(errorPage),
+	status_msg_(checkStatus(status_)),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
 }
+
+HttpResponse::HttpResponse(const HttpResponse& copy):
+	version_(copy.version_),
+	status_(copy.status_),
+	status_msg_(copy.status_msg_),
+	headers_(copy.headers_),
+	url_(copy.url_) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& assign) {
 	if (this == &assign)
 		return *this;
-	this->version_ = assign.version_;
 	this->status_ = assign.status_;
 	this->status_msg_ = assign.status_msg_;
 	this->headers_ = assign.headers_;
-	this->body_ = assign.body_;
+	this->url_ = assign.url_;
 	return *this;
 }
 
-HttpResponse::~HttpResponse() {
-
-}
+HttpResponse::~HttpResponse() {}
 
 const std::string HttpResponse::str() const {
-	std::string resp;
 	std::ostringstream oss;
 
 	oss	<< this->version_ << " " << this->status_ << " " << this->status_msg_ << "\r\n";
 	for(std::map<std::string, std::string>::const_iterator it = this->headers_.begin(); it != this->headers_.end(); it++) {
 		oss << it->first << ": " << it->second << "\r\n";
 	}
-	oss << "\r\n";
-	resp = oss.str();
-	if (this->body_)
-		resp.append(reinterpret_cast<const char*>(this->body_), Convert::ToInt(this->headers_.at("Content-Length")));
-	return resp;
+	return oss.str();
 }
 
-#include <unistd.h>
-
-void HttpResponse::sendResp(int socket_fd) const {
-	if (send(socket_fd, this->str().data(), this->str().size(), 0) < 0) {
-		Logger::fatal("Error on sending data") << std::endl;
-	}
-}
+int HttpResponse::getStatus() const { return this->status_; }
+void HttpResponse::setStatus(int status) { this->status_ = status; this->status_msg_ = checkStatus(status); }
+const std::string& HttpResponse::getStatusMsg() const { return this->status_msg_; }
+std::map<std::string, std::string>& HttpResponse::getHeaders() { return this->headers_; }
+const std::string& HttpResponse::getVersion() const { return this->version_; }
+const std::string HttpResponse::getResLine() const { return "Response " + Convert::ToString(this->status_) + " " + this->status_msg_; }
+const std::string *HttpResponse::getUrl() const { return this->url_; }

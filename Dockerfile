@@ -24,8 +24,6 @@ RUN apk update \
 
 COPY --from=builder /usr/webserv/webserv /usr/webserv/webserv
 
-COPY ./www /usr/webserv/www
-
 COPY ./config_files /usr/webserv/config_files
 
 WORKDIR /usr/webserv/

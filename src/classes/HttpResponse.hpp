@@ -7,28 +7,49 @@
 # include "../utils/Convert.hpp"
 # include "../utils/Logger.hpp"
 # include <sys/socket.h>
+# include "./HttpRequest.hpp"
+# include "./HttpInclude.hpp"
+
+# define DF_H_SERVER "WebservSIR/1.0"
+
+# define EXC_FILE_NOT_FOUND(file) file + " not found"
+# define EXC_SEND_ERROR "Error on sending data to socket"
 
 class HttpResponse {
 	private:
-		std::string version_;
+		const std::string version_;
 		int status_;
 		std::string status_msg_;
 		std::map<std::string, std::string> headers_;
-		const unsigned char *body_;
+		const std::string *url_;
 	public:
 		// Canonical
 
-		HttpResponse(int status);
-		HttpResponse(int status, const char *body, size_t bodySize, const std::string& url);
-		HttpResponse(int status, const unsigned char *body, size_t bodySize, const std::string& url);
+		HttpResponse();
+		HttpResponse(const HttpRequest& httpRequest);
+		HttpResponse(const HttpRequest& httpRequest, int errorPage);
 		HttpResponse(const HttpResponse&);
 		HttpResponse& operator=(const HttpResponse&);
 		~HttpResponse();
 
 		// Member function
 
+		// Returns a new string of header
 		const std::string str() const;
-		void sendResp(int socket_fd) const;
+		// Returns a content type of an url
+		static const std::string getType(const std::string&); 
+		// Returns a the status message of specific code
+		static const std::string checkStatus(int);
+
+		// Getters
+	
+		int getStatus() const;
+		void setStatus(int status);
+		const std::string& getStatusMsg() const;
+		std::map<std::string, std::string>& getHeaders();
+		const std::string& getVersion() const;
+		const std::string getResLine() const;
+		const std::string *getUrl() const;
 
 };
 
