@@ -14,7 +14,7 @@ class ServerConfig
 		int							_port;
 		std::vector<std::string>	_serverNames ;
 		std::map<int, std::string>	_errorPages ;
-		int							_clientBodyLimit ;
+		unsigned long long			_clientBodyLimit ;
 		std::string					_defaultFile ;
 		std::vector<RouteConfig>	_routes ;
 

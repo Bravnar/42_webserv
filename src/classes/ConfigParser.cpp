@@ -26,6 +26,7 @@ void	ConfigParser::_initMaps( void ) {
 	_serverKeyHandlers["errors"] = setError ;
 	_serverKeyHandlers["client_body_limit"] = setClientBodyLimit ;
 	_serverKeyHandlers["default_file"] = setDefaultFile ;
+	//_serverKeyHandlers["root"] = setServerRoot ;
 
 	_routeKeyHandlers["root"] = setRoot ;
 	_routeKeyHandlers["methods"] = setMethods ;
@@ -115,6 +116,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 			if (inLocationBlock) throw std::runtime_error("Error: Indented location blocks are not allowed.") ;
 			if (currentServer) {
 				RouteConfig route ;
+				// route.setRoot(currentServer.getRoot())
 				route.setPath(trim(line.substr(9, line.size() - 10))) ;
 				// std::cout << "IDENTIFIED LOCATION " << route.getPath() << " !"<< std::endl ;
 				currentServer->addRoute(route) ;
