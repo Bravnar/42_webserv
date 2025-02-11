@@ -157,10 +157,6 @@ void ClientHandler::sendResponse() {
 	return;
 }
 
-int ClientHandler::getSocket() const {
-	return this->socket_fd_;
-}
-
 const HttpRequest& ClientHandler::buildRequest() {
 	if (this->state_.isFetched)
 		return this->request_;
@@ -268,3 +264,4 @@ const ServerManager& ClientHandler::getServer() const { return this->server_; }
 bool ClientHandler::isSent() const { return this->state_.isSent; }
 bool ClientHandler::hasResponse() const { return this->state_.hasResponse; }
 std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }
+int ClientHandler::getFd() const { return this->socket_fd_; }

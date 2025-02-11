@@ -110,8 +110,6 @@ class ClientHandler
 		// Send full response to client (header and chunks of playload)
 		// @throw `EXC_SEND_ERROR`
 		void sendResponse();
-		// Get client socket fd
-		int getSocket() const;
 		// Read socket and fill requestBuffer by chunks until no more to read
 		// @throw `EXC_SOCKET_READ`
 		void readSocket();
@@ -135,6 +133,7 @@ class ClientHandler
 		bool hasResponse() const;
 		const ServerManager& getServer() const;
 		std::ifstream *getFileStream();
+		int getFd() const;
 
 		// Setters
 	
