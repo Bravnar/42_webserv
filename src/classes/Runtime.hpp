@@ -21,14 +21,16 @@ class Runtime {
 		std::ostream& info(const std::string&);
 		std::ostream& debug(const std::string&);
 
+		// Initializes server
+		void initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients);
 		// Properly handle exit
 		void handleExit_();
 		// Handle polling SyncPipe
-		void checkSyncPipe_();
+		void checkSyncPipeSocket_();
 		// Handle polling Servers
-		void checkServers_();
+		void checkServersSocket_();
 		// Handle polling Clients
-		void checkClients_();
+		void checkClientsSockets_();
 		// Return 0 on success
 		// Return -1 on handled error: client is deleted
 		// Return 1 on handled error: client should still receive a response

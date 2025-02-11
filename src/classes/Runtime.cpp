@@ -15,24 +15,29 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 	this->syncPoll_.fd = this->syncPipe_[0];
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
-	{
-		for(std::vector<ServerConfig>::const_iterator it = configs.begin(); it != configs.end(); it++) {
-			this->servers_.push_back(ServerManager(*it, maxClients));
-		}
-		for(std::vector<ServerManager>::iterator it = this->servers_.begin(); it != this->servers_.end(); it++) {
-			try {
-				it->init();
-				this->servers_map_.insert(std::make_pair(it->getSocket().fd, &*it));
-				this->sockets_.push_back(it->getSocket());
-			} catch (const std::exception& e) {
-				this->fatal("'") << it->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
-			}
+	this->initializeServers_(configs, maxClients);
+}
+
+void Runtime::initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients) {
+	for(std::vector<ServerConfig>::const_iterator config = configs.begin(); config != configs.end(); config++) {
+		this->servers_.push_back(ServerManager(*config, maxClients));
+	}
+	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
+		try {
+			server->init();
+			this->servers_map_.insert(std::make_pair(server->getSocket().fd, &*server));
+			this->sockets_.push_back(server->getSocket());
+		} catch (const std::exception& e) {
+			this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 		}
 	}
 }
 
-Runtime::Runtime(const Runtime& copy){
-	(void)copy;
+Runtime::~Runtime() {
+    #if LOGGER_DEBUG > 0
+        debug("deconstructor") << std::endl;
+    #endif
+    handleExit_();
 }
 
 Runtime& Runtime::operator=(const Runtime& assign) {
@@ -53,6 +58,7 @@ void Runtime::runServers() {
 		this->error("No binded servers to run") << std::endl;
 		return;
 	}
+
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
@@ -64,9 +70,9 @@ void Runtime::runServers() {
 				break;
 			}
 		}
-		this->checkSyncPipe_();
-		this->checkServers_();
-		this->checkClients_();
+		this->checkSyncPipeSocket_();
+		this->checkServersSocket_();
+		this->checkClientsSockets_();
 	}
 	return;
 }
@@ -91,7 +97,7 @@ void Runtime::handleExit_() {
 	this->sockets_.clear();
 }
 
-void Runtime::checkSyncPipe_() {
+void Runtime::checkSyncPipeSocket_() {
 	if (this->sockets_[0].revents & POLLIN) {
 		char flush;
 		read (this->syncPipe_[0], &flush, 1);
@@ -99,7 +105,7 @@ void Runtime::checkSyncPipe_() {
 	}
 }
 
-void Runtime::checkClients_() {
+void Runtime::checkClientsSockets_() {
 	for(size_t i = 0; i < this->clients_.size(); i++) {
 		ClientHandler *client = this->clients_[i];
 		pollfd *socket = this->getSocket_(client->getFd());
@@ -116,7 +122,7 @@ void Runtime::checkClients_() {
 	}
 }
 
-void Runtime::checkServers_() {
+void Runtime::checkServersSocket_() {
 	int socket_fd = -1;
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
