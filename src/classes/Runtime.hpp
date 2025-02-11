@@ -40,9 +40,9 @@ class Runtime {
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);
 		// Log request status
-		void logRequest_(ClientHandler *);
+		void handleRequest_(ClientHandler *);
 		// Log request status
-		void logRequest_(ClientHandler *, const std::exception *);
+		void handleRequest_(ClientHandler *, const std::exception *);
 		// Log response status
 		void logResponse_(ClientHandler *);
 		std::map<int, ServerManager *> servers_;

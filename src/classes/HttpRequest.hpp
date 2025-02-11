@@ -31,8 +31,8 @@ class HttpRequest {
 	public:
 		// canonical
 
-		// @throws `EXC_INVALID_RL`
 		HttpRequest();
+		// @throws `EXC_INVALID_RL`
 		HttpRequest(const std::string *);
 		HttpRequest(const HttpRequest&);
 		HttpRequest& operator=(const HttpRequest&);

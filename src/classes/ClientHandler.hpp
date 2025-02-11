@@ -119,8 +119,8 @@ class ClientHandler
 		// Returns the request if already fetched
 		// @throw `HttpRequest(const std::string*)` constructor exceptions
 		const HttpRequest& buildRequest();
-		// Build client response from `const HttpResponse&` template
-		const HttpResponse& buildResponse(const HttpResponse&);
+		// Build client response from `HttpResponse` template
+		const HttpResponse& buildResponse(HttpResponse);
 		// Flush client state
 		void flush();
 

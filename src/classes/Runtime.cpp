@@ -139,7 +139,7 @@ void Runtime::checkServers_() {
 	}
 }
 
-void Runtime::logRequest_(ClientHandler *client) {
+void Runtime::handleRequest_(ClientHandler *client) {
 	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
 		<< " client " << client->getClientIp();
@@ -149,12 +149,13 @@ void Runtime::logRequest_(ClientHandler *client) {
 	stream << std::endl;
 }
 
-void Runtime::logRequest_(ClientHandler *client, const std::exception *e) {
+void Runtime::handleRequest_(ClientHandler *client, const std::exception *e) {
 	std::string msg(e->what());
-	if (msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
-		client->buildResponse(HttpResponse(400));
-	else
-		client->buildResponse(HttpResponse(500));
+	if (msg == EXC_INVALID_RL || msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
+		client->buildResponse(HttpResponse(client->getRequest(), 400));
+	else {
+		client->buildResponse(HttpResponse(client->getRequest(), 500));
+	}
 	#if LOGGER_DEBUG > 0
 		this->debug("client ") << client->getSocket() << ": " << e->what() << std::endl;
 	#endif
@@ -176,24 +177,24 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
-			client->buildResponse(HttpResponse(500));
+			client->buildResponse(HttpResponse(client->getRequest(), 500));
 			#if LOGGER_DEBUG > 0
 				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
 			#endif
 			return 1;
 		}
 	} else if (client->isReading()) {
+		socket->events = POLLOUT;
 		#if LOGGER_DEBUG > 0
 			this->debug("pollin end client (fd: ") << client->getSocket() << ")" << std::endl;
 		#endif
 		try {
 			client->buildRequest();
-			this->logRequest_(client);
+			this->handleRequest_(client);
 		} catch (const std::exception& e) {
-			this->logRequest_(client, &e);
+			this->handleRequest_(client, &e);
 			return 1;
 		}
-		socket->events = POLLOUT;
 	}
 	return 0;
 }

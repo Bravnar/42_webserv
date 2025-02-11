@@ -8,7 +8,7 @@ static std::string getHttpDate() {
     return std::string(buf);
 }
 
-static std::string getType(const std::string& url) {
+const std::string HttpResponse::getType(const std::string& url) {
     std::string contentType;
     if (url.find(".html\0") != std::string::npos) {
         contentType = "text/html";
@@ -38,14 +38,13 @@ static std::string getType(const std::string& url) {
     return contentType;
 }
 
-static std::string checkStatus(int status) {
+const std::string HttpResponse::checkStatus(int status) {
 	switch (status) {
 		case 100: return "Continue";
 		case 200: return "OK";
 		case 201: return "Created";
 		case 400: return "Bad Request";
 		case 405: return "Method Not Allowed";
-		case 406: return "Not Acceptable";
 		case 408: return "Request Timeout";
 		case 404: return "Not Found";
 		case 500: return "Internal Server Error";
@@ -71,32 +70,25 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
 		this->url_ = &httpRequest.getUrl();
-		if (httpRequest.getHeaders().find(H_CONNECTION) != httpRequest.getHeaders().end())
-			this->headers_[H_CONNECTION] = httpRequest.getHeaders().at(H_CONNECTION);
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
 		else
 			this->headers_[H_CONNECTION] = "close";
-
-		if (httpRequest.getHeaders().find(H_ACCEPT) != httpRequest.getHeaders().end()) {
-			const std::string& accept = httpRequest.getHeaders().at(H_ACCEPT);
-			const std::string& type = this->headers_[H_CONTENT_TYPE];
-			if(accept.find("*/*") == std::string::npos
-				&& (type.find('/') != std::string::npos
-					&& accept.find(type.substr(0, type.find('/') + 1) + "*") == std::string::npos)
-				&& accept.find(type) == std::string::npos) {
-					*this = HttpResponse(406);
-			}
-		}
 }
 
-HttpResponse::HttpResponse(int errorPage):
+HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
 	version_("HTTP/1.1"),
 	status_(errorPage),
 	status_msg_(checkStatus(status_)),
 	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
-		this->headers_[H_CONNECTION] = "close";
-	(void)errorPage;
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
 }
 
 HttpResponse::HttpResponse(const HttpResponse& copy):
