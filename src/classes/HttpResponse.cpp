@@ -1,41 +1,34 @@
 #include "./HttpResponse.hpp"
 
 static std::string getHttpDate() {
-    std::time_t now = std::time(0);
-    std::tm *tm = std::gmtime(&now);
-    char buf[30];
-    std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
-    return std::string(buf);
+	std::time_t now = std::time(0);
+	std::tm *tm = std::gmtime(&now);
+	char buf[30];
+	std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
+	return std::string(buf);
+}
+
+static bool endsWith(const std::string& url, const std::string& end) {
+	if (url.length() >= end.length()) {
+		return (!url.compare(url.length() - end.length(), end.length(), end));
+	}
+	return false;
 }
 
 const std::string HttpResponse::getType(const std::string& url) {
-    std::string contentType;
-    if (url.find(".html\0") != std::string::npos) {
-        contentType = "text/html";
-    } else if (url.find(".css\0") != std::string::npos) {
-        contentType = "text/css";
-    } else if (url.find(".js\0") != std::string::npos) {
-        contentType = "application/javascript";
-    } else if (url.find(".json\0") != std::string::npos) {
-        contentType = "application/json";
-    } else if (url.find(".xml\0") != std::string::npos) {
-        contentType = "application/xml";
-    } else if (url.find(".jpg\0") != std::string::npos || url.find(".jpeg\0") != std::string::npos) {
-        contentType = "image/jpeg";
-    } else if (url.find(".png\0") != std::string::npos) {
-        contentType = "image/png";
-    } else if (url.find(".gif\0") != std::string::npos) {
-        contentType = "image/gif";
-    } else if (url.find(".txt\0") != std::string::npos) {
-        contentType = "text/plain";
-    } else if (url.find(".svg\0") != std::string::npos) {
-		contentType = "image/svg+xml";
-	} else if (url.find(".ico\0") != std::string::npos) {
-		contentType = "image/x-icon";
-	} else {
-        contentType = "application/octet-stream";
-    }
-    return contentType;
+	if (endsWith(url, ".html")) { return "text/html"; }
+	else if (endsWith(url, ".css")) { return "text/css"; }
+	else if (endsWith(url, ".js")) { return "application/javascript"; }
+	else if (endsWith(url, ".json")) { return "application/json"; }
+	else if (endsWith(url, ".xml")) { return "application/xml"; }
+	else if (endsWith(url, ".jpg"))  { return "image/jpeg"; }
+	else if (endsWith(url, ".jpeg")) { return "image/jpeg"; }
+	else if (endsWith(url, ".png")) { return "image/png"; }
+	else if (endsWith(url, ".gif")) { return "image/gif"; }
+	else if (endsWith(url, ".txt")) { return "text/plain"; }
+	else if (endsWith(url, ".svg")) { return "image/svg+xml"; }
+	else if (endsWith(url, ".ico")) { return "image/x-icon"; }
+	else { return("application/octet-stream"); }
 }
 
 const std::string HttpResponse::checkStatus(int status) {
