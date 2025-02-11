@@ -141,20 +141,17 @@ void Runtime::checkServers_() {
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
+		if(!client->isReading()) client->setReading(true);
 		#if LOGGER_DEBUG > 0
 			this->debug("pollin client (fd: ") << client->getSocket() << ")" << std::endl;
 		#endif
 		if (client->isFetched()) {
-			std::ostream& stream = this->warning("throwing sticky client");
 			#if LOGGER_DEBUG > 0
-				stream << " (fd: " << client->getSocket() << ")";
+				this->debug("throwing sticky client") << " (fd: " << client->getSocket() << ")" << std::endl;
 			#endif
-			stream << std::endl;
 			delete client;
 			return -1;
 		}
-		client->setFetched(false);
-		if(!client->isReading()) client->setReading(true);
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
@@ -163,11 +160,6 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 				this->debug("client ") << client->getSocket() << ": " << e.what() << std::endl;
 			#endif
 			return 1;
-		}
-		if (client->isDead()) {
-			this->fatal("throwing client ") << client->getClientIp() << " (fd: " << client->getSocket() << ")" << std::endl;
-			delete client;
-			return -1;
 		}
 	} else if (client->isReading()) {
 		#if LOGGER_DEBUG > 0

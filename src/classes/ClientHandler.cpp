@@ -244,6 +244,5 @@ void ClientHandler::setReading(bool value) { this->state_.isReading = value; }
 bool ClientHandler::isSending() const { return this->state_.isSending; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
 bool ClientHandler::isSent() const { return this->state_.isSent; }
-bool ClientHandler::isDead() const { return this->state_.isDead; }
 bool ClientHandler::hasResponse() const { return this->state_.hasResponse; }
 std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }
