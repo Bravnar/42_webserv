@@ -45,7 +45,8 @@ class Runtime {
 		void handleRequest_(ClientHandler *, const std::exception *);
 		// Log response status
 		void logResponse_(ClientHandler *);
-		std::map<int, ServerManager *> servers_;
+		std::vector<ServerManager> servers_;
+		std::map<int, ServerManager *> servers_map_;
 		std::vector<ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
 		int syncPipe_[2];

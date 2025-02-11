@@ -65,10 +65,12 @@ ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
 }
 
 ServerManager::ServerManager(const ServerManager& copy):
-	config_(copy.config_), addrv4_(copy.addrv4_),
+	config_(copy.config_),
+	addrv4_(copy.addrv4_),
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(copy.routeconfig_),
-	server_fd_(-1),
+	server_fd_(copy.server_fd_),
+	socket_(copy.socket_),
 	maxClients_(copy.maxClients_) {
 		std::memset(&this->status_, 0, sizeof(t_status));
 }
@@ -83,7 +85,8 @@ ServerManager::~ServerManager() {
 	#if LOGGER_DEBUG > 0
 		this->debug("ServerManager deconstructor") << std::endl;
 	#endif
-	close(this->server_fd_);
+	if (this->server_fd_ > 0)
+		close(this->server_fd_);
 }
 
 /**

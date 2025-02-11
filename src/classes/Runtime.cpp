@@ -17,20 +17,16 @@ Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
 	{
-		std::vector<ServerManager *> vservers;
 		for(std::vector<ServerConfig>::const_iterator it = configs.begin(); it != configs.end(); it++) {
-			vservers.push_back(new ServerManager(*it, maxClients));
+			this->servers_.push_back(ServerManager(*it, maxClients));
 		}
-		for(std::vector<ServerManager *>::iterator it = vservers.begin(); it != vservers.end(); it++) {
-			ServerManager *srv;
-			srv = *it;
+		for(std::vector<ServerManager>::iterator it = this->servers_.begin(); it != this->servers_.end(); it++) {
 			try {
-				srv->init();
-				this->servers_[srv->getSocket().fd] =  srv;
-				this->sockets_.push_back(srv->getSocket());
+				it->init();
+				this->servers_map_.insert(std::make_pair(it->getSocket().fd, &*it));
+				this->sockets_.push_back(it->getSocket());
 			} catch (const std::exception& e) {
-				this->fatal("'") << srv->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
-				delete *it;
+				this->fatal("'") << it->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 			}
 		}
 	}
@@ -54,7 +50,7 @@ Runtime::~Runtime() {
 }
 
 void Runtime::runServers() {
-	if (this->servers_.empty()) {
+	if (this->servers_map_.empty()) {
 		this->error("No binded servers to run") << std::endl;
 		return;
 	}
@@ -86,10 +82,8 @@ void Runtime::handleExit_() {
 		delete this->clients_[0];
 	}
 	this->clients_.clear();
-	for(std::map<int, ServerManager *>::iterator it = this->servers_.begin(); it != this->servers_.end(); it++) {
-		delete it->second;
-	}
 	this->servers_.clear();
+	this->servers_map_.clear();
 	for(std::vector<pollfd>::iterator it = this->sockets_.begin(); it != this->sockets_.end(); it++) {
 		close(it->fd);
 	}
@@ -128,14 +122,14 @@ void Runtime::checkServers_() {
 	sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
 	// starting at idx 1 since idx 0 is reserved to syncPipe
-	for (size_t i = 1; i < this->servers_.size() + 1; i++) {
+	for (size_t i = 1; i < this->servers_map_.size() + 1; i++) {
 		if (this->sockets_[i].revents & POLLIN) {
 			client_socket = accept(this->sockets_[i].fd, (sockaddr *)&client_addr, &client_len);
 			if (client_socket < 0) {
 				this->error("error on request accept(): ") << strerror(errno) << std::endl;
 				continue;
 			}
-			this->clients_.push_back(new ClientHandler(*this, *this->servers_[this->sockets_[i].fd], client_socket, client_addr, client_len));
+			this->clients_.push_back(new ClientHandler(*this, *this->servers_map_[this->sockets_[i].fd], client_socket, client_addr, client_len));
 		}
 	}
 }

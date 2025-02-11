@@ -27,7 +27,6 @@ class ServerManager {
 		// Forbidden canonical
 		// (A server is unique obviously)
 
-		ServerManager(const ServerManager&);
 		ServerManager& operator=(const ServerManager&);
 
 		// Internal logs
@@ -51,6 +50,7 @@ class ServerManager {
 		// Canonical
 
 		ServerManager(const ServerConfig&, size_t maxClients);
+		ServerManager(const ServerManager&);
 		~ServerManager();
 
 		// Member functions
