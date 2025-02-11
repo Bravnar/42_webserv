@@ -69,6 +69,12 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 		#endif
 		throw std::runtime_error(EXC_INVALID_RL);
 	}
+	#if LOGGER_DEBUG < 0
+		Logger::debug("removing query from url") << std::endl;
+	#endif
+	if (this->url_.find_first_of('?', 0) != std::string::npos) {
+		this->url_ = this->url_.substr(0, this->url_.find_first_of('?', 0));
+	}
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
 }
 
