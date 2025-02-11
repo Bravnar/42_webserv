@@ -41,7 +41,6 @@ int ServerManager::init() {
 		this->status_.isHealthy = false;
 		throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno)));
 	}
-	// TODO: define connections from config
 	if (listen(this->server_fd_, this->maxClients_)) {
 		this->status_.isHealthy = false;
 		throw std::logic_error("error on listen: " + std::string(strerror(errno)));
