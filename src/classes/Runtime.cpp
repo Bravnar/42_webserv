@@ -94,6 +94,7 @@ void Runtime::handleExit_() {
 		close(it->fd);
 	}
 	close(this->syncPipe_[1]);
+	close(this->syncPipe_[0]);
 	this->sockets_.clear();
 }
 
