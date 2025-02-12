@@ -8,15 +8,13 @@
 class RouteConfig
 {
 	private:
-		std::string						_path ;
-		std::vector<std::string>		_methods ;
-		std::string						_root ;
-		bool							_directoryListing ; // yes/no
-		// std::string						_defaultFile ;
-		std::string						_cgiPath ;
-		std::string						_redirect ; 
+		std::string						_path ; //from location line
+		std::string						_locationRoot ; //from root
+		std::vector<std::string>		_methods ; // 
+		bool							_directoryListing ; //on/off
 		bool							_acceptUploads ; // yes/no
 		std::string						_uploadPath ;
+		std::string						_finalPath ;
 
 	public:
 		RouteConfig();
@@ -25,24 +23,20 @@ class RouteConfig
 		~RouteConfig();
 
 		void							setPath( const std::string &path ) ;
+		void							setLocationRoot( const std::string &root ) ;
 		void							addMethod( const std::string &path ) ;
-		void							setRoot( const std::string &root ) ;
 		void							setDirectoryListing( bool io ) ;
-		// void							setDefaultFile( const std::string &file ) ;
-		void							setCgiPath( const std::string &cgiPath ) ;
-		void							setRedirect( const std::string &path ) ;
 		void							setAcceptUploads( bool io ) ;
 		void							setUploadPath( const std::string &path ) ;
+		void							setFinalPath( const std::string &path ) ;
 
 		const std::string				&getPath( ) const ;
+		const std::string				&getLocationRoot( ) const ;
 		const std::vector<std::string>	&getMethods( ) const ;
-		const std::string				&getRoot( ) const ;
 		bool							isDirectoryListingEnabled( ) const ;
-		// const std::string				&getDefaultFile( ) const ;
-		const std::string				&getCgiPath( ) const ;
-		const std::string				&getRedirect( ) const ;
 		bool							isUploadAccepted( ) const ;
-		const std::string				&getUploadPath( ) const ;	
+		const std::string				&getUploadPath( ) const ;
+		const std::string				&getFinalPath( ) const ;
 };
 
 #endif
