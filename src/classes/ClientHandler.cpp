@@ -150,6 +150,10 @@ const HttpRequest& ClientHandler::buildRequest() {
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
+	if (this->request_.getUrl().at(this->request_.getUrl().size() - 1) == '/')
+		this->request_.setFinalUrl(this->request_.getUrl() + this->server_.getConfig().getIndex());
+	else
+		this->request_.setFinalUrl(this->request_.getUrl());
 	return this->request_;
 }
 
@@ -159,7 +163,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
 	
 	// Open file
-	std::string rootFile = this->server_.getRouteConfig()[0].getLocationRoot() + this->request_.getUrl();
+	std::string rootFile = this->server_.getRouteConfig()[0].getLocationRoot() + this->request_.getFinalUrl();
 	if (response.getUrl()) {
 		this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
 	}

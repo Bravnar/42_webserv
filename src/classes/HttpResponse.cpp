@@ -61,8 +61,8 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
-		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
-		this->url_ = &httpRequest.getUrl();
+		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getFinalUrl());
+		this->url_ = &httpRequest.getFinalUrl();
 		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
 		if (this->status_ < 500 && this->status_ > 599
 				&& headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")

@@ -23,6 +23,7 @@ class HttpRequest {
 
 		std::string method_;
 		std::string url_;
+		std::string finalUrl_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
 		const unsigned char *body_;
@@ -40,7 +41,12 @@ class HttpRequest {
 
 		// member functions
 	
+		// Setters
+
+		void setFinalUrl(const std::string&);
+
 		// Getters
+
 		const std::string& getMethod() const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const unsigned char *getBody() const;
@@ -48,6 +54,7 @@ class HttpRequest {
 		const std::string& getUrl() const;
 		const std::string& getHttpVersion() const;
 		const std::string& getReqLine() const;
+		const std::string& getFinalUrl() const;
 };
 
 #endif
