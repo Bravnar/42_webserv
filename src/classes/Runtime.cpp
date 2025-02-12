@@ -116,12 +116,12 @@ void Runtime::checkClientsSockets_() {
 }
 
 void Runtime::checkServersSocket_() {
-	int socket_fd = -1;
-	sockaddr_in client_addr;
-	socklen_t client_len = sizeof(client_addr);
 	// starting at idx 1 since idx 0 is reserved to syncPipe
 	for (size_t i = 1; i < this->servers_map_.size() + 1; i++) {
 		if (this->sockets_[i].revents & POLLIN) {
+			int socket_fd = -1;
+			sockaddr_in client_addr;
+			socklen_t client_len = sizeof(client_addr);
 			socket_fd = accept(this->sockets_[i].fd, (sockaddr *)&client_addr, &client_len);
 			if (socket_fd < 0) {
 				this->error("error on request accept(): ") << strerror(errno) << std::endl;
