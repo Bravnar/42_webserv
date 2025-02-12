@@ -8,7 +8,7 @@ services:
       - "8081:8081"
     volumes:
       - ./www/:/usr/webserv/www/
-      - ./config_files/local.conf:/usr/webserv/config_files/local.conf
+      - ./config_files/default.conf:/usr/webserv/config_files/default.conf
     restart: always
   
   nginx:
