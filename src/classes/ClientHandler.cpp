@@ -64,21 +64,6 @@ ClientHandler::~ClientHandler() {
 		if (!trigger)
 			this->error("socket not destroyed from Runtime sockets_");
 	}
-	{
-		bool trigger = false;
-		std::vector<ClientHandler *>& clients_ = this->runtime_.getClients();
-		std::vector<ClientHandler *>::iterator it_clients = clients_.begin();
-		while (it_clients != clients_.end()) {
-			if (*it_clients == this) {
-				it_clients = clients_.erase(it_clients);
-				trigger = true;
-				break;
-			}
-			it_clients++;
-		}
-		if (!trigger)
-			this->error("client not destroyed from Runtime clients_");
-	}
 }
 
 std::string ClientHandler::buildDirlist_() {
