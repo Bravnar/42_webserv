@@ -50,6 +50,8 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 				this->url_ = line.substr(old_pos, pos - old_pos);
 				if (this->url_.at(0) != '/')
 					this->url_ = "/" + this->url_;
+				if (this->url_.at(this->url_.size() - 1) == '/')
+					this->url_.append("index.html"); // TODO: Replace with config index
 				break;
 			default:
 				this->httpVersion_ = line.substr(old_pos, line.size() - old_pos);
