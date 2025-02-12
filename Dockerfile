@@ -28,4 +28,4 @@ COPY ./config_files /usr/webserv/config_files
 
 WORKDIR /usr/webserv/
 
-CMD ["/usr/webserv/webserv", "/usr/webserv/config_files/local.conf"]
+CMD ["/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]

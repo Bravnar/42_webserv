@@ -5,6 +5,7 @@ webserv
 *.swp
 *.log
 *.~*
+*.tmp
 
 .vscode/
 .idea/
