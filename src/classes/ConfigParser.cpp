@@ -23,25 +23,35 @@ void	ConfigParser::_initMaps( void ) {
 	_serverKeyHandlers["host"] = setHost ;
 	_serverKeyHandlers["port"] = setPort ;
 	_serverKeyHandlers["server_name"] = setServerNames ;
-	_serverKeyHandlers["errors"] = setError ;
+	_serverKeyHandlers["root"] = setServerRoot ;
 	_serverKeyHandlers["client_body_limit"] = setClientBodyLimit ;
-	_serverKeyHandlers["default_file"] = setDefaultFile ;
+	_serverKeyHandlers["max_clients"] = setMaxClients ;
+	_serverKeyHandlers["index"] = setIndex ;
+	_serverKeyHandlers["errors"] = setError ;
 
-	_routeKeyHandlers["root"] = setRoot ;
+	_routeKeyHandlers["root"] = setLocationRoot ;
 	_routeKeyHandlers["methods"] = setMethods ;
 	_routeKeyHandlers["directory_listing"] = setDirectoryListing ;
-	_routeKeyHandlers["cgi_path"] = setCgiPath ;
-	_routeKeyHandlers["redirect"] = setRedirect ;
 	_routeKeyHandlers["accept_uploads"] = setAcceptUploads ;
 	_routeKeyHandlers["upload_path"] = setUploadPath ;
 }
 
 
 void	ConfigParser::parseKeyValue( ServerConfig& server, RouteConfig* route, const std::string& line, bool isError) {
+
+	if (!(line.find("server {") == 0 || line.find("location ") == 0 || line.find("errors {") == 0)) {
+		size_t semicolonPos = line.find(';');
+	
+		if (semicolonPos == std::string::npos) {
+			throw std::runtime_error("Syntax error: Missing ';' at the end of line -> " + line);
+		}
+	}
+
 	if (isError) {
 		_serverKeyHandlers.find("errors")->second( server, line ) ;
 		return ;
 	}
+
 	std::istringstream	iss( line ) ;
 	std::string			key, value ;
 	iss >> key ;
@@ -53,6 +63,7 @@ void	ConfigParser::parseKeyValue( ServerConfig& server, RouteConfig* route, cons
 		if (_routeKeyHandlers.find(key) == _routeKeyHandlers.end())
 			throw std::runtime_error("invalid route key detected: " + key ) ;
 		_routeKeyHandlers.find(key)->second(*route, value) ;
+		route->setFinalPath(route->getLocationRoot() + route->getPath()) ;
 		return ;
 	}
 
@@ -88,7 +99,6 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 
 		if (line == "server {") {
 			if (inServerBlock) throw std::runtime_error("Error: Indented server blocks are not allowed.") ;
-			std::cout << "IDENTIFIED SERVER BLOCK !" << std::endl ;
 			servers.push_back(ServerConfig()) ;
 			currentServer = &servers[servers.size() - 1] ;
 			inServerBlock = true ;
@@ -96,16 +106,24 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 		}
 
 		if (line == "}" || line.find("}") != std::string::npos) {
-			if (inLocationBlock) inLocationBlock = false ;
-			else if (inServerBlock) inServerBlock = false ;
-			else if (inErrorBlock) inErrorBlock = false ;
+			if (inLocationBlock) {
+				inLocationBlock = false ;
+				RouteConfig&	route = currentServer->getRoutes()[currentServer->getRoutes().size() - 1] ;
+				if (route.getMethods().empty()) {
+					route.addMethod("GET") ;
+					route.addMethod("POST") ;
+					route.addMethod("DELETE") ;
+				}
+			} else if (inServerBlock) {
+				inServerBlock = false ;
+				if (currentServer->getServerRoot().empty()) throw std::runtime_error("Error: Missing 'root' directive in server block.") ;
+			} else if (inErrorBlock) inErrorBlock = false ;
 			continue ;
 		}
 
 		if (line == "errors {") {
 			if (inErrorBlock) throw std::runtime_error("Error: Indented error blocks are not allowed.") ;
 			if (currentServer) {
-				std::cout << "IDENTIFIED ERROR LOCATION !" << std::endl ;
 				inErrorBlock = true ; 
 			}
 			continue ;
@@ -115,8 +133,8 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 			if (inLocationBlock) throw std::runtime_error("Error: Indented location blocks are not allowed.") ;
 			if (currentServer) {
 				RouteConfig route ;
+				route.setLocationRoot(currentServer->getServerRoot()) ;
 				route.setPath(trim(line.substr(9, line.size() - 10))) ;
-				std::cout << "IDENTIFIED LOCATION " << route.getPath() << " !"<< std::endl ;
 				currentServer->addRoute(route) ;
 				inLocationBlock = true ;
 			}

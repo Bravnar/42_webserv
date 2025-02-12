@@ -8,17 +8,17 @@
 void	setHost( ServerConfig& server, const std::string &str );
 void	setPort( ServerConfig& server, const std::string &str );
 void	setServerNames( ServerConfig& server, const std::string &str);
+void	setServerRoot( ServerConfig& server, const std::string &str );
 void	setError( ServerConfig& server, const std::string &str );
 void	setClientBodyLimit( ServerConfig& server, const std::string &str);
-void	setDefaultFile( ServerConfig& server, const std::string &str);
+void	setMaxClients( ServerConfig& server, const std::string &str );
+void	setIndex( ServerConfig& server, const std::string &str);
 
 /* Route Key Setters */
 
-void	setRoot( RouteConfig& route, const std::string &str);
+void	setLocationRoot( RouteConfig& route, const std::string &str);
 void	setMethods( RouteConfig& route, const std::string &str);
 void	setDirectoryListing( RouteConfig& route, const std::string &str);
-void	setCgiPath( RouteConfig& route, const std::string &str);
-void	setRedirect( RouteConfig& route, const std::string &str);
 void	setAcceptUploads( RouteConfig& route, const std::string &str);
 void	setUploadPath( RouteConfig& route, const std::string &str);
 

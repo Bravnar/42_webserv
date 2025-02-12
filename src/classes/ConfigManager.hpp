@@ -4,13 +4,12 @@
 # include <string>
 # include <vector>
 # include <iostream>
+# include <iomanip>
 # include "ServerConfig.hpp"
 # include "ConfigParser.hpp"
 
 class ConfigManager {
 	private:
-
-		int							_lineNum ;
 		std::vector<ServerConfig>	_servers ;
 		std::string					_confPath ;
 
