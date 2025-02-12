@@ -102,7 +102,6 @@ void ClientHandler::sendHeader_() {
 	oss << this->getResponse().str();
 
 	if (this->buffer_.fileStream) {
-		oss << "\r\n";	
 		this->state_.isSending = true;
 	} else {
 		this->state_.isSent = true;
@@ -182,7 +181,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::ifstream*& fileStream = this->buffer_.fileStream;
 
 	// Build 404
-	if (fileStream && !fileStream->good()) {
+	if (fileStream && !fileStream->good() && response.getStatus() != 404) {
 		#if LOGGER_DEBUG > 0
 			Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
 		#endif
@@ -214,6 +213,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream->tellg());
 		fileStream->seekg(0, std::ios::beg);
 	}
+	else
+		response.getHeaders()[H_CONTENT_LENGTH] = "0";
 	this->response_ = response;
 	this->state_.hasResponse = true;
 	return this->response_;

@@ -64,7 +64,8 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getUrl());
 		this->url_ = &httpRequest.getUrl();
 		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
-		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+		if (this->status_ < 500 && this->status_ > 599
+				&& headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
 			this->headers_[H_CONNECTION] = "keep-alive";
 		else
 			this->headers_[H_CONNECTION] = "close";
@@ -78,7 +79,8 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
 		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
-		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+		if (this->status_ < 500 && this->status_ > 500
+				&& headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
 			this->headers_[H_CONNECTION] = "keep-alive";
 		else
 			this->headers_[H_CONNECTION] = "close";
@@ -110,6 +112,7 @@ const std::string HttpResponse::str() const {
 	for(std::map<std::string, std::string>::const_iterator it = this->headers_.begin(); it != this->headers_.end(); it++) {
 		oss << it->first << ": " << it->second << "\r\n";
 	}
+	oss << "\r\n";
 	return oss.str();
 }
 
