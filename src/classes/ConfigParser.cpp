@@ -28,11 +28,12 @@ void	ConfigParser::_initMaps( void ) {
 	_serverKeyHandlers["default_file"] = setDefaultFile ;
 	//_serverKeyHandlers["root"] = setServerRoot ;
 
+	//_routeKeyHandlers["root"] = setLocationRoot ; // if not rerouted should take server route see line 120
 	_routeKeyHandlers["root"] = setRoot ;
 	_routeKeyHandlers["methods"] = setMethods ;
 	_routeKeyHandlers["directory_listing"] = setDirectoryListing ;
-	_routeKeyHandlers["cgi_path"] = setCgiPath ;
-	_routeKeyHandlers["redirect"] = setRedirect ;
+	_routeKeyHandlers["cgi_path"] = setCgiPath ; // not needed
+	_routeKeyHandlers["redirect"] = setRedirect ; // not needed
 	_routeKeyHandlers["accept_uploads"] = setAcceptUploads ;
 	_routeKeyHandlers["upload_path"] = setUploadPath ;
 }

@@ -55,8 +55,14 @@ void ConfigManager::printConfig( void ) const {
         std::cout << C_RED "│ " C_MAGENTA "└──────────────────────────────────────────────────────────────────────────┘" C_RED " │" C_RESET << std::endl ;
 
         //locations
-        std::cout << C_RED "│ " C_CYAN "┌" C_BOLD " LOCATIONS " C_RESET C_CYAN "───────────────────────────────────────────────────────────────┐" C_RED " │" C_RESET << std::endl ;
+        int first = 1 ;
+        
+        // std::cout << C_RED "│ " C_CYAN "┌" C_BOLD " LOCATIONS " C_RESET C_CYAN "───────────────────────────────────────────────────────────────┐" C_RED " │" C_RESET << std::endl ;
         for (std::vector<RouteConfig>::const_iterator it2 = it->getRoutes().begin() ; it2 != it->getRoutes().end() ; ++it2) {
+            if (first)
+                std::cout << C_RED "│ " C_CYAN "┌" C_BOLD " LOCATIONS " C_RESET C_CYAN "───────────────────────────────────────────────────────────────┐" C_RED " │" C_RESET << std::endl ;
+            else
+                std::cout << C_RED "│ " C_CYAN "├──────────────────────────────────────────────────────────────────────────┤" C_RESET << std::endl ;
             std::cout << C_RED "│ " C_CYAN "│" C_RESET << std::left << std::setw(20) << C_BOLD << " Path:\t\t" C_RESET << std::left << std::setw(totalWidth - 35) << it2->getPath() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             std::cout << C_RED "│ " C_CYAN "│" C_RESET << std::left << std::setw(20) << C_BOLD << " Root:\t\t" C_RESET << std::left << std::setw(totalWidth - 35) << it2->getRoot() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             if (!it2->getMethods().empty())
