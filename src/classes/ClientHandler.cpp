@@ -175,7 +175,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
 	
 	// Open file
-	std::string rootFile = this->server_.getRouteConfig()[0].getRoot() + this->request_.getUrl();
+	std::string rootFile = this->server_.getRouteConfig()[0].getLocationRoot() + this->request_.getUrl();
 	if (response.getUrl()) {
 		this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
 	}
