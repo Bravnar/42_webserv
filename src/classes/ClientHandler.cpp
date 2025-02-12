@@ -196,6 +196,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
+			if (this->buffer_.fileStream)
+				delete this->buffer_.fileStream;
 			this->buffer_.fileStream = new std::ifstream(errorPages.at(status).c_str());
 			if (!this->buffer_.fileStream->good()) {
 				this->buffer_.fileStream->close();
