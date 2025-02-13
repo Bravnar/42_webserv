@@ -65,6 +65,7 @@ const std::vector<std::string>&		ServerConfig::getServerNames( ) const { return 
 const std::string&					ServerConfig::getServerRoot( ) const { return _serverRoot ; }
 const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return _errorPages ;}
 unsigned long long					ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
+int									ServerConfig::getMaxClients( ) const { return _maxClients ; }
 const std::string&					ServerConfig::getIndex( ) const { return _index ; } 
 std::vector<RouteConfig>&			ServerConfig::getRoutes( ) { return _routes ; }
 const std::vector<RouteConfig>&		ServerConfig::getRoutes( ) const { return _routes ; }
