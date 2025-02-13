@@ -48,8 +48,6 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 				break;
 			case 1:
 				this->url_ = line.substr(old_pos, pos - old_pos);
-				if (this->url_.at(0) != '/')
-					this->url_ = "/" + this->url_;
 				break;
 			default:
 				this->httpVersion_ = line.substr(old_pos, line.size() - old_pos);
@@ -123,33 +121,13 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 	return 0;
 }
 
-const std::string& HttpRequest::getMethod() const {
-	return this->method_;
-}
-
-const std::map<std::string, std::string>& HttpRequest::getHeaders() const {
-	return this->headers_;
-}
-
-const unsigned char * HttpRequest::getBody() const {
-	return this->body_;
-}
-
+const std::string& HttpRequest::getMethod() const { return this->method_; }
+const std::map<std::string, std::string>& HttpRequest::getHeaders() const { return this->headers_; }
+const unsigned char * HttpRequest::getBody() const { return this->body_; }
 const std::string HttpRequest::getStringBody() const {
-	if (this->body_) {
-		return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headers_.at(H_CONTENT_LENGTH)));
-	}
+	if (this->body_) return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headers_.at(H_CONTENT_LENGTH)));
 	return "";
 }
-
-const std::string& HttpRequest::getUrl() const {
-	return this->url_;
-}
-
-const std::string& HttpRequest::getHttpVersion() const {
-	return this->httpVersion_;
-}
-
-const std::string& HttpRequest::getReqLine() const {
-	return this->reqLine_;
-}
+const std::string& HttpRequest::getUrl() const { return this->url_; }
+const std::string& HttpRequest::getHttpVersion() const { return this->httpVersion_; }
+const std::string& HttpRequest::getReqLine() const { return this->reqLine_; }

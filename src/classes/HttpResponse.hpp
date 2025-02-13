@@ -9,6 +9,7 @@
 # include <sys/socket.h>
 # include "./HttpRequest.hpp"
 # include "./HttpInclude.hpp"
+# include "./ConfigManager.hpp"
 
 # define DF_H_SERVER "WebservSIR/1.0"
 
@@ -28,6 +29,7 @@ class HttpResponse {
 		HttpResponse();
 		HttpResponse(const HttpRequest& httpRequest);
 		HttpResponse(const HttpRequest& httpRequest, int errorPage);
+		HttpResponse(const HttpRequest& httpRequest, const RouteConfig&);
 		HttpResponse(const HttpResponse&);
 		HttpResponse& operator=(const HttpResponse&);
 		~HttpResponse();

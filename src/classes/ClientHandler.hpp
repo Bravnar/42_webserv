@@ -13,16 +13,26 @@
 # include "./ServerManager.hpp"
 # include <fstream>
 # include "./HttpResponse.hpp"
+# include <sys/stat.h>
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
+
+// Flags for state
+
+# define FETCHED 0x01 // Has a request
+# define READING 0x02 // Still reading request
+# define SENT 0x04 // Response sent
+# define SENDING 0x08 // Still sending response
+# define RESPONSE 0x10 // Has a response
+
 
 class Runtime;
 
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
-	std::ifstream *fileStream;
+	std::ifstream fileStream;
 	s_clientBuffer():
 		requestBuffer(0),
 		fileStream(0) {}
@@ -41,21 +51,6 @@ struct s_clientAddress {
 		std::memset(&len, 0, sizeof(socklen_t));
 		std::memset(&clientIp, 0, INET6_ADDRSTRLEN);
 	}
-};
-
-// Unique client state
-struct s_clientState {
-	bool isFetched;
-	bool isReading;
-	bool isSent;
-	bool isSending;
-	bool hasResponse;
-	s_clientState():
-		isFetched(false),
-		isReading(false),
-		isSent(false),
-		isSending(false),
-		hasResponse(false) {}
 };
 
 class ClientHandler
@@ -83,9 +78,6 @@ class ClientHandler
 		// Send playload to client
 		// @throw `EXC_SEND_ERROR`
 		void sendPlayload_();
-		// TODO: Replace with proper Builder class
-		// Build a directory list page
-		std::string buildDirlist_();
 
 
 		// Properties
@@ -97,7 +89,7 @@ class ClientHandler
 		s_clientBuffer buffer_;
 		HttpRequest request_;
 		HttpResponse response_;
-		s_clientState state_;
+		int8_t flags_;
 
 	public:
 		// Canonical
@@ -126,19 +118,11 @@ class ClientHandler
 		const HttpRequest& getRequest() const;
 		HttpResponse& getResponse();
 		const char *getClientIp() const;
-		bool isFetched() const;
-		bool isReading() const;
-		bool isSending() const;
-		bool isSent() const;
-		bool hasResponse() const;
+		int8_t getFlags() const;
+		void clearFlag(int8_t flag);
+		void setFlag(int8_t flag);
 		const ServerManager& getServer() const;
-		std::ifstream *getFileStream();
 		int getFd() const;
-
-		// Setters
-	
-		void setFetched(bool);
-		void setReading(bool);
 };
 
 #endif
