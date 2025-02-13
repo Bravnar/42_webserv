@@ -28,8 +28,7 @@ void ServerManager::init() {
 	int opt = 1;
 	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) { throw std::logic_error("setsockopt: " + std::string(strerror(errno))); }
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) { throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno))); }
-	// TODO: Include getMaxClients() when implemented in config
-	if (listen(this->server_fd_, /*this->config_.getMaxClients()*/ 500)) { throw std::logic_error("error on listen: " + std::string(strerror(errno))); }
+	if (listen(this->server_fd_, this->config_.getMaxClients())) { throw std::logic_error("error on listen: " + std::string(strerror(errno))); }
 
 	this->socket_.fd = this->server_fd_;
 	this->socket_.events = POLLIN;

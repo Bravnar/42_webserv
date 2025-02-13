@@ -24,7 +24,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
 		try {
 			server->init();
-			socket_reserved += /*server->getConfig().getMaxClients()*/ 500 + 1; // TODO: Include getMaxClients() when implemented in config
+			socket_reserved += server->getConfig().getMaxClients();
 			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
 		} catch (const std::exception& e) {
