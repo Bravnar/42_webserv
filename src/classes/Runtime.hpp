@@ -4,7 +4,6 @@
 # include "./ClientHandler.hpp"
 # include "./ServerManager.hpp"
 # include <csignal>
-# include <list>
 
 class ClientHandler;
 
@@ -35,11 +34,11 @@ class Runtime {
 		// Return 0 on success
 		// Return -1 on handled error: client is deleted
 		// Return 1 on handled error: client should still receive a response
-		const std::list<ClientHandler *>::iterator handleClientPollin_(std::list<ClientHandler *>::iterator&, pollfd *);
+		int handleClientPollin_(ClientHandler *, pollfd *);
 		// Return 0 on success
 		// Return 1 on success: client is deleted
 		// Return -1 on handled error: client is deleted
-		const std::list<ClientHandler *>::iterator handleClientPollout_(std::list<ClientHandler *>::iterator&, pollfd *);
+		int handleClientPollout_(ClientHandler *, pollfd *);
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);
 		// Log request status
@@ -50,7 +49,7 @@ class Runtime {
 		void logResponse_(ClientHandler *);
 		std::vector<ServerManager> servers_;
 		std::map<int, ServerManager *> servers_map_;
-		std::list<ClientHandler *> clients_;
+		std::map<int, ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
 		int syncPipe_[2];
 		pollfd syncPoll_;
@@ -68,7 +67,7 @@ class Runtime {
 		// Get sockets as `vector<pollfd>` reference
 		std::vector<pollfd>& getSockets();
 		// Get clients as `vector<ClientHandler *>` reference
-		std::list<ClientHandler *>& getClients();
+		std::map<int, ClientHandler *>& getClients();
 		// Force a Sync on poll
 		// @note Will write on SyncPipe[1] which is checked by Poll
 		void Sync();

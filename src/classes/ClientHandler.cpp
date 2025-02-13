@@ -64,6 +64,7 @@ ClientHandler::~ClientHandler() {
 		if (!trigger)
 			this->error("socket not destroyed from Runtime sockets_");
 	}
+	this->runtime_.getClients().erase(this->socket_fd_);
 }
 
 void ClientHandler::sendHeader_() {
@@ -176,7 +177,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
 		}
-		this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
+		this->buffer_.fileStream = new std::ifstream(rootFile.c_str(), std::ios::binary);
 	}
 	std::ifstream*& fileStream = this->buffer_.fileStream;
 
@@ -201,7 +202,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		if (errorPages.find(status) != errorPages.end()) {
 			if (this->buffer_.fileStream)
 				delete this->buffer_.fileStream;
-			this->buffer_.fileStream = new std::ifstream(errorPages.at(status).c_str());
+			this->buffer_.fileStream = new std::ifstream(errorPages.at(status).c_str(), std::ios::binary);
 			if (!this->buffer_.fileStream->good()) {
 				this->buffer_.fileStream->close();
 				delete this->buffer_.fileStream;
