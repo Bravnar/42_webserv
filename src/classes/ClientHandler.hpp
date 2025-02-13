@@ -18,6 +18,15 @@
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
 
+// Flags for state
+
+# define FETCHED 0x01 // Has a request
+# define READING 0x02 // Still reading request
+# define SENT 0x04 // Response sent
+# define SENDING 0x08 // Still sending response
+# define RESPONSE 0x10 // Has a response
+
+
 class Runtime;
 
 // Unique temporary data
@@ -42,21 +51,6 @@ struct s_clientAddress {
 		std::memset(&len, 0, sizeof(socklen_t));
 		std::memset(&clientIp, 0, INET6_ADDRSTRLEN);
 	}
-};
-
-// Unique client state
-struct s_clientState {
-	bool isFetched;
-	bool isReading;
-	bool isSent;
-	bool isSending;
-	bool hasResponse;
-	s_clientState():
-		isFetched(false),
-		isReading(false),
-		isSent(false),
-		isSending(false),
-		hasResponse(false) {}
 };
 
 class ClientHandler
@@ -95,7 +89,7 @@ class ClientHandler
 		s_clientBuffer buffer_;
 		HttpRequest request_;
 		HttpResponse response_;
-		s_clientState state_;
+		int8_t flags_;
 
 	public:
 		// Canonical
