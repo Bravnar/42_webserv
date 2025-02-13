@@ -38,7 +38,7 @@ all: $(NAME)
 
 $(NAME): $(HEADERS) $(SRCS) $(OBJS)
 # @$(CXX) $(CXXFLAGS) $(INCLUDE_PATHS) -o $@ $(SRCS)
-		@$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
+		@$(CXX) $(CXXFLAGS) -OFast -funroll-loops -finline-functions -o $(NAME) $(OBJS)
 		@echo "\033[0;32m ✅ Compilation done! ✅ \033[0m"
 
 clean:
