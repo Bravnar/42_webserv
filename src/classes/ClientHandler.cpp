@@ -150,14 +150,6 @@ const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
-	
-	// Build 301 - Moved Permanently
-	if (response.getStatus() == 301) {
-		response.getHeaders()[H_CONTENT_LENGTH] = "0";
-		this->response_ = response;
-		this->flags_ |= RESPONSE;
-		return this->response_;
-	}
 
 	// Open file
 	std::string rootFile;
