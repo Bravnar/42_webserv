@@ -46,6 +46,7 @@ ClientHandler::~ClientHandler() {
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
 	close(this->socket_fd_);
+	this->runtime_.getClients().erase(this->socket_fd_);
 	if (this->buffer_.fileStream.is_open()) {
 		this->buffer_.fileStream.close();
 	}
@@ -65,7 +66,6 @@ ClientHandler::~ClientHandler() {
 		if (!trigger)
 			this->error("socket not destroyed from Runtime sockets_");
 	}
-	this->runtime_.getClients().erase(this->socket_fd_);
 }
 
 void ClientHandler::sendHeader_() {
@@ -203,11 +203,12 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 	}
 
-	// Final build
-	if (fileStream) {
+	// Final build (may need some modifications if building internal html)
+	if (fileStream.is_open()) {
 		fileStream.seekg(0, std::ios::end);
 		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream.tellg());
 		fileStream.seekg(0, std::ios::beg);
+		response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}
 	else
 		response.getHeaders()[H_CONTENT_LENGTH] = "0";

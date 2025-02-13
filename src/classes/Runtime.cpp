@@ -103,6 +103,9 @@ void Runtime::checkSyncPipeSocket_() {
 void Runtime::checkClientsSockets_() {
 	// starting at idx 1 + servers size since 0 and next are reserved
 	for(size_t i = 1 + this->servers_map_.size(); i < this->sockets_.size(); i++) {
+		#if LOGGER_DEBUG > 0
+			Logger::debug("client alive") << std::endl;
+		#endif
 		if(this->clients_.find(this->sockets_[i].fd) != this->clients_.end()) {
 			if (this->handleClientPollin_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])
 				|| this->handleClientPollout_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])) {
