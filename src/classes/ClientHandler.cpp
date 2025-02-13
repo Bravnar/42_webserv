@@ -148,10 +148,11 @@ const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
 
-	// Open file
 	std::string rootFile;
+	const RouteConfig *matchingRoot = 0;
+
+	// Open file or build 301
 	if (response.getUrl()) {
-		const RouteConfig *matchingRoot = 0;
 		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
 		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
 			const std::string& locationRoot = route->getPath();
@@ -176,7 +177,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 	std::ifstream& fileStream = this->buffer_.fileStream;
 
-	// Build 404
+	// Build 404 - Not Found
 	if (!rootFile.empty() && !fileStream.good() && response.getStatus() != 404) {
 		#if LOGGER_DEBUG > 0
 			if (!rootFile.empty())
@@ -185,6 +186,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		if (fileStream.is_open())
 			fileStream.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
+	}
+
+	// Build 405 - Method Not Allowed
+	if (matchingRoot) {
+		const std::vector<std::string>::const_iterator method
+			= std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
+		if (method == matchingRoot->getMethods().end())
+			this->buildResponse(HttpResponse(this->request_, 405));
 	}
 
 	// Check file for http code
@@ -197,10 +206,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				fileStream.close();
 			}
 			fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (!fileStream.good() && fileStream.is_open()) {
-				fileStream.close();
-			} else {
-				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+			if (fileStream.is_open()) {
+				if (!fileStream.good())
+					fileStream.close();
+				else
+					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
 		}
 	}
@@ -210,7 +220,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		fileStream.seekg(0, std::ios::end);
 		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(fileStream.tellg());
 		fileStream.seekg(0, std::ios::beg);
-		response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
+		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
+			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}
 	else
 		response.getHeaders()[H_CONTENT_LENGTH] = "0";
