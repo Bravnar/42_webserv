@@ -32,7 +32,7 @@ class Runtime;
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
-	std::ifstream *fileStream;
+	std::ifstream fileStream;
 	s_clientBuffer():
 		requestBuffer(0),
 		fileStream(0) {}
@@ -122,7 +122,6 @@ class ClientHandler
 		void clearFlag(int8_t flag);
 		void setFlag(int8_t flag);
 		const ServerManager& getServer() const;
-		std::ifstream *getFileStream();
 		int getFd() const;
 };
 

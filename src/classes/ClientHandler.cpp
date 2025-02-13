@@ -46,9 +46,8 @@ ClientHandler::~ClientHandler() {
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
 	close(this->socket_fd_);
-	if (this->buffer_.fileStream) {
-		this->buffer_.fileStream->close();
-		delete this->buffer_.fileStream;
+	if (this->buffer_.fileStream.is_open()) {
+		this->buffer_.fileStream.close();
 	}
 	delete this->buffer_.requestBuffer;
 	{
@@ -99,17 +98,15 @@ void ClientHandler::sendPlayload_() {
 			stream << this->getRequest().getUrl();
 		stream << std::endl;
 	#endif
-	std::ifstream *file = this->buffer_.fileStream;
+	std::ifstream& file = this->buffer_.fileStream;
 	char buffer[DF_MAX_BUFFER] = {0};
-	if (file->read(buffer, DF_MAX_BUFFER) || file->gcount() > 0) {
-		if (send(this->socket_fd_, buffer, file->gcount(), 0) < 0) {
+	if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
+		if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0) {
 			throw std::runtime_error(EXC_SEND_ERROR);
 		}
 	}
-	if (!*file) {
-		file->close();
-		delete file;
-		this->buffer_.fileStream = 0;
+	if (!file) {
+		file.close();
 		this->flags_ |= SENT;
 	}
 	#if LOGGER_DEBUG > 0
@@ -164,7 +161,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 		if (matchingRoot) {
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
-				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot)); // 301 redirect constructor
 			rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 			if (rootFile.at(rootFile.size() - 1) != '/') {
 				struct stat s;
@@ -173,21 +170,20 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
 		}
-		this->buffer_.fileStream = new std::ifstream(rootFile.c_str(), std::ios::binary);
+		if (this->buffer_.fileStream.is_open())
+			this->buffer_.fileStream.close();
+		this->buffer_.fileStream.open(rootFile.c_str(), std::ios::binary);
 	}
-	std::ifstream*& fileStream = this->buffer_.fileStream;
+	std::ifstream& fileStream = this->buffer_.fileStream;
 
 	// Build 404
-	if (fileStream && !fileStream->good() && response.getStatus() != 404) {
+	if (!rootFile.empty() && !fileStream.good() && response.getStatus() != 404) {
 		#if LOGGER_DEBUG > 0
 			if (!rootFile.empty())
 				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
-			else
-				Logger::debug(EXC_FILE_NOT_FOUND(*(response.getUrl()))) << std::endl;
 		#endif
-		this->buffer_.fileStream->close();
-		delete this->buffer_.fileStream;
-		this->buffer_.fileStream = 0;
+		if (this->buffer_.fileStream.is_open())
+			this->buffer_.fileStream.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
@@ -196,13 +192,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (this->buffer_.fileStream)
-				delete this->buffer_.fileStream;
-			this->buffer_.fileStream = new std::ifstream(errorPages.at(status).c_str(), std::ios::binary);
-			if (!this->buffer_.fileStream->good()) {
-				this->buffer_.fileStream->close();
-				delete this->buffer_.fileStream;
-				this->buffer_.fileStream = 0;
+			if (this->buffer_.fileStream.is_open())
+				this->buffer_.fileStream.close();
+			this->buffer_.fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (!this->buffer_.fileStream.good() && this->buffer_.fileStream.is_open()) {
+				this->buffer_.fileStream.close();
 			} else {
 				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
@@ -211,9 +205,9 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// Final build
 	if (fileStream) {
-		fileStream->seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream->tellg());
-		fileStream->seekg(0, std::ios::beg);
+		fileStream.seekg(0, std::ios::end);
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream.tellg());
+		fileStream.seekg(0, std::ios::beg);
 	}
 	else
 		response.getHeaders()[H_CONTENT_LENGTH] = "0";
@@ -223,10 +217,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 }
 
 void ClientHandler::flush() {
-	if (this->buffer_.fileStream) {
-		this->buffer_.fileStream->close();
-		delete this->buffer_.fileStream;
-		this->buffer_.fileStream = 0;
+	if (this->buffer_.fileStream.is_open()) {
+		this->buffer_.fileStream.close();
 	}
 	if (this->buffer_.requestBuffer) {
 		delete this->buffer_.requestBuffer;
@@ -262,5 +254,4 @@ int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
-std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }
 int ClientHandler::getFd() const { return this->socket_fd_; }
