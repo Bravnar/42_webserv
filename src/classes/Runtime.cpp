@@ -6,31 +6,32 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {	
-	this->sockets_.reserve(sizeof(pollfd) * (1 + configs.size() * (1 + maxClients)));
-
+Runtime::Runtime(const std::vector<ServerConfig>& configs) {	
 	pipe(this->syncPipe_);
 	this->syncPoll_.events = POLLIN;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
-	this->initializeServers_(configs, maxClients);
+	this->initializeServers_(configs);
 }
 
-void Runtime::initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients) {
+void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 	for(std::vector<ServerConfig>::const_iterator config = configs.begin(); config != configs.end(); config++) {
-		this->servers_.push_back(ServerManager(*config, maxClients));
+		this->servers_.push_back(ServerManager(*config));
 	}
+	size_t socket_reserved = 1;
 	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
 		try {
 			server->init();
+			socket_reserved += /*server->getConfig().getMaxClients()*/ 500 + 1; // TODO: Include getMaxClients() when implemented in config
 			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
 		} catch (const std::exception& e) {
 			this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 		}
 	}
+	this->sockets_.reserve(socket_reserved);
 }
 
 Runtime::~Runtime() {
