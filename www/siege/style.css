@@ -7,17 +7,33 @@
 body {
 	background-color: #fff;
 	color: #000;
+}
+section {
+	width: 100%;
+	min-height: 80vh;
 	display: flex;
-	justify-content: center;
+	flex-direction: column;
 	align-items: center;
-	height: 100vh;
 }
 .container {
+	margin-top: 100px;
+	max-height: fit-content;
 	width: 60%;
 	border: 2px solid black;
 	padding: 30px;
 	text-align: center;
 	box-shadow: 5px 5px 0px black;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+.container.picture {
+	width: 30%;
+	height: 20%;
+	margin: 0;
+	padding: 10px;
+	display: inline;
 }
 h1 {
 	border-bottom: 2px solid black;
