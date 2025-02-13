@@ -264,13 +264,9 @@ void ClientHandler::readSocket() {
 	else { this->buildRequest(); }
 }
 
-bool ClientHandler::isFetched() const { return this->flags_ & FETCHED; }
-void ClientHandler::setFetched(bool value) { if (value) this->flags_ |= FETCHED; else this->flags_ &= ~FETCHED; }
-bool ClientHandler::isReading() const { return this->flags_ & READING; }
-void ClientHandler::setReading(bool value) { if (value) this->flags_ |= READING; else this->flags_ &= ~READING; }
-bool ClientHandler::isSending() const { return this->flags_ & SENDING; }
-bool ClientHandler::isSent() const { return this->flags_ & SENT; }
-bool ClientHandler::hasResponse() const { return this->flags_ & RESPONSE; }
+int8_t ClientHandler::getFlags() const { return this->flags_; }
+void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
+void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
 std::ifstream *ClientHandler::getFileStream() { return this->buffer_.fileStream; }
 int ClientHandler::getFd() const { return this->socket_fd_; }

@@ -118,19 +118,12 @@ class ClientHandler
 		const HttpRequest& getRequest() const;
 		HttpResponse& getResponse();
 		const char *getClientIp() const;
-		bool isFetched() const;
-		bool isReading() const;
-		bool isSending() const;
-		bool isSent() const;
-		bool hasResponse() const;
+		int8_t getFlags() const;
+		void clearFlag(int8_t flag);
+		void setFlag(int8_t flag);
 		const ServerManager& getServer() const;
 		std::ifstream *getFileStream();
 		int getFd() const;
-
-		// Setters
-	
-		void setFetched(bool);
-		void setReading(bool);
 };
 
 #endif

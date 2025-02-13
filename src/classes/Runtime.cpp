@@ -154,11 +154,11 @@ void Runtime::handleRequest_(ClientHandler *client, const std::exception *e) {
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
-		if(!client->isReading()) client->setReading(true);
+		if(!(client->getFlags() & READING)) client->setFlag(READING);
 		#if LOGGER_DEBUG > 0
 			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
-		if (client->isFetched()) {
+		if (client->getFlags() & FETCHED) {
 			#if LOGGER_DEBUG > 0
 				this->debug("throwing sticky client") << " (fd: " << client->getFd() << ")" << std::endl;
 			#endif
@@ -174,7 +174,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			#endif
 			return 1;
 		}
-	} else if (client->isReading()) {
+	} else if (client->getFlags() & READING) {
 		socket->events = POLLOUT;
 		#if LOGGER_DEBUG > 0
 			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
@@ -208,11 +208,11 @@ void Runtime::logResponse_(ClientHandler *client) {
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLOUT && client->isFetched()) {
+	if (socket->revents & POLLOUT && client->getFlags() & FETCHED) {
 		#if LOGGER_DEBUG > 0
 			this->debug("pollout client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
-		if (!client->hasResponse() && !client->isSending()) {
+		if (!(client->getFlags() & RESPONSE) && !(client->getFlags() & SENDING)) {
 			client->buildResponse(HttpResponse(client->getRequest()));
 		}
 		try {
@@ -222,7 +222,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			delete client;
 			return -1;
 		}
-		if (client->isSent()) {
+		if (client->getFlags() & SENT) {
 			this->logResponse_(client);
 			if (client->getResponse().getHeaders()[H_CONNECTION] != "keep-alive") {
 				delete client;
