@@ -158,10 +158,6 @@ void Runtime::handleRequest_(ClientHandler *client, const std::exception *e) {
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
-		if(!(client->getFlags() & READING)) client->setFlag(READING);
-		#if LOGGER_DEBUG > 0
-			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
 		if (client->getFlags() & FETCHED) {
 			#if LOGGER_DEBUG > 0
 				this->debug("throwing sticky client") << " (fd: " << client->getFd() << ")" << std::endl;
@@ -169,6 +165,10 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			delete client;
 			return -1;
 		}
+		if(!(client->getFlags() & READING)) client->setFlag(READING);
+		#if LOGGER_DEBUG > 0
+			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
+		#endif
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
