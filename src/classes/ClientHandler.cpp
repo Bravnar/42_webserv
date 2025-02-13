@@ -66,18 +66,6 @@ ClientHandler::~ClientHandler() {
 	}
 }
 
-std::string ClientHandler::buildDirlist_() {
-	std::ostringstream oss;
-
-	oss	<< "<!DOCTYPE html>\n"
-		<< "<html>\n"
-		<< "<head></head>\n"
-		<< "<body>\n"
-		<< "<h1>Directory Listing</h1>\n"
-		<< "</body>\n";
-	return oss.str();
-}
-
 void ClientHandler::sendHeader_() {
 	#if LOGGER_DEBUG > 0
 		this->debug("sending header") << std::endl;
@@ -150,10 +138,6 @@ const HttpRequest& ClientHandler::buildRequest() {
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
-	if (this->request_.getUrl().at(this->request_.getUrl().size() - 1) == '/')
-		this->request_.setFinalUrl(this->request_.getUrl() + this->server_.getConfig().getIndex());
-	else
-		this->request_.setFinalUrl(this->request_.getUrl());
 	return this->request_;
 }
 
@@ -162,9 +146,36 @@ const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
 	
+	// Build 301 - Moved Permanently
+	if (response.getStatus() == 301) {
+		response.getHeaders()[H_CONTENT_LENGTH] = "0";
+		this->response_ = response;
+		this->state_.hasResponse = true;
+		return this->response_;
+	}
+
 	// Open file
-	std::string rootFile = this->server_.getRouteConfig()[0].getLocationRoot() + this->request_.getFinalUrl();
+	std::string rootFile;
 	if (response.getUrl()) {
+		const RouteConfig *matchingRoot = 0;
+		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
+		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
+			const std::string& locationRoot = route->getPath();
+			if (response.getUrl()->size() >= locationRoot.size() && response.getUrl()->substr(0, locationRoot.size()) == locationRoot)
+				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
+					matchingRoot = &*route;
+		}
+		if (matchingRoot) {
+			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+			rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
+			if (rootFile.at(rootFile.size() - 1) != '/') {
+				struct stat s;
+				stat(rootFile.c_str(), &s);
+				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
+			}
+			else rootFile.append(this->server_.getConfig().getIndex());
+		}
 		this->buffer_.fileStream = new std::ifstream(rootFile.c_str());
 	}
 	std::ifstream*& fileStream = this->buffer_.fileStream;
@@ -172,7 +183,10 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// Build 404
 	if (fileStream && !fileStream->good() && response.getStatus() != 404) {
 		#if LOGGER_DEBUG > 0
-			Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
+			if (!rootFile.empty())
+				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
+			else
+				Logger::debug(EXC_FILE_NOT_FOUND(*(response.getUrl()))) << std::endl;
 		#endif
 		this->buffer_.fileStream->close();
 		delete this->buffer_.fileStream;

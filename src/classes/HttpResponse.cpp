@@ -36,6 +36,7 @@ const std::string HttpResponse::checkStatus(int status) {
 		case 100: return "Continue";
 		case 200: return "OK";
 		case 201: return "Created";
+		case 301: return "Moved Permantly";
 		case 400: return "Bad Request";
 		case 405: return "Method Not Allowed";
 		case 408: return "Request Timeout";
@@ -61,8 +62,7 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest):
 	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
 		this->headers_[H_SERVER] = DF_H_SERVER;
-		this->headers_[H_CONTENT_TYPE] = getType(httpRequest.getFinalUrl());
-		this->url_ = &httpRequest.getFinalUrl();
+		this->url_ = &httpRequest.getUrl();
 		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
 		if ((this->status_ < 500 || this->status_ > 500)
 				&& headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
@@ -84,6 +84,21 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
 			this->headers_[H_CONNECTION] = "keep-alive";
 		else
 			this->headers_[H_CONNECTION] = "close";
+}
+
+HttpResponse::HttpResponse(const HttpRequest& httpRequest, const RouteConfig& routeConf):
+	version_("HTTP/1.1"),
+	status_(301),
+	status_msg_(checkStatus(status_)),
+	url_(0) {
+		this->headers_[H_DATE] = getHttpDate();
+		this->headers_[H_SERVER] = DF_H_SERVER;
+		const std::map<std::string, std::string>& headers = httpRequest.getHeaders();
+		if (headers.find(H_CONNECTION) != headers.end() && headers.at(H_CONNECTION) == "keep-alive")
+			this->headers_[H_CONNECTION] = "keep-alive";
+		else
+			this->headers_[H_CONNECTION] = "close";
+		this->headers_[H_LOCATION] = "http://" + httpRequest.getHeaders().at(H_HOST) + routeConf.getPath() + "/";
 }
 
 HttpResponse::HttpResponse(const HttpResponse& copy):

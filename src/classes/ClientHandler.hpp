@@ -13,6 +13,7 @@
 # include "./ServerManager.hpp"
 # include <fstream>
 # include "./HttpResponse.hpp"
+# include <sys/stat.h>
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
@@ -83,9 +84,6 @@ class ClientHandler
 		// Send playload to client
 		// @throw `EXC_SEND_ERROR`
 		void sendPlayload_();
-		// TODO: Replace with proper Builder class
-		// Build a directory list page
-		std::string buildDirlist_();
 
 
 		// Properties

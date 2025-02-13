@@ -121,7 +121,6 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 	return 0;
 }
 
-void HttpRequest::setFinalUrl(const std::string& url) { this->finalUrl_ = url; }
 const std::string& HttpRequest::getMethod() const { return this->method_; }
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const { return this->headers_; }
 const unsigned char * HttpRequest::getBody() const { return this->body_; }
@@ -132,4 +131,3 @@ const std::string HttpRequest::getStringBody() const {
 const std::string& HttpRequest::getUrl() const { return this->url_; }
 const std::string& HttpRequest::getHttpVersion() const { return this->httpVersion_; }
 const std::string& HttpRequest::getReqLine() const { return this->reqLine_; }
-const std::string& HttpRequest::getFinalUrl() const { return this->finalUrl_; }
