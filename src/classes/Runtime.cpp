@@ -25,7 +25,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs, size_
 	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
 		try {
 			server->init();
-			this->servers_map_.insert(std::make_pair(server->getSocket().fd, &*server));
+			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
 		} catch (const std::exception& e) {
 			this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
@@ -230,7 +230,6 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			}
 			client->flush();
 			socket->events = POLLIN;
-			return 1;
 		}
 	}
 	return 0;
