@@ -15,5 +15,6 @@
 # define H_CACHE_CONTROL "Cache-Control"
 # define H_DATE "Date"
 # define H_SERVER "Server"
+# define H_LOCATION "Location"
 
 #endif

@@ -49,7 +49,7 @@ class Runtime {
 		void logResponse_(ClientHandler *);
 		std::vector<ServerManager> servers_;
 		std::map<int, ServerManager *> servers_map_;
-		std::vector<ClientHandler *> clients_;
+		std::map<int, ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
 		int syncPipe_[2];
 		pollfd syncPoll_;
@@ -67,7 +67,7 @@ class Runtime {
 		// Get sockets as `vector<pollfd>` reference
 		std::vector<pollfd>& getSockets();
 		// Get clients as `vector<ClientHandler *>` reference
-		std::vector<ClientHandler *>& getClients();
+		std::map<int, ClientHandler *>& getClients();
 		// Force a Sync on poll
 		// @note Will write on SyncPipe[1] which is checked by Poll
 		void Sync();

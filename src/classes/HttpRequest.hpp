@@ -39,8 +39,9 @@ class HttpRequest {
 		~HttpRequest();
 
 		// member functions
-	
+
 		// Getters
+
 		const std::string& getMethod() const;
 		const std::map<std::string, std::string>& getHeaders() const;
 		const unsigned char *getBody() const;
