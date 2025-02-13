@@ -182,8 +182,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			if (!rootFile.empty())
 				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
 		#endif
-		if (this->buffer_.fileStream.is_open())
-			this->buffer_.fileStream.close();
+		if (fileStream.is_open())
+			fileStream.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
@@ -192,11 +192,13 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (this->buffer_.fileStream.is_open())
-				this->buffer_.fileStream.close();
-			this->buffer_.fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (!this->buffer_.fileStream.good() && this->buffer_.fileStream.is_open()) {
-				this->buffer_.fileStream.close();
+			if (fileStream.is_open()) {
+				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
+				fileStream.close();
+			}
+			fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (!fileStream.good() && fileStream.is_open()) {
+				fileStream.close();
 			} else {
 				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
@@ -206,7 +208,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// Final build (may need some modifications if building internal html)
 	if (fileStream.is_open()) {
 		fileStream.seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream.tellg());
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(fileStream.tellg());
 		fileStream.seekg(0, std::ios::beg);
 		response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}
