@@ -109,11 +109,7 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 			if (inLocationBlock) {
 				inLocationBlock = false ;
 				RouteConfig&	route = currentServer->getRoutes()[currentServer->getRoutes().size() - 1] ;
-				if (route.getMethods().empty()) {
-					route.addMethod("GET") ;
-					route.addMethod("POST") ;
-					route.addMethod("DELETE") ;
-				}
+				if (route.getMethods().empty()) route.addMethod("GET") ;
 			} else if (inServerBlock) {
 				inServerBlock = false ;
 				if (currentServer->getServerRoot().empty()) throw std::runtime_error("Error: Missing 'root' directive in server block.") ;
