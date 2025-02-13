@@ -212,9 +212,6 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 		#if LOGGER_DEBUG > 0
 			this->debug("pollout client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
-		if (!(client->getFlags() & RESPONSE) && !(client->getFlags() & SENDING)) {
-			client->buildResponse(HttpResponse(client->getRequest()));
-		}
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {

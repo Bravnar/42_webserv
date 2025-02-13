@@ -125,6 +125,8 @@ void ClientHandler::sendResponse() {
 	#endif
 	if (this->flags_ & SENT) return;
 	if (!(this->flags_ & SENDING)) {
+		if (!(this->flags_ & RESPONSE))
+			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
 	if (this->buffer_.fileStream)
