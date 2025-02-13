@@ -19,4 +19,12 @@ services:
     volumes:
       - ./config_files/nginx.conf:/etc/nginx/nginx.conf
       - ./www/:/var/www/
+    environment:
+      - NGINX_SINGLE_THREAD=true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+    command: ["nginx", "-g", "daemon off;"]
+    entrypoint: ["/bin/bash", "-c", "nginx -g 'worker_processes 1; daemon off;'"]
     restart: always
