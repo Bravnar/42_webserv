@@ -20,6 +20,9 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	server_(server),
 	address_(addr, addrlen),
 	flags_(0) {
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 		this->runtime_.getSockets().push_back(createPollfd(this->socket_fd_));
 		#if LOGGER_DEBUG
 			this->debug("New socket") << std::endl;
@@ -30,7 +33,8 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	socket_fd_(-1),	
 	runtime_(copy.runtime_),
 	server_(copy.server_),
-	flags_(copy.flags_) {
+	flags_(copy.flags_),
+	last_alive_(copy.last_alive_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 }
 
@@ -269,3 +273,9 @@ void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
 int ClientHandler::getFd() const { return this->socket_fd_; }
+unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
+void ClientHandler::updateLastAlive() {
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}

@@ -59,6 +59,7 @@ class Runtime {
 		int syncPipe_[2];
 		pollfd syncPoll_;
 		bool isSyncing_;
+		unsigned long long lat_tick_;
 	public:
 		Runtime(const std::vector<ServerConfig>&);
 		~Runtime();

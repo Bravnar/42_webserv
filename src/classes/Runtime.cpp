@@ -55,6 +55,7 @@ void Runtime::runServers() {
 
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
+		//TODO: Include config manager timeout
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;
@@ -65,6 +66,9 @@ void Runtime::runServers() {
 				break;
 			}
 		}
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		this->lat_tick_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 		this->checkSyncPipeSocket_();
 		this->checkServersSocket_();
 		this->checkClientsSockets_();
@@ -119,6 +123,15 @@ void Runtime::checkClientsSockets_() {
 					i--;
 					continue;
 			}
+		}
+		//TODO: include ConfigManager timeout value
+		if (this->lat_tick_ >= (client->getLastAlive() + 2000)) {
+			#if LOGGER_DEBUG
+				this->debug("throw client: reached timeout") << std::endl;
+			#endif
+			delete client;
+			i--;
+			continue;
 		}
 	}
 }
@@ -208,23 +221,28 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			#endif
 			return 1;
 		}
-	} else if (client->getFlags() & READING) {
-		socket->events = POLLOUT | POLLHUP;
-		#if LOGGER_DEBUG
-			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
-		try {
-			client->buildRequest();
-			this->handleRequest_(client);
-		} catch (const std::exception& e) {
-			std::string exception(e.what());
-			
-			if (exception == EXC_NOT_VALID_SERVERNAME) {
-				delete client;
-				return -1;
+		client->updateLastAlive();
+	} else {
+		if (client->getFlags() & READING) {
+			socket->events = POLLOUT | POLLHUP;
+			#if LOGGER_DEBUG
+				this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
+			#endif
+			try {
+				client->buildRequest();
+				this->handleRequest_(client);
+			} catch (const std::exception& e) {
+				std::string exception(e.what());
+				
+				if (exception == EXC_NOT_VALID_SERVERNAME) {
+					delete client;
+					return -1;
+				}
+				this->handleRequest_(client, exception);
+				client->updateLastAlive();
+				return 1;
 			}
-			this->handleRequest_(client, exception);
-			return 1;
+			client->updateLastAlive();
 		}
 	}
 	return 0;
@@ -268,6 +286,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 			client->flush();
 			socket->events = POLLIN | POLLHUP;
 		}
+		client->updateLastAlive();
 	}
 	return 0;
 }
