@@ -39,7 +39,7 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 	size_t old_pos = 0;
 
 	while (iter < 3) {
-		size_t pos = line.find_first_of(' ', old_pos);
+		size_t pos = line.find(' ', old_pos);
 		if ((iter != 2 && pos == line.npos) || (iter == 2 && pos != line.npos))
 			throw std::runtime_error(EXC_INVALID_RL);
 		switch(iter) {
@@ -70,8 +70,8 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 	#if LOGGER_DEBUG < 0
 		Logger::debug("removing query from url") << std::endl;
 	#endif
-	if (this->url_.find_first_of('?', 0) != std::string::npos) {
-		this->url_ = this->url_.substr(0, this->url_.find_first_of('?', 0));
+	if (this->url_.find('?', 0) != std::string::npos) {
+		this->url_ = this->url_.substr(0, this->url_.find('?', 0));
 	}
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
 }
@@ -91,7 +91,7 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 				isBody = true;
 				continue;
 			}
-			size_t sep = line.find_first_of(':', 0);
+			size_t sep = line.find(':', 0);
 			if (sep != line.npos) {
 				std::string key = line.substr(0, sep);
 				std::string value = line.substr(sep + 2, line.size() - sep - 2);

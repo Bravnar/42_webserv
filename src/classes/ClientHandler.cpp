@@ -86,7 +86,7 @@ void ClientHandler::sendHeader_() {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
 	#if LOGGER_DEBUG
-		if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
+		if (this->request_.getUrl().find(".html") != std::string::npos)
 			this->debug("sended: ") << std::endl << header << std::endl;
 	#endif
 }

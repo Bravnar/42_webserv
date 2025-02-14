@@ -23,7 +23,7 @@ std::string Logger::formatLog(const std::string& msg) {
 	std::size_t pos = 0;
 
 	while ((pos = output.find("http://", pos)) != std::string::npos) {
-		std::size_t end = output.find_first_of(" \t\n", pos);
+		std::size_t end = output.find(" \t\n", pos);
 		if (end == std::string::npos) {
 			end = output.length();
 		}
@@ -35,7 +35,7 @@ std::string Logger::formatLog(const std::string& msg) {
 
 	pos = 0;
 	while ((pos = output.find("https://", pos)) != std::string::npos) {
-		std::size_t end = output.find_first_of(" \t\n", pos);
+		std::size_t end = output.find(" \t\n", pos);
 		if (end == std::string::npos) {
 			end = output.length();
 		}
