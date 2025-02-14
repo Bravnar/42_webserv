@@ -152,6 +152,20 @@ void Runtime::checkServersSocket_() {
 }
 
 void Runtime::handleRequest_(ClientHandler *client) {
+	// Check if server name corresponds
+	// TODO: When isDefault() is implemented,  pass these tests
+	std::string hostname = client->getRequest().getHeaders().at(H_HOST);
+	bool isFound = false;
+
+	for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
+		this->debug("checking ") << *servername << std::endl;
+		if(hostname.find(*servername) != std::string::npos) {
+			isFound = true;
+			break;
+		}
+	}
+	if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
+	// Print Request
 	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
 		<< " client " << client->getClientIp();
@@ -161,15 +175,15 @@ void Runtime::handleRequest_(ClientHandler *client) {
 	stream << std::endl;
 }
 
-void Runtime::handleRequest_(ClientHandler *client, const std::exception *e) {
-	std::string msg(e->what());
-	if (msg == EXC_INVALID_RL || msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
+void Runtime::handleRequest_(ClientHandler *client, const std::string& exception) {
+	// Called on building error -> create a new response based on throw event
+	if (exception == EXC_INVALID_RL || exception == EXC_BODY_NEG_SIZE || exception == EXC_BODY_NOLIMITER || exception == EXC_HEADER_NOHOST)
 		client->buildResponse(HttpResponse(client->getRequest(), 400));
 	else {
 		client->buildResponse(HttpResponse(client->getRequest(), 500));
 	}
 	#if LOGGER_DEBUG
-		this->debug("client ") << client->getFd() << ": " << e->what() << std::endl;
+		this->debug("client ") << client->getFd() << ": " << exception << std::endl;
 	#endif
 }
 
@@ -204,7 +218,13 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			client->buildRequest();
 			this->handleRequest_(client);
 		} catch (const std::exception& e) {
-			this->handleRequest_(client, &e);
+			std::string exception(e.what());
+			
+			if (exception == EXC_NOT_VALID_SERVERNAME) {
+				delete client;
+				return -1;
+			}
+			this->handleRequest_(client, exception);
 			return 1;
 		}
 	}

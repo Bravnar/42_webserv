@@ -5,6 +5,8 @@
 # include "./ServerManager.hpp"
 # include <csignal>
 
+# define EXC_NOT_VALID_SERVERNAME "No virtual host matchin client host"
+
 class ClientHandler;
 
 class Runtime {
@@ -47,7 +49,7 @@ class Runtime {
 		// Log request status
 		void handleRequest_(ClientHandler *);
 		// Log request status
-		void handleRequest_(ClientHandler *, const std::exception *);
+		void handleRequest_(ClientHandler *, const std::string&);
 		// Log response status
 		void logResponse_(ClientHandler *);
 		std::vector<ServerManager> servers_;
