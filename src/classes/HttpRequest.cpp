@@ -56,7 +56,7 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 		old_pos = pos + 1;
 		iter++;
 	}
-	if (this->method_ != "GET" && this->method_ != "POST") {
+	if (this->method_ != "GET" && this->method_ != "POST" && this->method_ != "DELETE") {
 		#if LOGGER_DEBUG
 			Logger::debug("request invalid method") << std::endl;
 		#endif
