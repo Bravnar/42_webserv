@@ -57,12 +57,12 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 		iter++;
 	}
 	if (this->method_ != "GET" && this->method_ != "POST") {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			Logger::debug("request invalid method") << std::endl;
 		#endif
 		throw std::runtime_error(EXC_INVALID_RL);
 	} else if (this->httpVersion_ != "HTTP/1.1") {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			Logger::debug("request invalid http version") << std::endl;
 		#endif
 		throw std::runtime_error(EXC_INVALID_RL);
@@ -110,7 +110,7 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 				if (!bodySep) { throw std::runtime_error(EXC_BODY_NOLIMITER); }
 				else {
 					this->body_ = reinterpret_cast<const unsigned char *>(bodySep + 2);
-					#if LOGGER_DEBUG > 0
+					#if LOGGER_DEBUG
 						Logger::debug("data: ") << this->getStringBody() << std::endl;
 					#endif
 				}

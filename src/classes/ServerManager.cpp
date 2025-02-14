@@ -58,7 +58,7 @@ ServerManager& ServerManager::operator=(const ServerManager& assign) {
 }
 
 ServerManager::~ServerManager() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("ServerManager deconstructor") << std::endl;
 	#endif
 	if (this->server_fd_ > 0)

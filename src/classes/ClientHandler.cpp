@@ -21,7 +21,7 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	address_(addr, addrlen),
 	flags_(0) {
 		this->runtime_.getSockets().push_back(createPollfd(this->socket_fd_));
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			this->debug("New socket") << std::endl;
 		#endif
 }
@@ -42,7 +42,7 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 }
 
 ClientHandler::~ClientHandler() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
 	close(this->socket_fd_);
@@ -69,7 +69,7 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::sendHeader_() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("sending header") << std::endl;
 	#endif
 	std::string header;
@@ -85,14 +85,14 @@ void ClientHandler::sendHeader_() {
 	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
 			this->debug("sended: ") << std::endl << header << std::endl;
 	#endif
 }
 
 void ClientHandler::sendPlayload_() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		std::ostream& stream = this->debug("sending playload ");
 		if (!this->getRequest().getReqLine().empty())
 			stream << this->getRequest().getUrl();
@@ -109,7 +109,7 @@ void ClientHandler::sendPlayload_() {
 		file.close();
 		this->flags_ |= SENT;
 	}
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		if (this->request_.getUrl().find(".html") != std::string::npos) {
 			this->debug("sended: ") << buffer << std::endl;
 		}
@@ -117,7 +117,7 @@ void ClientHandler::sendPlayload_() {
 }
 
 void ClientHandler::sendResponse() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("sending response") << std::endl;
 	#endif
 	if (this->flags_ & SENT) return;
@@ -136,7 +136,7 @@ const HttpRequest& ClientHandler::buildRequest() {
 		return this->request_;
 	this->flags_ &= ~READING;
 	this->flags_ |= FETCHED;
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
@@ -179,7 +179,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// Build 404 - Not Found
 	if (!rootFile.empty() && !fileStream.good() && response.getStatus() != 404) {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			if (!rootFile.empty())
 				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
 		#endif
