@@ -108,7 +108,7 @@ void Runtime::checkClientsSockets_() {
 			Logger::debug("client alive") << std::endl;
 		#endif
 		if(this->clients_.find(this->sockets_[i].fd) != this->clients_.end()) {
-			if (this->handleClientPollin_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])
+			if (this->handleClientPollin_(this->clients_[this->sockets_[i].fd], &this->sockets_[i]) < 0
 				|| this->handleClientPollout_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])) {
 					i--;
 					continue;
