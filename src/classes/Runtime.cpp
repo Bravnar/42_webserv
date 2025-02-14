@@ -158,7 +158,7 @@ void Runtime::handleRequest_(ClientHandler *client) {
 	bool isFound = false;
 
 	for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
-		if(hostname.find(*servername) != std::string::npos) {
+		if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
 			isFound = true;
 			break;
 		}
