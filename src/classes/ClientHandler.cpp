@@ -9,7 +9,7 @@ std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debu
 static pollfd createPollfd(int fd) {
 	pollfd out;
 	out.fd = fd;
-	out.events = POLLIN;
+	out.events = POLLIN | POLLHUP;
 	out.revents = 0;
 	return out;
 }

@@ -39,6 +39,9 @@ class Runtime {
 		// Return 1 on success: client is deleted
 		// Return -1 on handled error: client is deleted
 		int handleClientPollout_(ClientHandler *, pollfd *);
+		// Return 0 on success
+		// Return 1 on success: client is deleted
+		int handleClientPollhup_(ClientHandler *, pollfd *);
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);
 		// Log request status

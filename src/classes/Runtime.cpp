@@ -107,14 +107,31 @@ void Runtime::checkClientsSockets_() {
 		#if LOGGER_DEBUG
 			Logger::debug("client alive") << std::endl;
 		#endif
+		pollfd *socket;
+		ClientHandler *client;
+
+		socket = &this->sockets_[i];
+		client = this->clients_[socket->fd];
 		if(this->clients_.find(this->sockets_[i].fd) != this->clients_.end()) {
-			if (this->handleClientPollin_(this->clients_[this->sockets_[i].fd], &this->sockets_[i]) < 0
-				|| this->handleClientPollout_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])) {
+			if (this->handleClientPollout_(client, socket)
+				|| this->handleClientPollin_(client, socket) < 0
+				|| this->handleClientPollout_(client, socket)) {
 					i--;
 					continue;
 			}
 		}
 	}
+}
+
+int Runtime::handleClientPollhup_(ClientHandler *client, pollfd *socket) {
+	if (socket->revents & POLLHUP) {
+		delete client;
+		#if LOGGER_DEBUG
+			this->debug("disconnected revent") << std::endl;
+		#endif
+		return 1;
+	}
+	return 0;
 }
 
 void Runtime::checkServersSocket_() {
@@ -179,7 +196,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return 1;
 		}
 	} else if (client->getFlags() & READING) {
-		socket->events = POLLOUT;
+		socket->events = POLLOUT | POLLHUP;
 		#if LOGGER_DEBUG
 			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
@@ -230,7 +247,7 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 				return 1;
 			}
 			client->flush();
-			socket->events = POLLIN;
+			socket->events = POLLIN | POLLHUP;
 		}
 	}
 	return 0;
