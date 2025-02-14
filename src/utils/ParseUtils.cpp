@@ -28,6 +28,8 @@ std::string	replWhitespace( const std::string& str ) {
 
 /* Setters for function pointers -------------------------------------- */
 
+/* SERVER CONFIG ------------------------------------------------------ */
+
 void	setHost( ServerConfig& server, const std::string &str ) {
 	server.setHost( str ) ;
 }
@@ -107,6 +109,8 @@ void	setIndex( ServerConfig& server, const std::string &str) {
 	server.setIndex( str ) ;
 }
 
+/* ROUTE CONFIG ------------------------------------------------------- */
+
 void	setLocationRoot( RouteConfig& route, const std::string &str) {
 	route.setLocationRoot( str ) ;
 }
@@ -119,6 +123,16 @@ void	setMethods( RouteConfig& route, const std::string &str) {
 			throw std::runtime_error( "invalid HTTP method: " + oneMethod ) ;
 		route.addMethod( oneMethod ) ;
 	}
+}
+
+void	setCgi( RouteConfig& route, const std::string &str ) {
+	if ( str == "on") route.setIsCgi(true) ;
+	else if ( str == "off" ) route.setIsCgi(false) ;
+	else throw std::runtime_error("invalid cgi value: must be 'on' or 'off'.") ;
+}
+
+void	setReturn( RouteConfig& route, const std::string &str ) {
+	route.setReturn( str ) ;
 }
 
 void	setDirectoryListing( RouteConfig& route, const std::string &str) {

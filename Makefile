@@ -15,6 +15,7 @@ FILES =	main \
 		classes/Runtime \
 		classes/ServerConfig \
 		classes/RouteConfig \
+		classes/CgiHandler \
 		utils/ParseUtils \
 		utils/Logger \
 		utils/Convert \

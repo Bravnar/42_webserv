@@ -31,6 +31,8 @@ void	ConfigParser::_initMaps( void ) {
 
 	_routeKeyHandlers["root"] = setLocationRoot ;
 	_routeKeyHandlers["methods"] = setMethods ;
+	_routeKeyHandlers["cgi"] = setCgi ;
+	_routeKeyHandlers["return"] = setReturn ;
 	_routeKeyHandlers["directory_listing"] = setDirectoryListing ;
 	_routeKeyHandlers["accept_uploads"] = setAcceptUploads ;
 	_routeKeyHandlers["upload_path"] = setUploadPath ;

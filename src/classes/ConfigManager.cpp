@@ -65,17 +65,22 @@ void ConfigManager::printConfig( void ) const {
             else
                 std::cout << C_RED "│ " C_CYAN "├──────────────────────────────────────────────────────────────────────────┤" C_RED " │" C_RESET << std::endl ;
             std::cout << C_RED "│ " C_CYAN "│" C_RESET 
-                << std::left << std::setw(20) << C_BOLD << " Path:\t\t" C_RESET 
+                << std::left << std::setw(21) << C_BOLD << "Path:\t\t" C_RESET 
                 << std::left << std::setw(totalWidth - 35) << it2->getPath() 
                 << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             std::cout << C_RED "│ " C_CYAN "│" C_RESET 
-                << std::left << std::setw(20) << C_BOLD << " Root:\t\t" C_RESET 
+                << std::left << std::setw(21) << C_BOLD << "Root:\t\t" C_RESET 
                 << std::left << std::setw(totalWidth - 35) 
                 << it2->getLocationRoot() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             // std::cout << C_RED "│ " C_CYAN "│" C_RESET << std::left << std::setw(20) << C_BOLD << " FinalRoot:\t" C_RESET << std::left << std::setw(totalWidth - 35) << it2->getFinalPath() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
+            if (it2->getIsCgi()) 
+                std::cout << C_RED "│ " C_CYAN "│" C_RESET 
+                    << std::left << std::setw(21) << C_BOLD << "CGI:\t\t" C_RESET 
+                    << std::left << std::setw(totalWidth - 35) 
+                    << (it2->getIsCgi() ? "ON" : "OFF" ) << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             if (it2->getUploadPath() != "/uploads")
                 std::cout << C_RED "│ " C_CYAN "│" C_RESET 
-                    << std::left << std::setw(20) << C_BOLD << " Upload Path:\t" C_RESET 
+                    << std::left << std::setw(21) << C_BOLD << "Upload Path:\t" C_RESET 
                     << std::left << std::setw(totalWidth - 35) 
                     << it2->getLocationRoot() + it2->getUploadPath() 
                     << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
@@ -86,11 +91,11 @@ void ConfigManager::printConfig( void ) const {
                 methods_str += *it3 ;
             }
             std::cout << C_RED "│ " C_CYAN "│" C_RESET 
-                << std::left << std::setw(20) << C_BOLD << " Methods:\t" C_RESET 
+                << std::left << std::setw(21) << C_BOLD << "Methods:\t" C_RESET 
                 << std::left << std::setw(totalWidth - 35) << methods_str 
                 << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             std::cout << C_RED "│ " C_CYAN "│" C_RESET 
-                << std::left << std::setw(20) << C_BOLD << " Dir Listing:\t" C_RESET 
+                << std::left << std::setw(21) << C_BOLD << "Dir Listing:\t" C_RESET 
                 << std::left << std::setw(totalWidth - 35) 
                 << (it2->isDirectoryListingEnabled() ? "ON" : "OFF") 
                 << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
