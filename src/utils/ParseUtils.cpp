@@ -28,6 +28,8 @@ std::string	replWhitespace( const std::string& str ) {
 
 /* Setters for function pointers -------------------------------------- */
 
+/* SERVER CONFIG ------------------------------------------------------ */
+
 void	setHost( ServerConfig& server, const std::string &str ) {
 	server.setHost( str ) ;
 }
@@ -77,6 +79,17 @@ void	setMaxClients( ServerConfig& server, const std::string &str ) {
 	server.setMaxClients(result) ;
 } 
 
+void	setTimeout( ServerConfig& server, const std::string &str ) {
+	char		*endptr = NULL ;
+	size_t		result ;
+
+	result = std::strtol( str.c_str(), &endptr, 10 ) ;
+	if (*endptr != '\0') throw std::runtime_error("invalid Timeout: non-numeric value.") ;
+	if (result <= 0 || result > 2147483647) 
+		throw std::runtime_error("invalid timeout limit.") ;
+	server.setTimeout(result) ;
+} 
+
 void	setError( ServerConfig& server, const std::string &str ) {
 	std::string trimmedStr = trim(str) ;
 
@@ -107,6 +120,8 @@ void	setIndex( ServerConfig& server, const std::string &str) {
 	server.setIndex( str ) ;
 }
 
+/* ROUTE CONFIG ------------------------------------------------------- */
+
 void	setLocationRoot( RouteConfig& route, const std::string &str) {
 	route.setLocationRoot( str ) ;
 }
@@ -119,6 +134,16 @@ void	setMethods( RouteConfig& route, const std::string &str) {
 			throw std::runtime_error( "invalid HTTP method: " + oneMethod ) ;
 		route.addMethod( oneMethod ) ;
 	}
+}
+
+void	setCgi( RouteConfig& route, const std::string &str ) {
+	if ( str == "on") route.setIsCgi(true) ;
+	else if ( str == "off" ) route.setIsCgi(false) ;
+	else throw std::runtime_error("invalid cgi value: must be 'on' or 'off'.") ;
+}
+
+void	setReturn( RouteConfig& route, const std::string &str ) {
+	route.setReturn( str ) ;
 }
 
 void	setDirectoryListing( RouteConfig& route, const std::string &str) {

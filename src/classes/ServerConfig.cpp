@@ -8,6 +8,7 @@ _serverNames(),
 _serverRoot(""),
 _clientBodyLimit(1024),
 _maxClients(100),
+_timeout(2000),
 _index("/index.html"),
 _errorPages(),
 _routes() { 
@@ -22,6 +23,7 @@ _serverNames(other._serverNames),
 _serverRoot(other._serverRoot),
 _clientBodyLimit(other._clientBodyLimit),
 _maxClients(other._maxClients),
+_timeout(other._timeout),
 _index(other._index),
 _errorPages(other._errorPages),
 _routes(other._routes) { }
@@ -35,6 +37,7 @@ ServerConfig& ServerConfig::operator=( const ServerConfig &other ) {
 		_serverRoot = other._serverRoot ;
 		_clientBodyLimit = other._clientBodyLimit ;
 		_maxClients = other._maxClients ;
+		_timeout = other._timeout ;
 		_index = other._index ;
 		_errorPages = other._errorPages ;
 		_routes = other._routes ;
@@ -51,6 +54,7 @@ void	ServerConfig::addServerName( const std::string& name ) { _serverNames.push_
 void	ServerConfig::setServerRoot( const std::string& root ) { _serverRoot = root ; }
 void	ServerConfig::setClientBodyLimit( unsigned long long limit ) { _clientBodyLimit = limit ; }
 void	ServerConfig::setMaxClients( int maxClients ) { _maxClients = maxClients ; }
+void	ServerConfig::setTimeout( int timeout ) { _timeout = timeout ; }
 void	ServerConfig::setIndex( const std::string &file ) { _index = file ; }
 void	ServerConfig::addErrorPage( int errorCode, const std::string& errorFile ) { 
 	_errorPages[errorCode] = errorFile ; 
@@ -66,6 +70,7 @@ const std::string&					ServerConfig::getServerRoot( ) const { return _serverRoot
 const std::map<int, std::string>&	ServerConfig::getErrorPages( ) const { return _errorPages ;}
 unsigned long long					ServerConfig::getClientBodyLimit( ) const { return _clientBodyLimit ; }
 int									ServerConfig::getMaxClients( ) const { return _maxClients ; }
+int									ServerConfig::getTimeout( ) const { return _timeout ; }
 const std::string&					ServerConfig::getIndex( ) const { return _index ; } 
 std::vector<RouteConfig>&			ServerConfig::getRoutes( ) { return _routes ; }
 const std::vector<RouteConfig>&		ServerConfig::getRoutes( ) const { return _routes ; }

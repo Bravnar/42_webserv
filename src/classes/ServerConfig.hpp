@@ -13,9 +13,10 @@ class ServerConfig
 		std::string					_host;
 		int							_port;
 		std::vector<std::string>	_serverNames ;
-		std::string					_serverRoot ; //obligatory
+		std::string					_serverRoot ;
 		unsigned long long			_clientBodyLimit ;
 		int							_maxClients ;
+		int							_timeout ;
 		std::string					_index ;
 		std::map<int, std::string>	_errorPages ;
 		std::vector<RouteConfig>	_routes ;
@@ -32,6 +33,7 @@ class ServerConfig
 		void	setServerRoot( const std::string& root ) ;
 		void	setClientBodyLimit( unsigned long long limit ) ;
 		void 	setMaxClients( int maxClients ) ;
+		void	setTimeout( int timeout ) ;
 		void	setIndex( const std::string &file ) ;
 		void	addErrorPage( int errorCode, const std::string& errorFile ) ;
 		void	addRoute( const RouteConfig& route ) ;
@@ -43,6 +45,7 @@ class ServerConfig
 		const	std::string					&getServerRoot( ) const ;
 		unsigned long long					getClientBodyLimit( ) const ;
 		int									getMaxClients( ) const ;
+		int									getTimeout( ) const ;
 		const std::string					&getIndex( ) const ;
 		const 	std::map<int, std::string>&	getErrorPages( ) const ;
 		std::vector<RouteConfig>			&getRoutes( ) ; 
