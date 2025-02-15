@@ -145,6 +145,7 @@ void	setCgi( RouteConfig& route, const std::string &str ) {
 }
 
 void	setReturn( RouteConfig& route, const std::string &str ) {
+	std::cout << "SALUT!" << std::endl ;
 	route.setReturn( str ) ;
 }
 
