@@ -164,12 +164,13 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
+		
 		if (matchingRoot) {
-			if (matchingRoot->getIsCgi()) {
-				// TODO: CGI Handler here
-				// need to return this->buildResponse(HttpResponse constructor)
-				// < you may want to create a new Response constructor for CGI
-			}
+			// TODO: CGI Handler by here
+			// using matchingRoot->getIsCgi() who is a RouteConfig
+			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
+			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
+			matchingRoot->getIsCgi();
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
 				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 			}
@@ -180,7 +181,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
-		} else {
+		} else /*if(!matchingRoot)*/ { // TODO: CGI Depending on past scenario uncomment or remove commented condition
 			throw std::runtime_error(EXC_NO_ROUTE);
 		}
 		if (this->buffer_.fileStream.is_open())
