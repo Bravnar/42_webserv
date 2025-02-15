@@ -84,7 +84,7 @@ void ConfigManager::printConfig( void ) const {
                 << std::left << std::setw(totalWidth - 43) 
                 << it2->getLocationRoot() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             #if LOGGER_DEBUG > 0
-                std::cout << C_RED "│ " C_CYAN "│" C_RESET << std::left << std::setw(20) << C_BOLD << " FinalRoot:\t" C_RESET << std::left << std::setw(totalWidth - 43) << it2->getFinalPath() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
+                std::cout << C_RED "│ " C_CYAN "│" C_RESET << std::left << std::setw(21) << C_BOLD << "FinalRoot:\t\t" C_RESET << std::left << std::setw(totalWidth - 43) << it2->getFinalPath() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             #endif
             // Allowed Methods
             std::string methods_str ;

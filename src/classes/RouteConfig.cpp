@@ -19,6 +19,8 @@ _locationRoot(other._locationRoot),
 _methods(other._methods),
 _directoryListing(other._directoryListing),
 _acceptUploads(other._acceptUploads),
+_isCgi(other._isCgi),
+_return(other._return),
 _uploadPath(other._uploadPath),
 _finalPath(other._finalPath) { }
 
@@ -30,6 +32,8 @@ RouteConfig& RouteConfig::operator=( const RouteConfig &other ) {
 		_methods = other._methods ;
 		_directoryListing = other._directoryListing ;
 		_acceptUploads = other._acceptUploads ;
+		_isCgi = other._isCgi ;
+		_return = other._return ;
 		_uploadPath = other._uploadPath ;
 		_finalPath = other._finalPath ;
 	}

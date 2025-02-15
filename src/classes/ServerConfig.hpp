@@ -13,6 +13,7 @@ class ServerConfig
 		std::string					_host;
 		int							_port;
 		std::vector<std::string>	_serverNames ;
+		bool						_isDefault ;
 		std::string					_serverRoot ;
 		unsigned long long			_clientBodyLimit ;
 		int							_maxClients ;
@@ -30,6 +31,7 @@ class ServerConfig
 		void	setHost( const std::string& host ) ;
 		void	setPort( int port ) ;
 		void	addServerName( const std::string& name ) ;
+		void	setIsDefault( bool io ) ;
 		void	setServerRoot( const std::string& root ) ;
 		void	setClientBodyLimit( unsigned long long limit ) ;
 		void 	setMaxClients( int maxClients ) ;
@@ -42,6 +44,7 @@ class ServerConfig
 		const	std::string					&getHost( ) const ;
 		int									getPort( ) const ;
 		const	std::vector<std::string>	&getServerNames( ) const ;
+		bool								getIsDefault( ) const ;
 		const	std::string					&getServerRoot( ) const ;
 		unsigned long long					getClientBodyLimit( ) const ;
 		int									getMaxClients( ) const ;
