@@ -155,7 +155,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::string rootFile;
 	const RouteConfig *matchingRoot = 0;
 
-	// Open file or build 301
+	// Open file or build 301 permanent redirection or 302 non-permanent redirection
 	if (response.getUrl()) {
 		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
 		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
@@ -164,9 +164,16 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
+		
 		if (matchingRoot) {
-			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
-				return this->buildResponse(HttpResponse(this->request_, *matchingRoot)); // 301 redirect constructor
+			// TODO: CGI Handler by here
+			// using matchingRoot->getIsCgi() who is a RouteConfig
+			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
+			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
+			matchingRoot->getIsCgi();
+			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+			}
 			rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 			if (rootFile.at(rootFile.size() - 1) != '/') {
 				struct stat s;
@@ -174,6 +181,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
+		} else /*if(!matchingRoot)*/ { // TODO: CGI Depending on past scenario uncomment or remove commented condition
+			throw std::runtime_error(EXC_NO_ROUTE);
 		}
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
@@ -271,7 +280,7 @@ void ClientHandler::readSocket() {
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
-const ServerManager& ClientHandler::getServer() const { return this->server_; }
+const ServerConfig& ClientHandler::getServerConfig() const { return this->server_.getConfig(); }
 int ClientHandler::getFd() const { return this->socket_fd_; }
 unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
 void ClientHandler::updateLastAlive() {

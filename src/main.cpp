@@ -20,7 +20,7 @@ int	main( int ac, char **av ) {
 	}
 	// std::cout << "Minimum timeout in given config: " << manager.getMinTimeout() << std::endl ;
 	manager.printConfig();
-	Runtime runtime(manager.getServers());
+	Runtime runtime(manager);
 	runtime.runServers();
 	return 0;
 }

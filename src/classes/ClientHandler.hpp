@@ -17,6 +17,7 @@
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
+# define EXC_NO_ROUTE "No valid route found"
 
 // Flags for state
 
@@ -102,6 +103,7 @@ class ClientHandler
 
 		// Send full response to client (header and chunks of playload)
 		// @throw `EXC_SEND_ERROR`
+		// @throw `buildResponse()` throws
 		void sendResponse();
 		// Read socket and fill requestBuffer by chunks until no more to read
 		// @throw `EXC_SOCKET_READ`
@@ -111,6 +113,7 @@ class ClientHandler
 		// @throw `HttpRequest(const std::string*)` constructor exceptions
 		const HttpRequest& buildRequest();
 		// Build client response from `HttpResponse` template
+		// @throw `EXC_NO_ROUTE`
 		const HttpResponse& buildResponse(HttpResponse);
 		// Flush client state
 		void flush();
@@ -122,7 +125,7 @@ class ClientHandler
 		int8_t getFlags() const;
 		void clearFlag(int8_t flag);
 		void setFlag(int8_t flag);
-		const ServerManager& getServer() const;
+		const ServerConfig& getServerConfig() const;
 		int getFd() const;
 		unsigned long long getLastAlive() const;
 		void updateLastAlive();

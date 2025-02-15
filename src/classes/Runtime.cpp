@@ -6,14 +6,14 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const std::vector<ServerConfig>& configs) {	
+Runtime::Runtime(const ConfigManager& config): config_(config) {	
 	pipe(this->syncPipe_);
 	this->syncPoll_.events = POLLIN;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
-	this->initializeServers_(configs);
+	this->initializeServers_(this->config_.getServers());
 }
 
 void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
@@ -55,8 +55,7 @@ void Runtime::runServers() {
 
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
-		//TODO: Include config manager timeout
-		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
+		if (poll(&this->sockets_[0], this->sockets_.size(), this->config_.getMinTimeout()) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;
 				continue;
@@ -124,8 +123,7 @@ void Runtime::checkClientsSockets_() {
 					continue;
 			}
 		}
-		//TODO: include ConfigManager timeout value
-		if (this->lat_tick_ >= (client->getLastAlive() + 2000)) {
+		if (this->lat_tick_ >= (client->getLastAlive() + client->getServerConfig().getTimeout())) {
 			#if LOGGER_DEBUG
 				this->debug("throw client: reached timeout") << std::endl;
 			#endif
@@ -166,19 +164,20 @@ void Runtime::checkServersSocket_() {
 
 void Runtime::handleRequest_(ClientHandler *client) {
 	// Check if server name corresponds
-	// TODO: When isDefault() is implemented,  pass these tests
-	std::string hostname = client->getRequest().getHeaders().at(H_HOST);
-	bool isFound = false;
-
-	for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
-		if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
-			isFound = true;
-			break;
+	if (!client->getServerConfig().getIsDefault()) {
+		std::string hostname = client->getRequest().getHeaders().at(H_HOST);
+		bool isFound = false;
+	
+		for(std::vector<std::string>::const_iterator servername = client->getServerConfig().getServerNames().begin(); servername != client->getServerConfig().getServerNames().end(); servername ++) {
+			if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
+				isFound = true;
+				break;
+			}
 		}
+		if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
 	}
-	if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
 	// Print Request
-	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
+	std::ostream& stream = this->info("") << C_BLUE << client->getServerConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
 		<< " client " << client->getClientIp();
 	#if LOGGER_DEBUG
@@ -254,7 +253,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 	else if (client->getResponse().getStatus() < 400) { stream = &this->warning(""); }
 	else if (client->getResponse().getStatus() < 500) { stream = &this->error(""); }
 	else { stream = &this->fatal(""); }
-	*stream << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
+	*stream << C_BLUE << client->getServerConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
 	if (!client->getRequest().getReqLine().empty())
 			*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
 	*stream << " client " << client->getClientIp();

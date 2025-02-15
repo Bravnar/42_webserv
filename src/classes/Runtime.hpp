@@ -24,7 +24,7 @@ class Runtime {
 		std::ostream& debug(const std::string&);
 
 		// Initializes server
-		void initializeServers_(const std::vector<ServerConfig>& configs);
+		void initializeServers_(const std::vector<ServerConfig>&);
 		// Properly handle exit
 		void handleExit_();
 		// Handle polling SyncPipe
@@ -52,6 +52,7 @@ class Runtime {
 		void handleRequest_(ClientHandler *, const std::string&);
 		// Log response status
 		void logResponse_(ClientHandler *);
+		const ConfigManager& config_;
 		std::vector<ServerManager> servers_;
 		std::map<int, ServerManager *> servers_map_;
 		std::map<int, ClientHandler *> clients_;
@@ -61,7 +62,7 @@ class Runtime {
 		bool isSyncing_;
 		unsigned long long lat_tick_;
 	public:
-		Runtime(const std::vector<ServerConfig>&);
+		Runtime(const ConfigManager&);
 		~Runtime();
 
 		// Member functions
