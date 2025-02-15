@@ -46,8 +46,10 @@ void	setPort( ServerConfig& server, const std::string &str ) {
 }
 
 void	setServerNames( ServerConfig& server, const std::string &str) {
-	if (std::find(server.getServerNames().begin(), server.getServerNames().end(), "default") != server.getServerNames().end())
+	if (std::find(server.getServerNames().begin(), server.getServerNames().end(), "default") != server.getServerNames().end()) {
 		server.clearServerNames() ;
+		server.setIsDefault(false) ;
+	}
 	std::istringstream	iss( str ) ;
 	std::string			oneName ;
 	while ( iss >> oneName ) server.addServerName( trim( oneName ) ) ;
