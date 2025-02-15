@@ -279,7 +279,7 @@ void ClientHandler::readSocket() {
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
-const ServerManager& ClientHandler::getServer() const { return this->server_; }
+const ServerConfig& ClientHandler::getServerConfig() const { return this->server_.getConfig(); }
 int ClientHandler::getFd() const { return this->socket_fd_; }
 unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
 void ClientHandler::updateLastAlive() {

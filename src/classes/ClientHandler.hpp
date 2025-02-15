@@ -125,7 +125,7 @@ class ClientHandler
 		int8_t getFlags() const;
 		void clearFlag(int8_t flag);
 		void setFlag(int8_t flag);
-		const ServerManager& getServer() const;
+		const ServerConfig& getServerConfig() const;
 		int getFd() const;
 		unsigned long long getLastAlive() const;
 		void updateLastAlive();

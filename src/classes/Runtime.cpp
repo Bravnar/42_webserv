@@ -123,7 +123,7 @@ void Runtime::checkClientsSockets_() {
 					continue;
 			}
 		}
-		if (this->lat_tick_ >= (client->getLastAlive() + client->getServer().getConfig().getTimeout())) {
+		if (this->lat_tick_ >= (client->getLastAlive() + client->getServerConfig().getTimeout())) {
 			#if LOGGER_DEBUG
 				this->debug("throw client: reached timeout") << std::endl;
 			#endif
@@ -164,11 +164,11 @@ void Runtime::checkServersSocket_() {
 
 void Runtime::handleRequest_(ClientHandler *client) {
 	// Check if server name corresponds
-	if (!client->getServer().getConfig().getIsDefault()) {
+	if (!client->getServerConfig().getIsDefault()) {
 		std::string hostname = client->getRequest().getHeaders().at(H_HOST);
 		bool isFound = false;
 	
-		for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
+		for(std::vector<std::string>::const_iterator servername = client->getServerConfig().getServerNames().begin(); servername != client->getServerConfig().getServerNames().end(); servername ++) {
 			if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
 				isFound = true;
 				break;
@@ -177,7 +177,7 @@ void Runtime::handleRequest_(ClientHandler *client) {
 		if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
 	}
 	// Print Request
-	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
+	std::ostream& stream = this->info("") << C_BLUE << client->getServerConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
 		<< " client " << client->getClientIp();
 	#if LOGGER_DEBUG
@@ -253,7 +253,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 	else if (client->getResponse().getStatus() < 400) { stream = &this->warning(""); }
 	else if (client->getResponse().getStatus() < 500) { stream = &this->error(""); }
 	else { stream = &this->fatal(""); }
-	*stream << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
+	*stream << C_BLUE << client->getServerConfig().getServerNames()[0] << C_RESET << ": " << client->getResponse().getResLine();
 	if (!client->getRequest().getReqLine().empty())
 			*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
 	*stream << " client " << client->getClientIp();
