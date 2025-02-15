@@ -9,7 +9,7 @@ std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debu
 static pollfd createPollfd(int fd) {
 	pollfd out;
 	out.fd = fd;
-	out.events = POLLIN;
+	out.events = POLLIN | POLLHUP;
 	out.revents = 0;
 	return out;
 }
@@ -20,8 +20,11 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	server_(server),
 	address_(addr, addrlen),
 	flags_(0) {
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 		this->runtime_.getSockets().push_back(createPollfd(this->socket_fd_));
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			this->debug("New socket") << std::endl;
 		#endif
 }
@@ -30,7 +33,8 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	socket_fd_(-1),	
 	runtime_(copy.runtime_),
 	server_(copy.server_),
-	flags_(copy.flags_) {
+	flags_(copy.flags_),
+	last_alive_(copy.last_alive_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 }
 
@@ -42,7 +46,7 @@ ClientHandler& ClientHandler::operator=(const ClientHandler& assign) {
 }
 
 ClientHandler::~ClientHandler() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
 	close(this->socket_fd_);
@@ -69,7 +73,7 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::sendHeader_() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("sending header") << std::endl;
 	#endif
 	std::string header;
@@ -85,14 +89,14 @@ void ClientHandler::sendHeader_() {
 	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
-	#if LOGGER_DEBUG > 0
-		if (this->request_.getUrl().find_first_of(".html") != std::string::npos)
+	#if LOGGER_DEBUG
+		if (this->request_.getUrl().find(".html") != std::string::npos)
 			this->debug("sended: ") << std::endl << header << std::endl;
 	#endif
 }
 
 void ClientHandler::sendPlayload_() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		std::ostream& stream = this->debug("sending playload ");
 		if (!this->getRequest().getReqLine().empty())
 			stream << this->getRequest().getUrl();
@@ -109,7 +113,7 @@ void ClientHandler::sendPlayload_() {
 		file.close();
 		this->flags_ |= SENT;
 	}
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		if (this->request_.getUrl().find(".html") != std::string::npos) {
 			this->debug("sended: ") << buffer << std::endl;
 		}
@@ -117,7 +121,7 @@ void ClientHandler::sendPlayload_() {
 }
 
 void ClientHandler::sendResponse() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("sending response") << std::endl;
 	#endif
 	if (this->flags_ & SENT) return;
@@ -136,7 +140,7 @@ const HttpRequest& ClientHandler::buildRequest() {
 		return this->request_;
 	this->flags_ &= ~READING;
 	this->flags_ |= FETCHED;
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
@@ -148,10 +152,11 @@ const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
 
-	// Open file
 	std::string rootFile;
+	const RouteConfig *matchingRoot = 0;
+
+	// Open file or build 301
 	if (response.getUrl()) {
-		const RouteConfig *matchingRoot = 0;
 		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
 		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
 			const std::string& locationRoot = route->getPath();
@@ -176,15 +181,23 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 	std::ifstream& fileStream = this->buffer_.fileStream;
 
-	// Build 404
+	// Build 404 - Not Found
 	if (!rootFile.empty() && !fileStream.good() && response.getStatus() != 404) {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			if (!rootFile.empty())
 				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
 		#endif
-		if (this->buffer_.fileStream.is_open())
-			this->buffer_.fileStream.close();
+		if (fileStream.is_open())
+			fileStream.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
+	}
+
+	// Build 405 - Method Not Allowed
+	if (matchingRoot) {
+		const std::vector<std::string>::const_iterator method
+			= std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
+		if (method == matchingRoot->getMethods().end())
+			this->buildResponse(HttpResponse(this->request_, 405));
 	}
 
 	// Check file for http code
@@ -192,13 +205,16 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (this->buffer_.fileStream.is_open())
-				this->buffer_.fileStream.close();
-			this->buffer_.fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (!this->buffer_.fileStream.good() && this->buffer_.fileStream.is_open()) {
-				this->buffer_.fileStream.close();
-			} else {
-				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+			if (fileStream.is_open()) {
+				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
+				fileStream.close();
+			}
+			fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (fileStream.is_open()) {
+				if (!fileStream.good())
+					fileStream.close();
+				else
+					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
 		}
 	}
@@ -206,9 +222,10 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// Final build (may need some modifications if building internal html)
 	if (fileStream.is_open()) {
 		fileStream.seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.fileStream.tellg());
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(fileStream.tellg());
 		fileStream.seekg(0, std::ios::beg);
-		response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
+		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
+			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}
 	else
 		response.getHeaders()[H_CONTENT_LENGTH] = "0";
@@ -256,3 +273,9 @@ void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
 const ServerManager& ClientHandler::getServer() const { return this->server_; }
 int ClientHandler::getFd() const { return this->socket_fd_; }
+unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
+void ClientHandler::updateLastAlive() {
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}

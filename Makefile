@@ -47,6 +47,7 @@ clean:
 
 fclean: clean
 		@rm -rf $(NAME)
+		@rm -rf ./www/siege/randomfile
 
 re: fclean all
 
@@ -62,7 +63,10 @@ down: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
 		@docker compose down
 		@echo "\033[0;32m ✅ WebservSIR and Nginx are down! ✅ \033[0m"
 
-logs: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
+logs: Dockerfile docker-compose.yml $(SRCS)
 		@docker logs 42_webserv-webserv-1
 
-.PHONY: all clean fclean re debug up down logs
+randomfile:
+	@dd if=/dev/urandom of=./www/siege/randomfile bs=1M count=10240
+
+.PHONY: all clean fclean re debug up down logs randomfile

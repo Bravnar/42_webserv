@@ -90,6 +90,7 @@ class ClientHandler
 		HttpRequest request_;
 		HttpResponse response_;
 		int8_t flags_;
+		unsigned long long last_alive_;
 
 	public:
 		// Canonical
@@ -123,6 +124,8 @@ class ClientHandler
 		void setFlag(int8_t flag);
 		const ServerManager& getServer() const;
 		int getFd() const;
+		unsigned long long getLastAlive() const;
+		void updateLastAlive();
 };
 
 #endif

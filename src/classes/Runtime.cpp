@@ -6,35 +6,36 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const std::vector<ServerConfig>& configs, size_t maxClients) {	
-	this->sockets_.reserve(sizeof(pollfd) * (1 + configs.size() * (1 + maxClients)));
-
+Runtime::Runtime(const std::vector<ServerConfig>& configs) {	
 	pipe(this->syncPipe_);
 	this->syncPoll_.events = POLLIN;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
-	this->initializeServers_(configs, maxClients);
+	this->initializeServers_(configs);
 }
 
-void Runtime::initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients) {
+void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 	for(std::vector<ServerConfig>::const_iterator config = configs.begin(); config != configs.end(); config++) {
-		this->servers_.push_back(ServerManager(*config, maxClients));
+		this->servers_.push_back(ServerManager(*config));
 	}
+	size_t socket_reserved = 1;
 	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
 		try {
 			server->init();
+			socket_reserved += server->getConfig().getMaxClients();
 			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
 		} catch (const std::exception& e) {
 			this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
 		}
 	}
+	this->sockets_.reserve(socket_reserved);
 }
 
 Runtime::~Runtime() {
-    #if LOGGER_DEBUG > 0
+    #if LOGGER_DEBUG
         debug("deconstructor") << std::endl;
     #endif
     handleExit_();
@@ -54,6 +55,7 @@ void Runtime::runServers() {
 
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
+		//TODO: Include config manager timeout
 		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;
@@ -64,6 +66,9 @@ void Runtime::runServers() {
 				break;
 			}
 		}
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		this->lat_tick_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 		this->checkSyncPipeSocket_();
 		this->checkServersSocket_();
 		this->checkClientsSockets_();
@@ -103,17 +108,43 @@ void Runtime::checkSyncPipeSocket_() {
 void Runtime::checkClientsSockets_() {
 	// starting at idx 1 + servers size since 0 and next are reserved
 	for(size_t i = 1 + this->servers_map_.size(); i < this->sockets_.size(); i++) {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			Logger::debug("client alive") << std::endl;
 		#endif
+		pollfd *socket;
+		ClientHandler *client;
+
+		socket = &this->sockets_[i];
+		client = this->clients_[socket->fd];
 		if(this->clients_.find(this->sockets_[i].fd) != this->clients_.end()) {
-			if (this->handleClientPollin_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])
-				|| this->handleClientPollout_(this->clients_[this->sockets_[i].fd], &this->sockets_[i])) {
+			if (this->handleClientPollout_(client, socket)
+				|| this->handleClientPollin_(client, socket) < 0
+				|| this->handleClientPollout_(client, socket)) {
 					i--;
 					continue;
 			}
 		}
+		//TODO: include ConfigManager timeout value
+		if (this->lat_tick_ >= (client->getLastAlive() + 2000)) {
+			#if LOGGER_DEBUG
+				this->debug("throw client: reached timeout") << std::endl;
+			#endif
+			delete client;
+			i--;
+			continue;
+		}
 	}
+}
+
+int Runtime::handleClientPollhup_(ClientHandler *client, pollfd *socket) {
+	if (socket->revents & POLLHUP) {
+		delete client;
+		#if LOGGER_DEBUG
+			this->debug("disconnected revent") << std::endl;
+		#endif
+		return 1;
+	}
+	return 0;
 }
 
 void Runtime::checkServersSocket_() {
@@ -134,60 +165,84 @@ void Runtime::checkServersSocket_() {
 }
 
 void Runtime::handleRequest_(ClientHandler *client) {
+	// Check if server name corresponds
+	// TODO: When isDefault() is implemented,  pass these tests
+	std::string hostname = client->getRequest().getHeaders().at(H_HOST);
+	bool isFound = false;
+
+	for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
+		if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
+			isFound = true;
+			break;
+		}
+	}
+	if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
+	// Print Request
 	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
 		<< " client " << client->getClientIp();
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		stream << " (fd: " << client->getFd() << ")";
 	#endif
 	stream << std::endl;
 }
 
-void Runtime::handleRequest_(ClientHandler *client, const std::exception *e) {
-	std::string msg(e->what());
-	if (msg == EXC_INVALID_RL || msg == EXC_BODY_NEG_SIZE || msg == EXC_BODY_NOLIMITER || msg == EXC_HEADER_NOHOST)
+void Runtime::handleRequest_(ClientHandler *client, const std::string& exception) {
+	// Called on building error -> create a new response based on throw event
+	if (exception == EXC_INVALID_RL || exception == EXC_BODY_NEG_SIZE || exception == EXC_BODY_NOLIMITER || exception == EXC_HEADER_NOHOST)
 		client->buildResponse(HttpResponse(client->getRequest(), 400));
 	else {
 		client->buildResponse(HttpResponse(client->getRequest(), 500));
 	}
-	#if LOGGER_DEBUG > 0
-		this->debug("client ") << client->getFd() << ": " << e->what() << std::endl;
+	#if LOGGER_DEBUG
+		this->debug("client ") << client->getFd() << ": " << exception << std::endl;
 	#endif
 }
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLIN) {
-		if(!(client->getFlags() & READING)) client->setFlag(READING);
-		#if LOGGER_DEBUG > 0
-			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
 		if (client->getFlags() & FETCHED) {
-			#if LOGGER_DEBUG > 0
+			#if LOGGER_DEBUG
 				this->debug("throwing sticky client") << " (fd: " << client->getFd() << ")" << std::endl;
 			#endif
 			delete client;
 			return -1;
 		}
+		if(!(client->getFlags() & READING)) client->setFlag(READING);
+		#if LOGGER_DEBUG
+			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
+		#endif
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
-			#if LOGGER_DEBUG > 0
+			#if LOGGER_DEBUG
 				this->debug("client ") << client->getFd() << ": " << e.what() << std::endl;
 			#endif
 			return 1;
 		}
-	} else if (client->getFlags() & READING) {
-		socket->events = POLLOUT;
-		#if LOGGER_DEBUG > 0
-			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
-		try {
-			client->buildRequest();
-			this->handleRequest_(client);
-		} catch (const std::exception& e) {
-			this->handleRequest_(client, &e);
-			return 1;
+		client->updateLastAlive();
+	} else {
+		if (client->getFlags() & READING) {
+			socket->events = POLLOUT | POLLHUP;
+			#if LOGGER_DEBUG
+				this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
+			#endif
+			try {
+				client->buildRequest();
+				this->handleRequest_(client);
+			} catch (const std::exception& e) {
+				std::string exception(e.what());
+				
+				if (exception == EXC_NOT_VALID_SERVERNAME) {
+					delete client;
+					return -1;
+				}
+				this->handleRequest_(client, exception);
+				client->updateLastAlive();
+				return 1;
+			}
+			client->updateLastAlive();
 		}
 	}
 	return 0;
@@ -203,7 +258,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 	if (!client->getRequest().getReqLine().empty())
 			*stream << " for " << client->getRequest().getMethod() << " " << client->getRequest().getUrl();
 	*stream << " client " << client->getClientIp();
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		if (LOGGER_DEBUG)
 			*stream << " (fd: " << client->getFd() << ")";
 	#endif
@@ -212,7 +267,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLOUT && client->getFlags() & FETCHED) {
-		#if LOGGER_DEBUG > 0
+		#if LOGGER_DEBUG
 			this->debug("pollout client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
 		try {
@@ -229,8 +284,9 @@ int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 				return 1;
 			}
 			client->flush();
-			socket->events = POLLIN;
+			socket->events = POLLIN | POLLHUP;
 		}
+		client->updateLastAlive();
 	}
 	return 0;
 }

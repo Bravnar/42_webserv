@@ -38,12 +38,11 @@ class ServerManager {
 		const std::vector<RouteConfig>& routeconfig_;
 		int server_fd_;
 		pollfd socket_;
-		size_t maxClients_;
 
 	public:
 		// Canonical
 
-		ServerManager(const ServerConfig&, size_t maxClients);
+		ServerManager(const ServerConfig&);
 		ServerManager(const ServerManager&);
 		~ServerManager();
 

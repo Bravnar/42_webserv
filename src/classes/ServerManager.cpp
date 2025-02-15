@@ -28,7 +28,7 @@ void ServerManager::init() {
 	int opt = 1;
 	if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) { throw std::logic_error("setsockopt: " + std::string(strerror(errno))); }
 	if (bind(this->server_fd_, this->address_, sizeof(addrv4_)) < 0) { throw std::logic_error("binding " + this->config_.getHost() + ":" + Convert::ToString(this->config_.getPort()) + ": " + std::string(strerror(errno))); }
-	if (listen(this->server_fd_, this->maxClients_)) { throw std::logic_error("error on listen: " + std::string(strerror(errno))); }
+	if (listen(this->server_fd_, this->config_.getMaxClients())) { throw std::logic_error("error on listen: " + std::string(strerror(errno))); }
 
 	this->socket_.fd = this->server_fd_;
 	this->socket_.events = POLLIN;
@@ -36,13 +36,12 @@ void ServerManager::init() {
 	this->info("Virtual host listening on: http://" + (this->config_.getHost() == "0.0.0.0" ? "127.0.0.1" : this->config_.getHost()) + ":" + std::string(Convert::ToString(this->config_.getPort()))) << std::endl;
 }
 
-ServerManager::ServerManager(const ServerConfig& config, size_t maxClients):
+ServerManager::ServerManager(const ServerConfig& config):
 	config_(config),
 	addrv4_(newAddr(config.getPort(), config.getHost())),
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(config.getRoutes()),
-	server_fd_(-1),
-	maxClients_(maxClients) {}
+	server_fd_(-1) {}
 
 ServerManager::ServerManager(const ServerManager& copy):
 	config_(copy.config_),
@@ -50,8 +49,7 @@ ServerManager::ServerManager(const ServerManager& copy):
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(copy.routeconfig_),
 	server_fd_(copy.server_fd_),
-	socket_(copy.socket_),
-	maxClients_(copy.maxClients_) {}
+	socket_(copy.socket_) {}
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
 	if (this == &assign)
@@ -60,7 +58,7 @@ ServerManager& ServerManager::operator=(const ServerManager& assign) {
 }
 
 ServerManager::~ServerManager() {
-	#if LOGGER_DEBUG > 0
+	#if LOGGER_DEBUG
 		this->debug("ServerManager deconstructor") << std::endl;
 	#endif
 	if (this->server_fd_ > 0)

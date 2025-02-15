@@ -5,6 +5,8 @@
 # include "./ServerManager.hpp"
 # include <csignal>
 
+# define EXC_NOT_VALID_SERVERNAME "No virtual host matchin client host"
+
 class ClientHandler;
 
 class Runtime {
@@ -22,7 +24,7 @@ class Runtime {
 		std::ostream& debug(const std::string&);
 
 		// Initializes server
-		void initializeServers_(const std::vector<ServerConfig>& configs, size_t maxClients);
+		void initializeServers_(const std::vector<ServerConfig>& configs);
 		// Properly handle exit
 		void handleExit_();
 		// Handle polling SyncPipe
@@ -39,12 +41,15 @@ class Runtime {
 		// Return 1 on success: client is deleted
 		// Return -1 on handled error: client is deleted
 		int handleClientPollout_(ClientHandler *, pollfd *);
+		// Return 0 on success
+		// Return 1 on success: client is deleted
+		int handleClientPollhup_(ClientHandler *, pollfd *);
 		// Return retrieve a socket by its socket_fd (identifier)
 		pollfd *getSocket_(int socket_fd_);
 		// Log request status
 		void handleRequest_(ClientHandler *);
 		// Log request status
-		void handleRequest_(ClientHandler *, const std::exception *);
+		void handleRequest_(ClientHandler *, const std::string&);
 		// Log response status
 		void logResponse_(ClientHandler *);
 		std::vector<ServerManager> servers_;
@@ -54,8 +59,9 @@ class Runtime {
 		int syncPipe_[2];
 		pollfd syncPoll_;
 		bool isSyncing_;
+		unsigned long long lat_tick_;
 	public:
-		Runtime(const std::vector<ServerConfig>&, size_t maxClients);
+		Runtime(const std::vector<ServerConfig>&);
 		~Runtime();
 
 		// Member functions
