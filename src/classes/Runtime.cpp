@@ -6,14 +6,14 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const std::vector<ServerConfig>& configs) {	
+Runtime::Runtime(const ConfigManager& config): config_(config) {	
 	pipe(this->syncPipe_);
 	this->syncPoll_.events = POLLIN;
 	this->syncPoll_.revents = 0;
 	this->syncPoll_.fd = this->syncPipe_[0];
 	this->sockets_.push_back(this->syncPoll_);
 	this->isSyncing_ = false;
-	this->initializeServers_(configs);
+	this->initializeServers_(this->config_.getServers());
 }
 
 void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
@@ -56,7 +56,7 @@ void Runtime::runServers() {
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
 		//TODO: Include config manager timeout
-		if (poll(&this->sockets_[0], this->sockets_.size(), 2000) < 0) {
+		if (poll(&this->sockets_[0], this->sockets_.size(), this->config_.getMinTimeout()) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;
 				continue;
@@ -124,8 +124,7 @@ void Runtime::checkClientsSockets_() {
 					continue;
 			}
 		}
-		//TODO: include ConfigManager timeout value
-		if (this->lat_tick_ >= (client->getLastAlive() + 2000)) {
+		if (this->lat_tick_ >= (client->getLastAlive() + client->getServer().getConfig().getTimeout())) {
 			#if LOGGER_DEBUG
 				this->debug("throw client: reached timeout") << std::endl;
 			#endif
