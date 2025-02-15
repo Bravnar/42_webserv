@@ -12,6 +12,7 @@ void	setServerRoot( ServerConfig& server, const std::string &str ) ;
 void	setError( ServerConfig& server, const std::string &str ) ;
 void	setClientBodyLimit( ServerConfig& server, const std::string &str) ;
 void	setMaxClients( ServerConfig& server, const std::string &str ) ;
+void	setTimeout( ServerConfig& server, const std::string &str ) ;
 void	setIndex( ServerConfig& server, const std::string &str ) ;
 
 /* Route Key Setters */

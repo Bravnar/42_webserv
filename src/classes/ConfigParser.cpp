@@ -26,6 +26,7 @@ void	ConfigParser::_initMaps( void ) {
 	_serverKeyHandlers["root"] = setServerRoot ;
 	_serverKeyHandlers["client_body_limit"] = setClientBodyLimit ;
 	_serverKeyHandlers["max_clients"] = setMaxClients ;
+	_serverKeyHandlers["timeout"] = setTimeout ;
 	_serverKeyHandlers["index"] = setIndex ;
 	_serverKeyHandlers["errors"] = setError ;
 

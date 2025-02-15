@@ -5,6 +5,7 @@
 # include <vector>
 # include <iostream>
 # include <iomanip>
+# include <limits>
 # include "ServerConfig.hpp"
 # include "ConfigParser.hpp"
 
@@ -23,7 +24,10 @@ class ConfigManager {
 		ConfigManager& operator=( const ConfigManager &other ) ;
 		~ConfigManager( void ) ;
 
+		
 		const	std::vector<ServerConfig>&	getServers() const ;
+		int		getMinTimeout( void ) const ;
+
 		void	printConfig() const  ;
 
 } ;

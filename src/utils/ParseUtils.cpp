@@ -79,6 +79,17 @@ void	setMaxClients( ServerConfig& server, const std::string &str ) {
 	server.setMaxClients(result) ;
 } 
 
+void	setTimeout( ServerConfig& server, const std::string &str ) {
+	char		*endptr = NULL ;
+	size_t		result ;
+
+	result = std::strtol( str.c_str(), &endptr, 10 ) ;
+	if (*endptr != '\0') throw std::runtime_error("invalid Timeout: non-numeric value.") ;
+	if (result <= 0 || result > 2147483647) 
+		throw std::runtime_error("invalid timeout limit.") ;
+	server.setTimeout(result) ;
+} 
+
 void	setError( ServerConfig& server, const std::string &str ) {
 	std::string trimmedStr = trim(str) ;
 
