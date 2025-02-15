@@ -31,7 +31,7 @@ class ServerConfig
 		void	setHost( const std::string& host ) ;
 		void	setPort( int port ) ;
 		void	addServerName( const std::string& name ) ;
-		void	ServerConfig::setIsDefault( bool io ) ;
+		void	setIsDefault( bool io ) ;
 		void	setServerRoot( const std::string& root ) ;
 		void	setClientBodyLimit( unsigned long long limit ) ;
 		void 	setMaxClients( int maxClients ) ;
