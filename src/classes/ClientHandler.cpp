@@ -155,7 +155,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::string rootFile;
 	const RouteConfig *matchingRoot = 0;
 
-	// Open file or build 301
+	// Open file or build 301 permanent redirection or 302 non-permanent redirection
 	if (response.getUrl()) {
 		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
 		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
@@ -165,8 +165,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		if (matchingRoot) {
-			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
-				return this->buildResponse(HttpResponse(this->request_, *matchingRoot)); // 301 redirect constructor
+			if (matchingRoot->getIsCgi()) {
+				// TODO: CGI Handler here
+				// need to return this->buildResponse(HttpResponse constructor)
+				// < you may want to create a new Response constructor for CGI
+			}
+			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+			}
 			rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 			if (rootFile.at(rootFile.size() - 1) != '/') {
 				struct stat s;
@@ -174,6 +180,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
+		} else {
+			throw std::runtime_error(EXC_NO_ROUTE);
 		}
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();

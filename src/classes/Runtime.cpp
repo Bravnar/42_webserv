@@ -55,7 +55,6 @@ void Runtime::runServers() {
 
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
-		//TODO: Include config manager timeout
 		if (poll(&this->sockets_[0], this->sockets_.size(), this->config_.getMinTimeout()) < 0) {
 			if (errno == EINTR) {
 				this->error("poll error: ") << strerror(errno) << std::endl;
@@ -165,17 +164,18 @@ void Runtime::checkServersSocket_() {
 
 void Runtime::handleRequest_(ClientHandler *client) {
 	// Check if server name corresponds
-	// TODO: When isDefault() is implemented,  pass these tests
-	std::string hostname = client->getRequest().getHeaders().at(H_HOST);
-	bool isFound = false;
-
-	for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
-		if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
-			isFound = true;
-			break;
+	if (!client->getServer().getConfig().getIsDefault()) {
+		std::string hostname = client->getRequest().getHeaders().at(H_HOST);
+		bool isFound = false;
+	
+		for(std::vector<std::string>::const_iterator servername = client->getServer().getConfig().getServerNames().begin(); servername != client->getServer().getConfig().getServerNames().end(); servername ++) {
+			if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
+				isFound = true;
+				break;
+			}
 		}
+		if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
 	}
-	if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
 	// Print Request
 	std::ostream& stream = this->info("") << C_BLUE << client->getServer().getConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()

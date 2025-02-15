@@ -88,7 +88,7 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest, int errorPage):
 
 HttpResponse::HttpResponse(const HttpRequest& httpRequest, const RouteConfig& routeConf):
 	version_("HTTP/1.1"),
-	status_(301),
+	status_(routeConf.getReturn().empty() ? 301 : 302),
 	status_msg_(checkStatus(status_)),
 	url_(0) {
 		this->headers_[H_DATE] = getHttpDate();
@@ -98,7 +98,10 @@ HttpResponse::HttpResponse(const HttpRequest& httpRequest, const RouteConfig& ro
 			this->headers_[H_CONNECTION] = "keep-alive";
 		else
 			this->headers_[H_CONNECTION] = "close";
-		this->headers_[H_LOCATION] = "http://" + httpRequest.getHeaders().at(H_HOST) + routeConf.getPath() + "/";
+		if (status_ == 301)
+			this->headers_[H_LOCATION] = "http://" + httpRequest.getHeaders().at(H_HOST) + routeConf.getPath() + "/";
+		else
+			this->headers_[H_LOCATION] = routeConf.getReturn();
 }
 
 HttpResponse::HttpResponse(const HttpResponse& copy):
