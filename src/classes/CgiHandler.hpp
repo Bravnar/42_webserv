@@ -12,9 +12,7 @@
 
 class CgiHandler {
 	private:
-		std::string			_scriptPath ;
 		std::vector<char *>	_envp ; // for execve
-		// HttpRequest			_request ;
 		HttpResponse		_response ;
 
 		void				_setEnvVariables() ;
@@ -25,8 +23,7 @@ class CgiHandler {
 		CgiHandler( void ) ;
 
 	public:
-		// CgiHandler( const HttpRequest& request, const std::string& scriptPath ) ;
-		CgiHandler( const HttpResponse& response, const std::string& scriptPath ) ;
+		CgiHandler( const HttpResponse& response) ;
 		CgiHandler( const CgiHandler &other ) ;
 		CgiHandler& operator=( const CgiHandler &other ) ;
 		~CgiHandler( void ) ;

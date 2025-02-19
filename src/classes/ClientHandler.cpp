@@ -179,7 +179,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
 		} else if(matchingRoot) {
-			CgiHandler	cgi( response, *response.getUrl() ) ;
+			CgiHandler	cgi( response ) ;
 			cgi.run() ; 
 			return this->response_ ;
 		} else throw std::runtime_error(EXC_NO_ROUTE) ;
