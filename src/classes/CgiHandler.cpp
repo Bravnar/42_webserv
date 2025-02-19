@@ -66,7 +66,6 @@ CgiHandler::~CgiHandler( void ) {
 
 std::string	CgiHandler::run( void ) {
 	std::cout << "Hello, from the C-G-Aaaaaaaiee" << std::endl ; // like Adele's hello from the other siiiide
-
 	
 	return "Work in Progress\n" ;
 }

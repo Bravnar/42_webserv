@@ -166,8 +166,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 		
 		if (matchingRoot && !matchingRoot->getIsCgi()) {
-			// TODO: CGI Handler by here
-			// using matchingRoot->getIsCgi() who is a RouteConfig
 			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
 			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
@@ -180,7 +178,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
-		} else if(matchingRoot) { // TODO: CGI Depending on past scenario uncomment or remove commented condition
+		} else if(matchingRoot) {
 			CgiHandler	cgi( response, *response.getUrl() ) ;
 			cgi.run() ; 
 			return this->response_ ;
