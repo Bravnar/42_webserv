@@ -165,12 +165,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		
-		if (matchingRoot) {
+		if (matchingRoot && !matchingRoot->getIsCgi()) {
 			// TODO: CGI Handler by here
 			// using matchingRoot->getIsCgi() who is a RouteConfig
 			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
 			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
-			matchingRoot->getIsCgi();
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
 				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 			}
@@ -181,9 +180,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
-		} else /*if(!matchingRoot)*/ { // TODO: CGI Depending on past scenario uncomment or remove commented condition
-			throw std::runtime_error(EXC_NO_ROUTE);
-		}
+		} else if(matchingRoot) { // TODO: CGI Depending on past scenario uncomment or remove commented condition
+			CgiHandler	cgi( response, *response.getUrl() ) ;
+			cgi.run() ; 
+			return this->response_ ;
+		} else throw std::runtime_error(EXC_NO_ROUTE) ;
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
 		this->buffer_.fileStream.open(rootFile.c_str(), std::ios::binary);

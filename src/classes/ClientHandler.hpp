@@ -11,6 +11,7 @@
 # include "./HttpResponse.hpp"
 # include "./Runtime.hpp"
 # include "./ServerManager.hpp"
+# include "./CgiHandler.hpp"
 # include <fstream>
 # include "./HttpResponse.hpp"
 # include <sys/stat.h>
