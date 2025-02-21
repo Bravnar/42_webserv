@@ -23,22 +23,28 @@ CgiHandler& CgiHandler::operator=( const CgiHandler& other ) {
 	return *this ; 
 }
 
-CgiHandler::~CgiHandler( void ) { }
+CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 
 /* Helper private functions */
 
 void	CgiHandler::_setEnvVariables( void ) {
 
+	_cgiStrVect.clear() ;
+	_envp.clear() ;
+
 	std::cout << _client->getRequest().getMethod() << std::endl ;
+	std::cout << "URL: " << _client->getRequest().getUrl() << std::endl ;
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
 	_cgiStrVect.push_back("SCRIPT_NAME=" + _client->getRequest().getUrl()) ;
-
+	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
+	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
 	}
 	_envp.push_back(NULL) ;
+	// _cgiStrVect.clear() ;
 }
 
 /* Main function run */
@@ -49,7 +55,8 @@ std::string	CgiHandler::run( void ) {
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
 
 	_setEnvVariables() ;
-	// _buildCgiEnv() ;
+	for ( size_t i = 0; i < _envp.size(); i++)
+		std::cout << _envp[i] << std::endl ;
 	// if (_method == "GET") _executeCgiGet() ;
 	// if (_method == "POST") _executeCgiPost() ;
 	
