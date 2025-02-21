@@ -151,10 +151,8 @@ const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// -> CGI
-
 	std::string rootFile;
 	const RouteConfig *matchingRoot = 0;
-
 	// Open file or build 301 permanent redirection or 302 non-permanent redirection
 	if (response.getUrl()) {
 		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
@@ -164,7 +162,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
-		
 		if (matchingRoot && !matchingRoot->getIsCgi()) {
 			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
 			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
@@ -179,9 +176,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
 		} else if(matchingRoot) {
-			CgiHandler	cgi( response ) ;
+
+
+			CgiHandler	cgi( *this ) ;
 			cgi.run() ; 
 			return this->response_ ;
+			// TODO: how to send response to Rui?
+
+
 		} else throw std::runtime_error(EXC_NO_ROUTE) ;
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
