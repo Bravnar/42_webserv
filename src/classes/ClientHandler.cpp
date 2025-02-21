@@ -177,13 +177,10 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			else rootFile.append(this->server_.getConfig().getIndex());
 		} else if(matchingRoot) {
 
-
-			CgiHandler	cgi( *this ) ;
+			CgiHandler	cgi( this ) ;
 			cgi.run() ; 
-			return this->response_ ;
+			// return this->response_ ;
 			// TODO: how to send response to Rui?
-
-
 		} else throw std::runtime_error(EXC_NO_ROUTE) ;
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();

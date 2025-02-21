@@ -1,35 +1,60 @@
 #include "CgiHandler.hpp"
+#include "ClientHandler.hpp"
 #include <cstring>
 
-CgiHandler::CgiHandler( const ClientHandler& client ) : _client( client ) { }
-CgiHandler::CgiHandler( const CgiHandler& other ) : _client( other._client ) { }
-CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { return *this ; }
+/* Constructors / Destructors */
+
+CgiHandler::CgiHandler( ClientHandler *client ) : 
+_cgiStrVect(),
+_client( client ),
+_method( client->getRequest().getMethod() ) { }
+
+CgiHandler::CgiHandler( const CgiHandler& other ) :
+_cgiStrVect( other._cgiStrVect ),
+_client( other._client ),
+_method( other._method ) { }
+
+CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
+	if (this != &other ) {
+		_cgiStrVect = other._cgiStrVect ;
+		_client =  other._client  ;
+		_method =  other._method  ;
+	}
+	return *this ; 
+}
+
+CgiHandler::~CgiHandler( void ) { }
+
+/* Helper private functions */
+
+void	CgiHandler::_setEnvVariables( void ) {
+
+	std::cout << _client->getRequest().getMethod() << std::endl ;
+
+	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
+	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
+	_cgiStrVect.push_back("SCRIPT_NAME=" + _client->getRequest().getUrl()) ;
+
+	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
+		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
+	}
+	_envp.push_back(NULL) ;
+}
+
+/* Main function run */
 
 std::string	CgiHandler::run( void ) {
 
-	std::cout << C_RED "\n\n####################### CGI #########################" C_RESET << std::endl ;
-	
-	std::cout << _client.getRequest().getMethod() << std::endl ;
+	std::cout << "Entering run()" << std::endl ;
+	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
 
-	std::cout << C_RED "\n#####################################################" C_RESET << std::endl ;
+	_setEnvVariables() ;
+	// _buildCgiEnv() ;
+	// if (_method == "GET") _executeCgiGet() ;
+	// if (_method == "POST") _executeCgiPost() ;
 	
 	return "Work in Progress\n" ;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* CgiHandler::CgiHandler( void ) : 
