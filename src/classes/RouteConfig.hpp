@@ -13,7 +13,7 @@ class RouteConfig
 		std::vector<std::string>		_methods ; // 
 		bool							_directoryListing ; //on/off
 		bool							_acceptUploads ; // yes/no
-		bool							_isCgi ;
+		std::string						_cgi ;
 		std::string						_return ;
 		std::string						_uploadPath ;
 		std::string						_finalPath ;
@@ -29,7 +29,7 @@ class RouteConfig
 		void							addMethod( const std::string &path ) ;
 		void							setDirectoryListing( bool io ) ;
 		void							setAcceptUploads( bool io ) ;
-		void							setIsCgi( bool io ) ;
+		void							setCgi( const std::string &path ) ;
 		void							setReturn( const std::string &path ) ;
 		void							setUploadPath( const std::string &path ) ;
 		void							setFinalPath( const std::string &path ) ;
@@ -39,7 +39,7 @@ class RouteConfig
 		const std::vector<std::string>	&getMethods( ) const ;
 		bool							isDirectoryListingEnabled( ) const ;
 		bool							isUploadAccepted( ) const ;
-		bool							getIsCgi( ) const ;
+		const std::string				&getCgi( ) const ;
 		const std::string				&getReturn( ) const ;
 		const std::string				&getUploadPath( ) const ;
 		const std::string				&getFinalPath( ) const ;

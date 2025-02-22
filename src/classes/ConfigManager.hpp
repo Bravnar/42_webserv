@@ -8,6 +8,7 @@
 # include <limits>
 # include "ServerConfig.hpp"
 # include "ConfigParser.hpp"
+# include "../utils/Logger.hpp"
 
 class ConfigManager {
 	private:

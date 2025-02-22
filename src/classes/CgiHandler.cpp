@@ -1,24 +1,31 @@
 #include "CgiHandler.hpp"
 #include "ClientHandler.hpp"
+#include "RouteConfig.hpp"
 #include <cstring>
 
 /* Constructors / Destructors */
 
-CgiHandler::CgiHandler( ClientHandler *client ) : 
+CgiHandler::CgiHandler( ClientHandler *client, const RouteConfig *route ) : 
 _cgiStrVect(),
 _client( client ),
-_method( client->getRequest().getMethod() ) { }
+_route( route ),
+_method( client->getRequest().getMethod() ),
+_cgi( route->getCgi() ) { }
 
 CgiHandler::CgiHandler( const CgiHandler& other ) :
 _cgiStrVect( other._cgiStrVect ),
 _client( other._client ),
-_method( other._method ) { }
+_route( other._route ),
+_method( other._method ),
+_cgi( other._cgi ) { }
 
 CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
 	if (this != &other ) {
 		_cgiStrVect = other._cgiStrVect ;
 		_client =  other._client  ;
+		_route = other._route ;
 		_method =  other._method  ;
+		_cgi = other._cgi ;
 	}
 	return *this ; 
 }
@@ -32,86 +39,64 @@ void	CgiHandler::_setEnvVariables( void ) {
 	_cgiStrVect.clear() ;
 	_envp.clear() ;
 
-	std::cout << _client->getRequest().getMethod() << std::endl ;
-	std::cout << "URL: " << _client->getRequest().getUrl() << std::endl ;
-
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
-	_cgiStrVect.push_back("SCRIPT_NAME=" + _client->getRequest().getUrl()) ;
+	_cgiStrVect.push_back("SCRIPT_NAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
 	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
+	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
 	}
 	_envp.push_back(NULL) ;
-	// _cgiStrVect.clear() ;
+}
+
+void	CgiHandler::_execProcess( const std::string &scriptPath ) {
+
+	Logger::warning("Script path: ") << scriptPath << std::endl ;
+	int 	pipefd[2] ;
+	if (pipe(pipefd) == -1) throw std::runtime_error("Failed to create pipe.") ;
+
+	pid_t	pid = fork() ;
+	if ( pid == -1 ) throw std::runtime_error("Failed to fork process.") ;
+	else if (pid == 0) {
+		close( pipefd[0] ) ;
+		dup2( pipefd[1], STDOUT_FILENO ) ;
+		close( pipefd[1] ) ;  
+
+		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
+		execve(_cgi.c_str(), av, &_envp[0]) ;
+		Logger::fatal("Execve failed.");
+		exit(EXIT_FAILURE) ;
+	} else {
+		close(pipefd[1]) ;
+
+		char		buffer[1024] ;
+		std::string	output ;
+		ssize_t		bytesRead ;
+
+		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+			buffer[bytesRead] = '\0' ;
+			output += buffer ;
+		}
+
+		close( pipefd[0] ) ;
+		waitpid( pid, NULL, 0 ) ;
+		// TODO: how to pass it to ClientHandler ?
+		Logger::info("CGI output:\n") << output << std::endl ;
+	}
 }
 
 /* Main function run */
 
 std::string	CgiHandler::run( void ) {
 
-	std::cout << "Entering run()" << std::endl ;
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
-
 	_setEnvVariables() ;
-	for ( size_t i = 0; i < _envp.size(); i++)
-		std::cout << _envp[i] << std::endl ;
-	// if (_method == "GET") _executeCgiGet() ;
-	// if (_method == "POST") _executeCgiPost() ;
+	_execProcess( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+
+	/* for ( size_t i = 0; i < _envp.size(); i++)
+		std::cout << _envp[i] << std::endl ; */
 	
 	return "Work in Progress\n" ;
 }
-
-
-/* CgiHandler::CgiHandler( void ) : 
-_client() { } // in private should not be called
-
-
-CgiHandler::CgiHandler( const HttpResponse& response) :
-_client(response) { 
-	#if LOGGER_DEBUG > 0
-		Logger::debug("CgiHandler created successfully") << std::endl ;
-	#endif
-	std::cout << "Created successfully\n" ; 
-}
-
-CgiHandler::CgiHandler( const CgiHandler& other ) :
-_client(other._client) { 
-	for ( size_t i = 0; i < other._envp.size(); ++i ) {
-		_envp.push_back(new char[std::strlen(other._envp[i]) + 1]) ;
-		std::strcpy(_envp.back(), other._envp[i]) ;
-	}
-}
-
-CgiHandler&	CgiHandler::operator=( const CgiHandler& other ) {
-	if ( this != &other ) {
-		for ( size_t i = 0; i < _envp.size(); ++i ) {
-			delete[] _envp[i] ;
-		}
-		_envp.clear() ;
-		_client = other._client ;
-
-		for ( size_t i = 0; i < other._envp.size(); ++i ) {
-			_envp.push_back(new char[std::strlen(other._envp[i]) + 1]) ;
-			std::strcpy(_envp.back(), other._envp[i]) ;
-		}
-	}
-	return *this ;
-} 
-
-CgiHandler::~CgiHandler( void ) {
-	for ( size_t i = 0; i < _envp.size(); ++i ) {
-		delete[] _envp[i] ;
-	}
-	_envp.clear() ;
-	#if LOGGER_DEBUG > 0
-		Logger::debug("Cgi cleared and exited, may cause memory issues for now") << std::endl ;
-	#endif
-} */
-
-// void	CgiHandler::_setEnvVariables( void ) {
-// 	std::vector<std::string>	tmp ;
-
-// 	tmp.push_back("REQUEST_METHOD=" + _client.getRe)
-// }

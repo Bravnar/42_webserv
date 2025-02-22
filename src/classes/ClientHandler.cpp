@@ -162,7 +162,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
-		if (matchingRoot && !matchingRoot->getIsCgi()) {
+		if (matchingRoot && matchingRoot->getCgi().empty()) {
 			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
 			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
@@ -177,10 +177,22 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			else rootFile.append(this->server_.getConfig().getIndex());
 		} else if(matchingRoot) {
 
-			CgiHandler	cgi( this ) ;
-			cgi.run() ; 
+			try {
+				CgiHandler	cgi( this, matchingRoot ) ;
+				cgi.run() ; 
+			}
+			catch(const std::exception& e) {
+				std::string	errMessage = e.what() ;
+				Logger::error("CGI Error: " + errMessage + "\n") ;
+			}
+			
+			// TODO: Rui, can you think of a way that can help me with the comments just below?
+			// if (cgi.run()) maybe? it would return true and pipe info? pipe where?
+			// else if false then serve the static file
+			// cgi will check if the requested file has a correct extension according to the cgi-bin
+			// cgi-bin will be separated into cgi-bin-python and cgi-bin-php
+			// checks will return false if the file inside cgi-bin does not correspond to the right script
 			// return this->response_ ;
-			// TODO: how to send response to Rui?
 		} else throw std::runtime_error(EXC_NO_ROUTE) ;
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
