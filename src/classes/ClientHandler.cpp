@@ -107,14 +107,12 @@ void ClientHandler::sendPlayload_() {
 	#endif
 	/* Stan CGI send */
 	if (!_cgiOutput.empty()) {
-		Logger::debug("I AM HERE! I GOT THE CGI TRIGGER\n") ;
-		std::cout << "Declared Content-Length: " << response_.getHeaders().at("Content-Length") << std::endl;
-		std::cout << "Actual Body Size: " << _cgiOutput.size() << std::endl;
+		// std::cout << "Declared Content-Length: " << response_.getHeaders().at("Content-Length") << std::endl;
+		// std::cout << "Actual Body Size: " << _cgiOutput.size() << std::endl;
 		ssize_t	sent = send(this->socket_fd_, _cgiOutput.c_str(), _cgiOutput.size(), 0) ;
 		if (sent < 0) throw std::runtime_error(EXC_SEND_ERROR) ;
 		this->_cgiOutput.clear() ;
 		this->flags_ |= SENT ;
-		Logger::debug("GOT TO THE END\n") ;
 		return ;
 	}
 
@@ -194,11 +192,10 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				CgiHandler	cgi( this, matchingRoot ) ;
 				cgi.run() ; 
 				
-				std::cout << " HELLO !" << std::endl ;
 				this->_cgiOutput = cgi.getOutputBody() ;
-				for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
+				/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
 					std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
-				}
+				} */
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(_cgiOutput.size()) ;
 				if (matchingRoot->getCgi() == "/usr/bin/php-cgi") 
 					response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;

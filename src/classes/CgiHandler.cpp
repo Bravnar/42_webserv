@@ -121,8 +121,8 @@ void	CgiHandler::_execProcess( const std::string &scriptPath ) {
 		close( pipefd[0] ) ;
 		waitpid( pid, NULL, 0 ) ;
 		_parseOutput( output ) ;
-		Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
-		Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
+		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
+		// Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
 	}
 }
 
