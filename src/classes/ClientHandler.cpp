@@ -175,7 +175,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
-		if (matchingRoot && matchingRoot->getCgi().empty()) {
+		if (matchingRoot) {
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
 				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 			}
@@ -186,31 +186,9 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
-		} else if(matchingRoot) {
-
-			try {
-				CgiHandler	cgi( this, matchingRoot ) ;
-				cgi.run() ; 
-				
-				this->_cgiOutput = cgi.getOutputBody() ;
-				/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
-					std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
-				} */
-				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(_cgiOutput.size()) ;
-				if (matchingRoot->getCgi() == "/usr/bin/php-cgi") 
-					response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
-				else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
-
-				this->response_ = response ;
-				this->flags_ |= RESPONSE ;
-				return this->response_ ;
-			}
-			catch(const std::exception& e) {
-				std::string	errMessage = e.what() ;
-				Logger::error("CGI Error: " + errMessage + "\n") ;
-			}
-			
-		} else throw std::runtime_error(EXC_NO_ROUTE) ;
+		} else if (matchingRoot->getCgi().empty()) {
+			throw std::runtime_error(EXC_NO_ROUTE) ;
+		} 
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
 		this->buffer_.fileStream.open(rootFile.c_str(), std::ios::binary);
@@ -234,6 +212,31 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			= std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
 		if (method == matchingRoot->getMethods().end())
 			this->buildResponse(HttpResponse(this->request_, 405));
+	}
+
+	// ici ?
+	if (matchingRoot && !matchingRoot->getCgi().empty()) {
+		try {
+			CgiHandler	cgi( this, matchingRoot ) ;
+			cgi.run() ; 
+			// TODO: check if the script file is actually the one being requested !
+			
+			this->_cgiOutput = cgi.getOutputBody() ;
+			/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
+				std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
+			} */
+			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(_cgiOutput.size()) ;
+			if (matchingRoot->getCgi() == "/usr/bin/php-cgi") 
+				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
+			else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			this->response_ = response ;
+			this->flags_ |= RESPONSE ;
+			return this->response_ ;
+		}
+		catch(const std::exception& e) {
+			std::string	errMessage = e.what() ;
+			Logger::error("CGI Error: " + errMessage + "\n") ;
+		}
 	}
 
 	// Check file for http code
