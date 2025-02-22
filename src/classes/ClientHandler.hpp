@@ -37,7 +37,7 @@ struct s_clientBuffer {
 	std::ifstream fileStream;
 	s_clientBuffer():
 		requestBuffer(0),
-		fileStream(0) {}
+		fileStream() {}
 };
 
 // Unique client address identifier
