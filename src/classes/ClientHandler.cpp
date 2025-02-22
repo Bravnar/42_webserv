@@ -19,7 +19,8 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	runtime_(runtime),
 	server_(server),
 	address_(addr, addrlen),
-	flags_(0) {
+	flags_(0),
+	_cgiOutput("") {
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
@@ -34,7 +35,8 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	runtime_(copy.runtime_),
 	server_(copy.server_),
 	flags_(copy.flags_),
-	last_alive_(copy.last_alive_) {
+	last_alive_(copy.last_alive_),
+	_cgiOutput(copy._cgiOutput) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 }
 
@@ -89,6 +91,7 @@ void ClientHandler::sendHeader_() {
 	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
+
 	#if LOGGER_DEBUG
 		if (this->request_.getUrl().find(".html") != std::string::npos)
 			this->debug("sended: ") << std::endl << header << std::endl;
@@ -102,6 +105,19 @@ void ClientHandler::sendPlayload_() {
 			stream << this->getRequest().getUrl();
 		stream << std::endl;
 	#endif
+	/* Stan CGI send */
+	if (!_cgiOutput.empty()) {
+		Logger::debug("I AM HERE! I GOT THE CGI TRIGGER\n") ;
+		std::cout << "Declared Content-Length: " << response_.getHeaders().at("Content-Length") << std::endl;
+		std::cout << "Actual Body Size: " << _cgiOutput.size() << std::endl;
+		ssize_t	sent = send(this->socket_fd_, _cgiOutput.c_str(), _cgiOutput.size(), 0) ;
+		if (sent < 0) throw std::runtime_error(EXC_SEND_ERROR) ;
+		this->_cgiOutput.clear() ;
+		this->flags_ |= SENT ;
+		Logger::debug("GOT TO THE END\n") ;
+		return ;
+	}
+
 	std::ifstream& file = this->buffer_.fileStream;
 	char buffer[DF_MAX_BUFFER] = {0};
 	if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
@@ -130,7 +146,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.fileStream)
+	if (this->buffer_.fileStream || !_cgiOutput.empty())
 		sendPlayload_();
 	return;
 }
@@ -177,19 +193,26 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			try {
 				CgiHandler	cgi( this, matchingRoot ) ;
 				cgi.run() ; 
+				
+				std::cout << " HELLO !" << std::endl ;
+				this->_cgiOutput = cgi.getOutputBody() ;
+				for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
+					std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
+				}
+				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(_cgiOutput.size()) ;
+				if (matchingRoot->getCgi() == "/usr/bin/php-cgi") 
+					response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
+				else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+
+				this->response_ = response ;
+				this->flags_ |= RESPONSE ;
+				return this->response_ ;
 			}
 			catch(const std::exception& e) {
 				std::string	errMessage = e.what() ;
 				Logger::error("CGI Error: " + errMessage + "\n") ;
 			}
 			
-			// TODO: Rui, can you think of a way that can help me with the comments just below?
-			// if (cgi.run()) maybe? it would return true and pipe info? pipe where?
-			// else if false then serve the static file
-			// cgi will check if the requested file has a correct extension according to the cgi-bin
-			// cgi-bin will be separated into cgi-bin-python and cgi-bin-php
-			// checks will return false if the file inside cgi-bin does not correspond to the right script
-			// return this->response_ ;
 		} else throw std::runtime_error(EXC_NO_ROUTE) ;
 		if (this->buffer_.fileStream.is_open())
 			this->buffer_.fileStream.close();
@@ -254,6 +277,7 @@ void ClientHandler::flush() {
 	if (this->buffer_.fileStream.is_open()) {
 		this->buffer_.fileStream.close();
 	}
+	this->_cgiOutput.clear() ;
 	if (this->buffer_.requestBuffer) {
 		delete this->buffer_.requestBuffer;
 		this->buffer_.requestBuffer = 0;

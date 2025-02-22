@@ -76,11 +76,20 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 		if (!line.empty() && line[line.size() - 1] == '\r') {
 			line.resize(line.size() - 1) ;
 		}
-		_outputHeaders.push_back( line ) ;
+		line = replWhitespace(trim(line)) ;
+		std::istringstream	iss(line) ;
+		std::string	key, value ;
+		iss >> key ;
+		key = trim(key) ;
+		if (key.at(key.size() - 1) == ':') key.resize(key.size() - 1) ;
+		std::getline( iss, value ) ;
+		value = trim(value) ;
+		_outputHeaders[key] = value ;
 	}
-	for (size_t i = 0; i < _outputHeaders.size(); i++ ) {
-		std::cout << "Header [" << i << "]: " << _outputHeaders[i] << std::endl ;
-	}
+
+	/* for (std::map<std::string, std::string>::iterator it = _outputHeaders.begin() ; it != _outputHeaders.end() ; it++) {
+		std::cout << "KEY: " << it->first << " | " << "VALUE: " << it->second << std::endl ; 
+	} */
 }
 
 void	CgiHandler::_execProcess( const std::string &scriptPath ) {
@@ -112,8 +121,8 @@ void	CgiHandler::_execProcess( const std::string &scriptPath ) {
 		close( pipefd[0] ) ;
 		waitpid( pid, NULL, 0 ) ;
 		_parseOutput( output ) ;
-		// TODO: how to pass it to ClientHandler ?
-		Logger::info("CGI output:\n") << output << std::endl ;
+		Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
+		Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
 	}
 }
 
@@ -131,5 +140,17 @@ std::string	CgiHandler::run( void ) {
 	return "Work in Progress\n" ;
 }
 
-const std::vector<std::string>&	CgiHandler::getOutputHeaders( void ) const { return _outputHeaders ; }
-const std::string&				CgiHandler::getOutputBody( void ) const { return _outputBody ; }
+/* Getters */
+
+const std::map<std::string, std::string>&	CgiHandler::getOutputHeaders( void ) const { return _outputHeaders ; }
+const std::string&							CgiHandler::getOutputBody( void ) const { return _outputBody ; }
+long long int								CgiHandler::getContentSize( void ) const {
+
+	char	*endptr = NULL ;
+	long long int	result ;
+	std::map<std::string, std::string>::const_iterator it = _outputHeaders.find("Content-Length") ;
+	if (it == _outputHeaders.end()) throw std::runtime_error("Content-Length not found.") ;
+	result = std::strtoll( it->second.c_str(), &endptr, 10 ) ;
+	if (*endptr != '\0') throw std::runtime_error("Invalid Content-Length value.");
+	return result ;
+}

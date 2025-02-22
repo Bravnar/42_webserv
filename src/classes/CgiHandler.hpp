@@ -10,6 +10,7 @@
 # include <sys/wait.h>
 # include <exception>
 # include "../utils/Logger.hpp"
+# include "../utils/ParseUtils.hpp"
 # include "../utils/colors.h"
 
 class ClientHandler ;
@@ -24,7 +25,7 @@ class CgiHandler {
 		const RouteConfig					*_route ;
 		std::string							_method ;
 		std::string							_cgi ;
-		std::vector<std::string>			_outputHeaders ;
+		std::map<std::string, std::string>	_outputHeaders ;
 		std::string							_outputBody ;
 
 		
@@ -44,8 +45,9 @@ class CgiHandler {
 		~CgiHandler( void ) ;
 
 		std::string			run() ;
-		const std::vector<std::string>	&getOutputHeaders( void ) const ;
-		const std::string				&getOutputBody( void ) const ;
+		const std::map<std::string, std::string>	&getOutputHeaders( void ) const ;
+		long long int								getContentSize( void ) const ;
+		const std::string							&getOutputBody( void ) const ;
 
 } ;
 
