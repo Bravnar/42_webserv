@@ -1,6 +1,11 @@
 #!/usr/bin/php-cgi
 
 <?php
+
+$day_of_week = date("l");
+
+$day_message = "$day_of_week!";
+
 $content = "
 <!DOCTYPE html>
 <html lang=\"en\">
@@ -91,6 +96,7 @@ $content = "
     <section>
         <div class=\"container\">
             <h1>WebServ-PythonCGI</h1>
+            <h2>Happy <span style=\"color: blue;\">$day_message</span> Hope you're having a great day!</h2>
         </div>
         <div class=\"container\">
             <h1>Welcome to Python CGI Page!</h1>

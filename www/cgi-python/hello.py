@@ -1,5 +1,22 @@
 #!/usr/bin/python
-content = """
+
+import datetime
+
+now = datetime.datetime.now()
+formatted_time = now.strftime("%H:%M")
+
+hour = now.hour 
+
+if 5 <= hour < 12:
+	greeting = "Good Morning!"
+elif 12 <= hour < 18:
+	greeting = "Good Afternoon!"
+elif 18 <= hour < 22:
+	greeting = "Good Evening!"
+else:
+    greeting = "Good Night!"
+
+content = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,24 +25,24 @@ content = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PythonCGI!</title>
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
-        }
-        body {
+        }}
+        body {{
             background-color: #fff;
             color: #000;
-        }
-        section {
+        }}
+        section {{
             width: 100%;
             min-height: 80vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        .container {
+        }}
+        .container {{
             margin-top: 100px;
             max-height: fit-content;
             width: 60%;
@@ -37,26 +54,26 @@ content = """
             flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-        h1 {
+        }}
+        h1 {{
             border-bottom: 2px solid black;
             padding-bottom: 10px;
             margin-bottom: 20px;
-        }
-        img {
+        }}
+        img {{
             width: 100%;
             max-width: 400px;
             height: auto;
             border: 2px solid black;
             margin: 20px 0;
-        }
-        p {
+        }}
+        p {{
             line-height: 1.6;
-        }
-        .buttons {
+        }}
+        .buttons {{
             margin-top: 20px;
-        }
-        .buttons a {
+        }}
+        .buttons a {{
             display: inline-block;
             text-decoration: none;
             color: black;
@@ -64,12 +81,12 @@ content = """
             padding: 10px 20px;
             margin: 10px;
             font-size: 16px;
-        }
-        .buttons a:hover {
+        }}
+        .buttons a:hover {{
             background: black;
             color: white;
-        }
-        .cgi-buttons a {
+        }}
+        .cgi-buttons a {{
             display: inline-block;
             text-decoration: none;
             color: black;
@@ -78,17 +95,18 @@ content = """
             padding: 10px 20px;
             margin: 10px;
             font-size: 16px;
-        }
-        .cgi-buttons a:hover {
+        }}
+        .cgi-buttons a:hover {{
             background: #022449;
             color: white;
-        }
+        }}
     </style>
 </head>
 <body>
     <section>
         <div class="container">
             <h1>WebServ-PythonCGI</h1>
+			<h2><span style="color: blue;">{greeting}</span> It is now: <span style="color: blue;">{formatted_time}</span>!</h2>
         </div>
         <div class="container">
             <h1>Welcome to Python CGI Page!</h1>
