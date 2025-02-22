@@ -215,7 +215,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 
 	// ici ?
-	if (matchingRoot && !matchingRoot->getCgi().empty()) {
+	if (matchingRoot && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
 		try {
 			CgiHandler	cgi( this, matchingRoot ) ;
 			cgi.run() ; 
