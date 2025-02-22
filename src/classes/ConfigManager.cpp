@@ -26,7 +26,9 @@ ConfigManager::~ConfigManager( void ) { }
 
 void ConfigManager::_parseConfig( void ) {
 	try { _servers = ConfigParser::parse( _confPath ) ; }
-	catch(const std::exception& e) { std::cerr << "Error parsing config: " << e.what() << '\n'; }
+	catch(const std::exception& e) {
+        std::string err_message = e.what() ;
+        Logger::error( "Parsing issue: " + err_message + "\n") ; }
 }
 
 const std::vector<ServerConfig>& ConfigManager::getServers() const {
@@ -104,11 +106,11 @@ void ConfigManager::printConfig( void ) const {
                 << (it2->isDirectoryListingEnabled() ? "ON" : "OFF") 
                 << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             // Is CGI ON/OFF
-            if (it2->getIsCgi()) 
+            if (!it2->getCgi().empty()) 
                 std::cout << C_RED "│ " C_CYAN "│" C_RESET 
                     << std::left << std::setw(21) << C_BOLD << "CGI:\t\t\t" C_RESET 
                     << std::left << std::setw(totalWidth - 43) 
-                    << (it2->getIsCgi() ? "ON" : "OFF" ) << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
+                    << it2->getCgi() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             // Is Upload Accepted ON/OFF
             if (it2->isUploadAccepted())
                 std::cout << C_RED "│ " C_CYAN "│" C_RESET 

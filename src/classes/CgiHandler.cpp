@@ -1,57 +1,156 @@
 #include "CgiHandler.hpp"
+#include "ClientHandler.hpp"
+#include "RouteConfig.hpp"
 #include <cstring>
 
-CgiHandler::CgiHandler( void ) : 
-_scriptPath(""),
-_request() { } // in private should not be called
+/* Constructors / Destructors */
 
-CgiHandler::CgiHandler( const HttpRequest& request, const std::string &scriptPath ) :
-_scriptPath(scriptPath),
-_request(request) { 
-	#if LOGGER_DEBUG > 0
-		Logger::debug("CgiHandler created successfully") << std::endl ;
-	#endif
-	std::cout << "Created successfully\n" ; 
-}
+CgiHandler::CgiHandler( ClientHandler *client, const RouteConfig *route ) : 
+_cgiStrVect(),
+_client( client ),
+_route( route ),
+_method( client->getRequest().getMethod() ),
+_cgi( route->getCgi() ),
+_outputHeaders(),
+_outputBody("") { }
 
 CgiHandler::CgiHandler( const CgiHandler& other ) :
-_scriptPath(other._scriptPath),
-_request(other._request) { 
-	for ( size_t i = 0; i < other._envp.size(); ++i ) {
-		_envp.push_back(new char[std::strlen(other._envp[i]) + 1]) ;
-		std::strcpy(_envp.back(), other._envp[i]) ;
+_cgiStrVect( other._cgiStrVect ),
+_client( other._client ),
+_route( other._route ),
+_method( other._method ),
+_cgi( other._cgi ),
+_outputHeaders( other._outputHeaders ),
+_outputBody( other._outputBody) { }
+
+CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
+	if (this != &other ) {
+		_cgiStrVect = other._cgiStrVect ;
+		_client =  other._client  ;
+		_route = other._route ;
+		_method =  other._method  ;
+		_cgi = other._cgi ;
+		_outputHeaders = other._outputHeaders ;
+		_outputBody = other._outputBody ;
 	}
+	return *this ; 
 }
 
-CgiHandler&	CgiHandler::operator=( const CgiHandler& other ) {
-	if ( this != &other ) {
-		for ( size_t i = 0; i < _envp.size(); ++i ) {
-			delete[] _envp[i] ;
-		}
-		_envp.clear() ;
+CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 
-		_scriptPath = other._scriptPath ;
-		_request = other._request ;
+/* Helper private functions */
 
-		for ( size_t i = 0; i < other._envp.size(); ++i ) {
-			_envp.push_back(new char[std::strlen(other._envp[i]) + 1]) ;
-			std::strcpy(_envp.back(), other._envp[i]) ;
-		}
-	}
-	return *this ;
-} 
+void	CgiHandler::_setEnvVariables( void ) {
 
-CgiHandler::~CgiHandler( void ) {
-	for ( size_t i = 0; i < _envp.size(); ++i ) {
-		delete[] _envp[i] ;
-	}
+	_cgiStrVect.clear() ;
 	_envp.clear() ;
-	#if LOGGER_DEBUG > 0
-		Logger::debug("Cgi cleared and exited, may cause memory issues for now") << std::endl ;
-	#endif
+
+	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
+	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
+	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
+	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
+	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
+	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
+	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
+		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
+	}
+	_envp.push_back(NULL) ;
 }
+
+void	CgiHandler::_parseOutput( const std::string &output ) {
+
+	size_t	header_end = output.find("\r\n\r\n") ;
+	size_t	offset = 4 ;
+	if ( header_end == std::string::npos ) {
+		header_end = output.find("\n\n") ;
+		offset = 2 ;
+	}
+
+	std::string	headers = output.substr( 0, header_end ) ;
+	_outputBody = output.substr( header_end + offset );
+
+	_outputHeaders.clear() ;
+	std::istringstream	headerStream(headers) ;
+	std::string line ;
+	while (std::getline(headerStream, line)) {
+		if (!line.empty() && line[line.size() - 1] == '\r') {
+			line.resize(line.size() - 1) ;
+		}
+		line = replWhitespace(trim(line)) ;
+		std::istringstream	iss(line) ;
+		std::string	key, value ;
+		iss >> key ;
+		key = trim(key) ;
+		if (key.at(key.size() - 1) == ':') key.resize(key.size() - 1) ;
+		std::getline( iss, value ) ;
+		value = trim(value) ;
+		_outputHeaders[key] = value ;
+	}
+
+	/* for (std::map<std::string, std::string>::iterator it = _outputHeaders.begin() ; it != _outputHeaders.end() ; it++) {
+		std::cout << "KEY: " << it->first << " | " << "VALUE: " << it->second << std::endl ; 
+	} */
+}
+
+void	CgiHandler::_execProcess( const std::string &scriptPath ) {
+
+	Logger::debug("Script path: ") << scriptPath << std::endl ;
+	int 	pipefd[2] ;
+	if (pipe(pipefd) == -1) throw std::runtime_error("Failed to create pipe.") ;
+
+	pid_t	pid = fork() ;
+	if ( pid == -1 ) throw std::runtime_error("Failed to fork process.") ;
+	else if (pid == 0) {
+		close( pipefd[0] ) ;
+		dup2( pipefd[1], STDOUT_FILENO ) ;
+		close( pipefd[1] ) ;  
+
+		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
+		execve(_cgi.c_str(), av, &_envp[0]) ;
+		Logger::fatal("Execve failed.");
+		exit(EXIT_FAILURE) ;
+	} else {
+		close(pipefd[1]) ;
+
+		char		buffer[1024] ;
+		std::string	output ;
+		ssize_t		bytesRead ;
+
+		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
+
+		close( pipefd[0] ) ;
+		waitpid( pid, NULL, 0 ) ;
+		_parseOutput( output ) ;
+		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
+		// Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
+	}
+}
+
+/* Main function run */
 
 std::string	CgiHandler::run( void ) {
-	std::cout << "Hello, from the C-G-Aaaaaaaiee" << std::endl ; // like Adele's hello from the other siiiide 
+
+	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
+	_setEnvVariables() ;
+	_execProcess( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+
+	/* for ( size_t i = 0; i < _envp.size(); i++)
+		std::cout << _envp[i] << std::endl ; */
+	
 	return "Work in Progress\n" ;
+}
+
+/* Getters */
+
+const std::map<std::string, std::string>&	CgiHandler::getOutputHeaders( void ) const { return _outputHeaders ; }
+const std::string&							CgiHandler::getOutputBody( void ) const { return _outputBody ; }
+long long int								CgiHandler::getContentSize( void ) const {
+
+	char	*endptr = NULL ;
+	long long int	result ;
+	std::map<std::string, std::string>::const_iterator it = _outputHeaders.find("Content-Length") ;
+	if (it == _outputHeaders.end()) throw std::runtime_error("Content-Length not found.") ;
+	result = std::strtoll( it->second.c_str(), &endptr, 10 ) ;
+	if (*endptr != '\0') throw std::runtime_error("Invalid Content-Length value.");
+	return result ;
 }
