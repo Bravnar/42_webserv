@@ -150,7 +150,6 @@ const HttpRequest& ClientHandler::buildRequest() {
 const HttpRequest& ClientHandler::getRequest() const { return this->request_; }
 
 const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
-	// -> CGI
 	std::string rootFile;
 	const RouteConfig *matchingRoot = 0;
 	// Open file or build 301 permanent redirection or 302 non-permanent redirection
@@ -163,8 +162,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		if (matchingRoot && matchingRoot->getCgi().empty()) {
-			// though, you may want to handle 404, in that case, replace if(matchingRoot) by if(matchingRoot && !matchinRoot->getIsCgi())
-			// in that same case, handle if(matchingRoot->getIsCgi()) only after 404 (or 405 and future http error)
 			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
 				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 			}

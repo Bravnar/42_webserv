@@ -2,6 +2,7 @@
 # define CGIHANDLER_HPP
 
 # include <iostream>
+# include <string>
 # include <vector>
 # include <map>
 # include <unistd.h>
@@ -23,10 +24,14 @@ class CgiHandler {
 		const RouteConfig					*_route ;
 		std::string							_method ;
 		std::string							_cgi ;
+		std::vector<std::string>			_outputHeaders ;
+		std::string							_outputBody ;
+
 		
 
 		void						_setEnvVariables() ;
 		void						_execProcess( const std::string &scriptPath ) ;
+		void						_parseOutput( const std::string &output ) ;
 		// std::string				_executeCgiGet() ;
 		// std::string				_executeCgiPost() ;
 		
@@ -39,6 +44,8 @@ class CgiHandler {
 		~CgiHandler( void ) ;
 
 		std::string			run() ;
+		const std::vector<std::string>	&getOutputHeaders( void ) const ;
+		const std::string				&getOutputBody( void ) const ;
 
 } ;
 

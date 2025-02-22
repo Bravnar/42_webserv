@@ -10,14 +10,18 @@ _cgiStrVect(),
 _client( client ),
 _route( route ),
 _method( client->getRequest().getMethod() ),
-_cgi( route->getCgi() ) { }
+_cgi( route->getCgi() ),
+_outputHeaders(),
+_outputBody("") { }
 
 CgiHandler::CgiHandler( const CgiHandler& other ) :
 _cgiStrVect( other._cgiStrVect ),
 _client( other._client ),
 _route( other._route ),
 _method( other._method ),
-_cgi( other._cgi ) { }
+_cgi( other._cgi ),
+_outputHeaders( other._outputHeaders ),
+_outputBody( other._outputBody) { }
 
 CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
 	if (this != &other ) {
@@ -26,6 +30,8 @@ CgiHandler& CgiHandler::operator=( const CgiHandler& other ) {
 		_route = other._route ;
 		_method =  other._method  ;
 		_cgi = other._cgi ;
+		_outputHeaders = other._outputHeaders ;
+		_outputBody = other._outputBody ;
 	}
 	return *this ; 
 }
@@ -41,7 +47,7 @@ void	CgiHandler::_setEnvVariables( void ) {
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
-	_cgiStrVect.push_back("SCRIPT_NAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
+	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
 	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
@@ -49,6 +55,32 @@ void	CgiHandler::_setEnvVariables( void ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
 	}
 	_envp.push_back(NULL) ;
+}
+
+void	CgiHandler::_parseOutput( const std::string &output ) {
+
+	size_t	header_end = output.find("\r\n\r\n") ;
+	size_t	offset = 4 ;
+	if ( header_end == std::string::npos ) {
+		header_end = output.find("\n\n") ;
+		offset = 2 ;
+	}
+
+	std::string	headers = output.substr( 0, header_end ) ;
+	_outputBody = output.substr( header_end + offset );
+
+	_outputHeaders.clear() ;
+	std::istringstream	headerStream(headers) ;
+	std::string line ;
+	while (std::getline(headerStream, line)) {
+		if (!line.empty() && line[line.size() - 1] == '\r') {
+			line.resize(line.size() - 1) ;
+		}
+		_outputHeaders.push_back( line ) ;
+	}
+	for (size_t i = 0; i < _outputHeaders.size(); i++ ) {
+		std::cout << "Header [" << i << "]: " << _outputHeaders[i] << std::endl ;
+	}
 }
 
 void	CgiHandler::_execProcess( const std::string &scriptPath ) {
@@ -75,13 +107,11 @@ void	CgiHandler::_execProcess( const std::string &scriptPath ) {
 		std::string	output ;
 		ssize_t		bytesRead ;
 
-		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
-			buffer[bytesRead] = '\0' ;
-			output += buffer ;
-		}
+		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
 		waitpid( pid, NULL, 0 ) ;
+		_parseOutput( output ) ;
 		// TODO: how to pass it to ClientHandler ?
 		Logger::info("CGI output:\n") << output << std::endl ;
 	}
@@ -100,3 +130,6 @@ std::string	CgiHandler::run( void ) {
 	
 	return "Work in Progress\n" ;
 }
+
+const std::vector<std::string>&	CgiHandler::getOutputHeaders( void ) const { return _outputHeaders ; }
+const std::string&				CgiHandler::getOutputBody( void ) const { return _outputBody ; }

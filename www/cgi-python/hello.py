@@ -9,7 +9,7 @@ content = """
 </body>
 </html>
 """
-print("Content-Type: text/html\r\n\r\n")
+print("Content-Type: text/html")
 print(f"Content-Length: {len(content)}")
 print()
 print (content)

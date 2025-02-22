@@ -1,4 +1,5 @@
 #!/usr/bin/php-cgi
+
 <?php
 $content = "
 <html>
