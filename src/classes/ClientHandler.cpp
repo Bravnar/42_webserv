@@ -211,7 +211,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::vector<std::string>::const_iterator method
 			= std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
 		if (method == matchingRoot->getMethods().end())
-			this->buildResponse(HttpResponse(this->request_, 405));
+			return this->buildResponse(HttpResponse(this->request_, 405));
 	}
 
 	// ici ?
@@ -236,6 +236,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		catch(const std::exception& e) {
 			std::string	errMessage = e.what() ;
 			Logger::error("CGI Error: " + errMessage + "\n") ;
+			return buildResponse(HttpResponse(this->request_, 500));
 		}
 	}
 
