@@ -139,7 +139,7 @@ void	setMethods( RouteConfig& route, const std::string &str) {
 }
 
 void	setCgi( RouteConfig& route, const std::string &str ) {
-	if (access( str.c_str(), F_OK | X_OK ) ) throw std::runtime_error("invalid cgi-file provided.");
+	if (access( str.c_str(), F_OK | X_OK ) ) throw std::runtime_error("invalid cgi-file provided: " + str);
 	route.setCgi( str ) ;
 }
 
