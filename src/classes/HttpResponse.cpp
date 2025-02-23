@@ -36,6 +36,7 @@ const std::string HttpResponse::checkStatus(int status) {
 		case 100: return "Continue";
 		case 200: return "OK";
 		case 201: return "Created";
+		case 204: return "No Content";
 		case 301: return "Moved Permantly";
 		case 400: return "Bad Request";
 		case 405: return "Method Not Allowed";
