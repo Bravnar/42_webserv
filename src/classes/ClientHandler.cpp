@@ -93,9 +93,9 @@ void ClientHandler::sendHeader_() {
 	}
 }
 
-void ClientHandler::sendPlayload_() {
+void ClientHandler::sendpayload_() {
 	#if LOGGER_DEBUG
-		std::ostream& stream = this->debug("sending playload ");
+		std::ostream& stream = this->debug("sending payload ");
 		if (!this->getRequest().getReqLine().empty())
 			stream << this->getRequest().getUrl();
 		stream << std::endl;
@@ -137,7 +137,7 @@ void ClientHandler::sendResponse() {
 		this->sendHeader_();
 	}
 	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty() || !_cgiOutput.empty())
-		sendPlayload_();
+		sendpayload_();
 	return;
 }
 

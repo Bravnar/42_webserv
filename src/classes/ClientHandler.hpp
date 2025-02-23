@@ -80,9 +80,9 @@ class ClientHandler
 		// Send response header to client
 		// @throw `EXC_SEND_ERROR`
 		void sendHeader_();
-		// Send playload to client
+		// Send payload to client
 		// @throw `EXC_SEND_ERROR`
-		void sendPlayload_();
+		void sendpayload_();
 
 
 		// Properties
@@ -107,7 +107,7 @@ class ClientHandler
 
 		//Member functions
 
-		// Send full response to client (header and chunks of playload)
+		// Send full response to client (header and chunks of payload)
 		// @throw `EXC_SEND_ERROR`
 		// @throw `buildResponse()` throws
 		void sendResponse();
