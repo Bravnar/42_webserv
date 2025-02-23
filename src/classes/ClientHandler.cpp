@@ -186,7 +186,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
 			}
 			else rootFile.append(this->server_.getConfig().getIndex());
-		} else if (matchingRoot->getCgi().empty()) {
+		} else if (!matchingRoot) {
 			throw std::runtime_error(EXC_NO_ROUTE) ;
 		} 
 		if (this->buffer_.fileStream.is_open())
@@ -196,23 +196,48 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::ifstream& fileStream = this->buffer_.fileStream;
 
 	// Build 404 - Not Found
-	if (!rootFile.empty() && !fileStream.good() && response.getStatus() != 404) {
-		#if LOGGER_DEBUG
-			if (!rootFile.empty())
-				Logger::debug(EXC_FILE_NOT_FOUND(rootFile)) << std::endl;
-		#endif
+	if (request_.getMethod() == "GET" && !fileStream.good() && response.getStatus() != 404) {
 		if (fileStream.is_open())
 			fileStream.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
 	// Build 405 - Method Not Allowed
-	if (matchingRoot) {
-		const std::vector<std::string>::const_iterator method
-			= std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
+	if (matchingRoot && !matchingRoot->getMethods().empty()) {
+		const std::vector<std::string>::const_iterator method = std::find(matchingRoot->getMethods().begin(), matchingRoot->getMethods().end(), this->request_.getMethod());
 		if (method == matchingRoot->getMethods().end())
 			return this->buildResponse(HttpResponse(this->request_, 405));
 	}
+
+	// Check file for http code
+	if (response.getStatus() < 200 || response.getStatus() > 299 ) {
+		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
+		int status = response.getStatus();
+		if (errorPages.find(status) != errorPages.end()) {
+			if (fileStream.is_open()) {
+				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
+				fileStream.close();
+			}
+				fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (fileStream.is_open()) {
+				if (!fileStream.good())
+					fileStream.close();
+				else
+					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+			}
+		}
+	} else {
+		// Handle delete method
+		if (this->request_.getMethod() == "DELETE") {
+			if (this->buffer_.fileStream.is_open())
+				this->buffer_.fileStream.close();
+			if (unlink(rootFile.c_str()) < 0) {
+				return this->buildResponse(HttpResponse(this->request_, 404));
+			}
+			response.setStatus(204);
+		}
+	}
+	
 
 	// ici ?
 	if (matchingRoot && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
@@ -237,25 +262,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			std::string	errMessage = e.what() ;
 			Logger::error("CGI Error: " + errMessage + "\n") ;
 			return buildResponse(HttpResponse(this->request_, 500));
-		}
-	}
-
-	// Check file for http code
-	if (response.getStatus() < 200 || response.getStatus() > 299 ) {
-		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
-		int status = response.getStatus();
-		if (errorPages.find(status) != errorPages.end()) {
-			if (fileStream.is_open()) {
-				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
-				fileStream.close();
-			}
-			fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (fileStream.is_open()) {
-				if (!fileStream.good())
-					fileStream.close();
-				else
-					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
-			}
 		}
 	}
 

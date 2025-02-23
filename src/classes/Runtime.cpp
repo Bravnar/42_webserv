@@ -116,7 +116,7 @@ void Runtime::checkClientsSockets_() {
 		socket = &this->sockets_[i];
 		client = this->clients_[socket->fd];
 		if(this->clients_.find(this->sockets_[i].fd) != this->clients_.end()) {
-			if (this->handleClientPollout_(client, socket)
+			if (this->handleClientPollhup_(client, socket)
 				|| this->handleClientPollin_(client, socket) < 0
 				|| this->handleClientPollout_(client, socket)) {
 					i--;
