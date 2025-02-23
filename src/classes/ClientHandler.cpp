@@ -302,8 +302,9 @@ void ClientHandler::readSocket() {
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 	ssize_t bytesRead;
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0)
-		this->buffer_.requestBuffer->append(buffer, bytesRead);
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
+		this->buffer_.requestBuffer->append(buffer, bytesRead); //
+	}
 	else if (bytesRead < 0) {
 		this->flags_ |= FETCHED;
 		throw std::runtime_error(EXC_SOCKET_READ);
