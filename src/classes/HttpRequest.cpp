@@ -142,10 +142,10 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 					}
 					std::streamoff cursor_pos = ss.tellg();
 					size_t len = buffer->find(boundary, cursor_pos) - cursor_pos - 2;
-					std::string data = buffer->substr(cursor_pos, len);
-					file_dl.write(data.c_str(), data.size());
+					std::string *data = new std::string(buffer->substr(cursor_pos, len));
+					file_dl.write(data->c_str(), data->size());
 					file_dl.close();
-					data.clear();
+					delete data;
 				}
 			}
 		}
