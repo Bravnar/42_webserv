@@ -183,8 +183,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
-			stat(rootFile.c_str(), &s);
-			if (s.st_mode & S_IFDIR) {
+			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
 				if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
 					rootFile.append("/" + this->server_.getConfig().getIndex());
 				else
@@ -210,7 +209,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::cout << this->buffer_.internalBody.empty() << std::endl;
 	std::cout << !externalBody.good() << std::endl;
 	// Build 404 - Not Found
-	if (request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+	if (response.getUrl() && request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
 		if (externalBody.is_open())
 			externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
