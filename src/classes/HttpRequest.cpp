@@ -40,27 +40,9 @@ HttpRequest::~HttpRequest() {
 }
 
 void HttpRequest::parseRequestLine_(const std::string& line) {
-	int iter = 0;
-	size_t old_pos = 0;
+	std::stringstream os(line);
 
-	while (iter < 3) {
-		size_t pos = line.find(' ', old_pos);
-		if ((iter != 2 && pos == line.npos) || (iter == 2 && pos != line.npos))
-			throw std::runtime_error(EXC_INVALID_RL);
-		switch(iter) {
-			case 0:
-				this->method_ = line.substr(old_pos, pos);
-				break;
-			case 1:
-				this->url_ = line.substr(old_pos, pos - old_pos);
-				break;
-			default:
-				this->httpVersion_ = line.substr(old_pos, line.size() - old_pos);
-				break;
-		}
-		old_pos = pos + 1;
-		iter++;
-	}
+	os >> method_ >> url_ >> httpVersion_;
 	if (this->method_ != "GET" && this->method_ != "POST" && this->method_ != "DELETE") {
 		#if LOGGER_DEBUG
 			Logger::debug("request invalid method") << std::endl;
