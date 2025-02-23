@@ -100,17 +100,13 @@ void ClientHandler::sendPlayload_() {
 			stream << this->getRequest().getUrl();
 		stream << std::endl;
 	#endif
-	/* Stan CGI send */
-	if (!_cgiOutput.empty()) {
-		// std::cout << "Declared Content-Length: " << response_.getHeaders().at("Content-Length") << std::endl;
-		// std::cout << "Actual Body Size: " << _cgiOutput.size() << std::endl;
-		ssize_t	sent = send(this->socket_fd_, _cgiOutput.c_str(), _cgiOutput.size(), 0) ;
-		if (sent < 0) throw std::runtime_error(EXC_SEND_ERROR) ;
-		this->_cgiOutput.clear() ;
-		this->flags_ |= SENT ;
-		return ;
-	}
-	if (this->buffer_.externalBody.is_open()) {
+	if (!this->buffer_.internalBody.empty()) {
+		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0) {
+			throw std::runtime_error(EXC_SEND_ERROR);
+		}
+		this->buffer_.internalBody.clear();
+		this->flags_ |= SENT;
+	} else if (this->buffer_.externalBody.is_open()) {
 		std::ifstream& file = this->buffer_.externalBody;
 		char buffer[DF_MAX_BUFFER] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
@@ -127,12 +123,6 @@ void ClientHandler::sendPlayload_() {
 				this->debug("sended: ") << buffer << std::endl;
 			}
 		#endif
-	} else if (!this->buffer_.internalBody.empty()) {
-		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0) {
-			throw std::runtime_error(EXC_SEND_ERROR);
-		}
-		this->buffer_.internalBody.clear();
-		this->flags_ |= SENT;
 	}
 }
 
@@ -252,6 +242,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 	
 
+	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
+
 	// ici ?
 	if (matchingRoot && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
 		try {
@@ -259,17 +251,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			cgi.run() ; 
 			// TODO: check if the script file is actually the one being requested !
 			
-			this->_cgiOutput = cgi.getOutputBody() ;
+			this->buffer_.internalBody = cgi.getOutputBody();
 			/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
 				std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
 			} */
-			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(_cgiOutput.size()) ;
-			if (matchingRoot->getCgi() == "/usr/bin/php-cgi") 
+			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
+			if (matchingRoot->getCgi() == "/usr/bin/php-cgi")  // TODO: is it possible to detect it using cgi file instead of root ?
 				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
 			else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
-			this->response_ = response ;
-			this->flags_ |= RESPONSE ;
-			return this->response_ ;
 		}
 		catch(const std::exception& e) {
 			std::string	errMessage = e.what() ;
@@ -279,7 +268,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 
 	// Final build (may need some modifications if building internal html)
-	if (externalBody.is_open()) {
+	if (this->buffer_.internalBody.empty() && externalBody.is_open()) {
 		externalBody.seekg(0, std::ios::end);
 		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(externalBody.tellg());
 		externalBody.seekg(0, std::ios::beg);
