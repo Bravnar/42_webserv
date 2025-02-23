@@ -86,9 +86,8 @@ void ClientHandler::sendHeader_() {
 		this->flags_ |= SENT;
 	}
 	header = oss.str();
-	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
+	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0)
 		throw std::runtime_error(EXC_SEND_ERROR);
-	}
 }
 
 void ClientHandler::sendpayload_() {
@@ -99,18 +98,16 @@ void ClientHandler::sendpayload_() {
 		stream << std::endl;
 	#endif
 	if (!this->buffer_.internalBody.empty()) {
-		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0) {
+		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0)
 			throw std::runtime_error(EXC_SEND_ERROR);
-		}
 		this->buffer_.internalBody.clear();
 		this->flags_ |= SENT;
 	} else if (this->buffer_.externalBody.is_open()) {
 		std::ifstream& file = this->buffer_.externalBody;
 		char buffer[DF_MAX_BUFFER] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
-			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0) {
+			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
-			}
 		}
 		if (!file) {
 			file.close();
