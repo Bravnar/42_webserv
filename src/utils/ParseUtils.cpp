@@ -139,9 +139,8 @@ void	setMethods( RouteConfig& route, const std::string &str) {
 }
 
 void	setCgi( RouteConfig& route, const std::string &str ) {
-	if ( str == "on") route.setIsCgi(true) ;
-	else if ( str == "off" ) route.setIsCgi(false) ;
-	else throw std::runtime_error("invalid cgi value: must be 'on' or 'off'.") ;
+	if (access( str.c_str(), F_OK | X_OK ) ) throw std::runtime_error("invalid cgi-file provided.");
+	route.setCgi( str ) ;
 }
 
 void	setReturn( RouteConfig& route, const std::string &str ) {

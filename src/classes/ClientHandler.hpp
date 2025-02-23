@@ -11,6 +11,7 @@
 # include "./HttpResponse.hpp"
 # include "./Runtime.hpp"
 # include "./ServerManager.hpp"
+# include "./CgiHandler.hpp"
 # include <fstream>
 # include "./HttpResponse.hpp"
 # include <sys/stat.h>
@@ -92,6 +93,8 @@ class ClientHandler
 		HttpResponse response_;
 		int8_t flags_;
 		unsigned long long last_alive_;
+
+		std::string	_cgiOutput ;
 
 	public:
 		// Canonical

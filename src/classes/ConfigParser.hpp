@@ -9,6 +9,7 @@
 # include <fstream>
 # include <sstream>
 # include <istream>
+# include <unistd.h>
 # include "ServerConfig.hpp"
 
 typedef	void (*ServerConfigHandler)(ServerConfig&, const std::string&) ;
