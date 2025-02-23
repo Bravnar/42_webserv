@@ -107,9 +107,6 @@ void Runtime::checkSyncPipeSocket_() {
 void Runtime::checkClientsSockets_() {
 	// starting at idx 1 + servers size since 0 and next are reserved
 	for(size_t i = 1 + this->servers_map_.size(); i < this->sockets_.size(); i++) {
-		#if LOGGER_DEBUG
-			Logger::debug("client alive") << std::endl;
-		#endif
 		pollfd *socket;
 		ClientHandler *client;
 
@@ -208,9 +205,6 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return -1;
 		}
 		if(!(client->getFlags() & READING)) client->setFlag(READING);
-		#if LOGGER_DEBUG
-			this->debug("pollin client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
@@ -266,9 +260,6 @@ void Runtime::logResponse_(ClientHandler *client) {
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
 	if (socket->revents & POLLOUT && client->getFlags() & FETCHED) {
-		#if LOGGER_DEBUG
-			this->debug("pollout client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {
