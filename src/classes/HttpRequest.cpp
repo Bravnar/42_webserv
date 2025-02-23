@@ -1,4 +1,7 @@
 #include "./HttpRequest.hpp"
+#include <fstream>
+#include <sstream>
+#include <string>
 
 HttpRequest::HttpRequest():
 	method_(""),
@@ -80,43 +83,51 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 	std::stringstream ss(*buffer);
 	std::string line;
-	bool isBody = false;
+	std::string boundary;
+	std::ofstream	file_dl;
 
 	size_t idx = 0;
-	while (!isBody && std::getline(ss, line)) {
+	while (std::getline(ss, line))
+	{
 		line = line.substr(0, line.size() - 1);
-		if (!idx) {
+		if (!idx)
 			parseRequestLine_(line);
-		} else {
-			if (line.empty()) {
-				isBody = true;
-				continue;
-			}
+		else
+		{
+			if (line.empty())
+				break;
 			size_t sep = line.find(':', 0);
 			if (sep != line.npos) {
 				std::string key = line.substr(0, sep);
 				std::string value = line.substr(sep + 2, line.size() - sep - 2);
+				if (key == "Content-Type" && value.find("multipart/form-data") != value.npos)
+					boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
 				this->headers_[key] = value;
 			}
 		}
 		idx++;
 	}
-	if (isBody) {
-		std::map<std::string, std::string>::iterator it_contentlen = this->headers_.find(H_CONTENT_LENGTH);
-		if (it_contentlen != this->headers_.end()) {
+	if (!boundary.empty() && std::getline(ss, line)){
+		if (this->headers_.find(H_CONTENT_LENGTH) != this->headers_.end()){
 			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
-			if (bodySize) {
-				if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
-				const char *bodySep = std::strstr(buffer->data(), "\r\n\r\n");
-				if (!bodySep) { throw std::runtime_error(EXC_BODY_NOLIMITER); }
-				else {
-					this->body_ = reinterpret_cast<const unsigned char *>(bodySep + 2);
-					#if LOGGER_DEBUG
-						Logger::debug("data: ") << this->getStringBody() << std::endl;
-					#endif
+			if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
+		}
+		if (line == boundary){
+			if (std::getline(ss, line)){
+				std::stringstream os(line);
+				while (line.find("name=") == line.npos)
+					os >> line;
+				if (line.substr(line.find("\"", line.find_last_of("\""))) == "fileToUpload"){
+					os >> line;
+					line = PATH_TO_DOWNLOAD + line.substr(line.find("\"", line.find_last_of("\"")));
+					file_dl.open(line);
+					if (!file_dl.is_open())
+						throw std::runtime_error("can\'t open/create the file");
 				}
+
 			}
 		}
+		else throw (std::runtime_error(EXC_INVALID_BOUNDARY));
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;

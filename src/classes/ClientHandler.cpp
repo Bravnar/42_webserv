@@ -298,9 +298,6 @@ void ClientHandler::readSocket() {
 	ssize_t bytesRead;
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->buffer_.requestBuffer->append(buffer, bytesRead); //
-		#if LOGGER_LEVEL > 0
-			this->debug("Syncing") << std::endl;
-		#endif
 		this->runtime_.Sync();
 	}
 	else if (bytesRead < 0) {
