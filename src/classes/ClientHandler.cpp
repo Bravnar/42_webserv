@@ -53,8 +53,8 @@ ClientHandler::~ClientHandler() {
 	#endif
 	close(this->socket_fd_);
 	this->runtime_.getClients().erase(this->socket_fd_);
-	if (this->buffer_.fileStream.is_open()) {
-		this->buffer_.fileStream.close();
+	if (this->buffer_.externalBody.is_open()) {
+		this->buffer_.externalBody.close();
 	}
 	delete this->buffer_.requestBuffer;
 	{
@@ -82,7 +82,7 @@ void ClientHandler::sendHeader_() {
 	std::ostringstream oss;
 	oss << this->getResponse().str();
 
-	if (this->buffer_.fileStream) {
+	if (this->buffer_.externalBody) {
 		this->flags_ |= SENDING;
 	} else {
 		this->flags_ |= SENT;
@@ -91,11 +91,6 @@ void ClientHandler::sendHeader_() {
 	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0) {
 		throw std::runtime_error(EXC_SEND_ERROR);
 	}
-
-	#if LOGGER_DEBUG
-		if (this->request_.getUrl().find(".html") != std::string::npos)
-			this->debug("sended: ") << std::endl << header << std::endl;
-	#endif
 }
 
 void ClientHandler::sendPlayload_() {
@@ -115,23 +110,30 @@ void ClientHandler::sendPlayload_() {
 		this->flags_ |= SENT ;
 		return ;
 	}
-
-	std::ifstream& file = this->buffer_.fileStream;
-	char buffer[DF_MAX_BUFFER] = {0};
-	if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
-		if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0) {
+	if (this->buffer_.externalBody.is_open()) {
+		std::ifstream& file = this->buffer_.externalBody;
+		char buffer[DF_MAX_BUFFER] = {0};
+		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
+			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0) {
+				throw std::runtime_error(EXC_SEND_ERROR);
+			}
+		}
+		if (!file) {
+			file.close();
+			this->flags_ |= SENT;
+		}
+		#if LOGGER_DEBUG
+			if (this->request_.getUrl().find(".html") != std::string::npos) {
+				this->debug("sended: ") << buffer << std::endl;
+			}
+		#endif
+	} else if (!this->buffer_.internalBody.empty()) {
+		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0) {
 			throw std::runtime_error(EXC_SEND_ERROR);
 		}
-	}
-	if (!file) {
-		file.close();
+		this->buffer_.internalBody.clear();
 		this->flags_ |= SENT;
 	}
-	#if LOGGER_DEBUG
-		if (this->request_.getUrl().find(".html") != std::string::npos) {
-			this->debug("sended: ") << buffer << std::endl;
-		}
-	#endif
 }
 
 void ClientHandler::sendResponse() {
@@ -144,7 +146,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.fileStream || !_cgiOutput.empty())
+	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty() || !_cgiOutput.empty())
 		sendPlayload_();
 	return;
 }
@@ -175,30 +177,42 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (!matchingRoot || locationRoot.size() > matchingRoot->getPath().size())
 					matchingRoot = &*route;
 		}
-		if (matchingRoot) {
-			if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl()) {
-				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+		if (!matchingRoot) throw std::runtime_error(EXC_NO_ROUTE);
+		if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
+			return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+		rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
+		if (rootFile.at(rootFile.size() - 1) != '/') {
+			struct stat s;
+			stat(rootFile.c_str(), &s);
+			if (s.st_mode & S_IFDIR) {
+				if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
+					rootFile.append("/" + this->server_.getConfig().getIndex());
+				else
+					rootFile.append("/");
 			}
-			rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
-			if (rootFile.at(rootFile.size() - 1) != '/') {
-				struct stat s;
-				stat(rootFile.c_str(), &s);
-				if (s.st_mode & S_IFDIR) rootFile.append("/" + this->server_.getConfig().getIndex());
-			}
-			else rootFile.append(this->server_.getConfig().getIndex());
-		} else if (!matchingRoot) {
-			throw std::runtime_error(EXC_NO_ROUTE) ;
-		} 
-		if (this->buffer_.fileStream.is_open())
-			this->buffer_.fileStream.close();
-		this->buffer_.fileStream.open(rootFile.c_str(), std::ios::binary);
+		}
+		else {
+			if (access((rootFile + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
+				rootFile.append(this->server_.getConfig().getIndex());
+		}
+		if (this->buffer_.externalBody.is_open())
+			this->buffer_.externalBody.close();
+		if (rootFile.at(rootFile.size() - 1) != '/')
+			this->buffer_.externalBody.open(rootFile.c_str(), std::ios::binary);
+		else if (matchingRoot && matchingRoot->isDirectoryListingEnabled()) {
+			// Build directory listing
+			this->buffer_.internalBody = ListingBuilder::buildBody(request_.getUrl(), rootFile);
+		}
+		
 	}
-	std::ifstream& fileStream = this->buffer_.fileStream;
+	std::ifstream& externalBody = this->buffer_.externalBody;
 
+	std::cout << this->buffer_.internalBody.empty() << std::endl;
+	std::cout << !externalBody.good() << std::endl;
 	// Build 404 - Not Found
-	if (request_.getMethod() == "GET" && !fileStream.good() && response.getStatus() != 404) {
-		if (fileStream.is_open())
-			fileStream.close();
+	if (request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+		if (externalBody.is_open())
+			externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
@@ -214,14 +228,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (fileStream.is_open()) {
+			if (externalBody.is_open()) {
 				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
-				fileStream.close();
+				externalBody.close();
 			}
-				fileStream.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (fileStream.is_open()) {
-				if (!fileStream.good())
-					fileStream.close();
+				externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (externalBody.is_open()) {
+				if (!externalBody.good())
+					externalBody.close();
 				else
 					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
@@ -229,8 +243,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	} else {
 		// Handle delete method
 		if (this->request_.getMethod() == "DELETE") {
-			if (this->buffer_.fileStream.is_open())
-				this->buffer_.fileStream.close();
+			if (this->buffer_.externalBody.is_open())
+				this->buffer_.externalBody.close();
 			if (unlink(rootFile.c_str()) < 0) {
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			}
@@ -266,12 +280,16 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 
 	// Final build (may need some modifications if building internal html)
-	if (fileStream.is_open()) {
-		fileStream.seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(fileStream.tellg());
-		fileStream.seekg(0, std::ios::beg);
+	if (externalBody.is_open()) {
+		externalBody.seekg(0, std::ios::end);
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(externalBody.tellg());
+		externalBody.seekg(0, std::ios::beg);
 		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
 			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
+	}
+	else if (!this->buffer_.internalBody.empty()) {
+		response.getHeaders()[H_CONTENT_TYPE] = "text/html";
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size());
 	}
 	else
 		response.getHeaders()[H_CONTENT_LENGTH] = "0";
@@ -281,9 +299,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 }
 
 void ClientHandler::flush() {
-	if (this->buffer_.fileStream.is_open()) {
-		this->buffer_.fileStream.close();
+	if (this->buffer_.externalBody.is_open()) {
+		this->buffer_.externalBody.close();
 	}
+	if (!this->buffer_.internalBody.empty())
+		this->buffer_.internalBody.clear();
 	this->_cgiOutput.clear() ;
 	if (this->buffer_.requestBuffer) {
 		delete this->buffer_.requestBuffer;

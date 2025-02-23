@@ -15,6 +15,7 @@
 # include <fstream>
 # include "./HttpResponse.hpp"
 # include <sys/stat.h>
+# include "./ListingBuilder.hpp"
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
@@ -34,10 +35,12 @@ class Runtime;
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
-	std::ifstream fileStream;
+	std::string internalBody;
+	std::ifstream externalBody;
 	s_clientBuffer():
 		requestBuffer(0),
-		fileStream() {}
+		internalBody(),
+		externalBody() {}
 };
 
 // Unique client address identifier
