@@ -56,6 +56,7 @@ clean:
 fclean: clean
 		@rm -rf $(NAME)
 		@rm -rf ./www/siege/randomfile
+		@rm -rf $(NAME).dSYM
 
 re:
 	@make fclean

@@ -1,5 +1,8 @@
 #include "./HttpRequest.hpp"
+#include <algorithm>
+#include <cstddef>
 #include <fstream>
+#include <ios>
 #include <sstream>
 #include <string>
 
@@ -108,6 +111,7 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 		idx++;
 	}
 	if (!boundary.empty() && std::getline(ss, line)){
+		line = line.substr(0, line.size() - 1);
 		if (this->headers_.find(H_CONTENT_LENGTH) != this->headers_.end()){
 			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
 			if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
@@ -115,16 +119,34 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 		if (line == boundary){
 			if (std::getline(ss, line)){
 				std::stringstream os(line);
+				line.clear();
 				while (line.find("name=") == line.npos)
 					os >> line;
-				if (line.substr(line.find("\"", line.find_last_of("\""))) == "fileToUpload"){
-					os >> line;
-					line = PATH_TO_DOWNLOAD + line.substr(line.find("\"", line.find_last_of("\"")));
-					file_dl.open(line);
+				if (line.find("fileToUpload") != line.npos){
+					while (line.find("filename=") == line.npos)
+						os >> line;
+					for (std::string tmp = line; line.find("\"") == line.rfind("\""); line += " " + tmp)
+						os >> tmp;
+					line = PATH_TO_DOWNLOAD + line.substr(line.find("\"")+1, line.size() - line.find("\"") - 2);
+					#if LOGGER_DEBUG
+						Logger::debug(line) << std::endl;
+					#endif
+					// file_dl.open(line.c_str(), std::ios::out | std::ios::binary);
+					file_dl.open(line.c_str());
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
+					while(std::getline(ss, line)){
+						line = line.substr(0, line.size() - 1);
+						if (line.empty())
+							break ;
+					}
+					std::streamoff cursor_pos = ss.tellg();
+					size_t len = buffer->find(boundary, cursor_pos) - cursor_pos - 2;
+					std::string data = buffer->substr(cursor_pos, len);
+					file_dl.write(data.c_str(), data.size());
+					file_dl.close();
+					data.clear();
 				}
-
 			}
 		}
 		else throw (std::runtime_error(EXC_INVALID_BOUNDARY));
