@@ -3,6 +3,7 @@
 static std::string getCurrentDateTime() {
 	struct timeval tv;
 	gettimeofday(&tv, 0);
+	std::stringstream ss;
 
 	time_t now = tv.tv_sec;
 	struct tm *ltm = localtime(&now);
@@ -10,10 +11,8 @@ static std::string getCurrentDateTime() {
 	char date_time[30];
 	strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", ltm);
 
-	char current_time[40];
-	snprintf(current_time, sizeof(current_time), "%s.%03d", date_time, tv.tv_usec / 1000);
-
-	return std::string(current_time);
+	ss << date_time << "." << tv.tv_usec / 100;
+	return (ss.str());
 }
 
 // TODO: if possible better optimized code
