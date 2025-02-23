@@ -304,7 +304,7 @@ void ClientHandler::readSocket() {
 	ssize_t bytesRead;
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		this->buffer_.requestBuffer->append(buffer, bytesRead); //
-		this->runtime_.Sync();
+		// this->runtime_.Sync();
 	}
 	else if (bytesRead < 0) {
 		this->flags_ |= FETCHED;

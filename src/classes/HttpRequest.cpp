@@ -113,8 +113,8 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 					#if LOGGER_DEBUG
 						Logger::debug(line) << std::endl;
 					#endif
-					// file_dl.open(line.c_str(), std::ios::out | std::ios::binary);
-					file_dl.open(line.c_str());
+					file_dl.open(line.c_str(), std::ios::out | std::ios::binary);
+					// file_dl.open(line.c_str());
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
