@@ -97,8 +97,6 @@ class ClientHandler
 		int8_t flags_;
 		unsigned long long last_alive_;
 
-		std::string	_cgiOutput ;
-
 	public:
 		// Canonical
 

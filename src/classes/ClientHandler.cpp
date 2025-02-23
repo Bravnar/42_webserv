@@ -19,8 +19,7 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	runtime_(runtime),
 	server_(server),
 	address_(addr, addrlen),
-	flags_(0),
-	_cgiOutput("") {
+	flags_(0) {
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
@@ -35,8 +34,7 @@ ClientHandler::ClientHandler(const ClientHandler& copy):
 	runtime_(copy.runtime_),
 	server_(copy.server_),
 	flags_(copy.flags_),
-	last_alive_(copy.last_alive_),
-	_cgiOutput(copy._cgiOutput) {
+	last_alive_(copy.last_alive_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
 }
 
@@ -136,7 +134,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty() || !_cgiOutput.empty())
+	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }
@@ -292,7 +290,6 @@ void ClientHandler::flush() {
 	}
 	if (!this->buffer_.internalBody.empty())
 		this->buffer_.internalBody.clear();
-	this->_cgiOutput.clear() ;
 	if (this->buffer_.requestBuffer) {
 		delete this->buffer_.requestBuffer;
 		this->buffer_.requestBuffer = 0;
