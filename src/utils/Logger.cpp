@@ -11,7 +11,7 @@ static std::string getCurrentDateTime() {
 	strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", ltm);
 
 	char current_time[40];
-	snprintf(current_time, sizeof(current_time), "%s.%03ld", date_time, tv.tv_usec / 1000);
+	snprintf(current_time, sizeof(current_time), "%s.%03d", date_time, tv.tv_usec / 1000);
 
 	return std::string(current_time);
 }

@@ -32,7 +32,7 @@ class Runtime;
 
 // Unique temporary data
 struct s_clientBuffer {
-	std::string *requestBuffer;
+	std::string *requestBuffer; // pas bon (a refaire)
 	std::ifstream fileStream;
 	s_clientBuffer():
 		requestBuffer(0),

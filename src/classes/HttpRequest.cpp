@@ -6,8 +6,7 @@ HttpRequest::HttpRequest():
 	httpVersion_(""),
 	body_(0) {}
 
-HttpRequest::HttpRequest(const std::string *buffer) {
-	this->body_ = 0;
+HttpRequest::HttpRequest(const std::string *buffer) : body_(0){
 	buildFromBuffer_(buffer);
 }
 
