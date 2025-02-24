@@ -8,6 +8,8 @@
 # include "./../utils/Convert.hpp"
 # include <cstring>
 # include "./HttpInclude.hpp"
+# include <unistd.h>
+
 # define PATH_TO_DOWNLOAD "./www/uploads/"
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_INVALID_BOUNDARY "invalid Boundary"
