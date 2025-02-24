@@ -8,12 +8,15 @@
 # include "./../utils/Convert.hpp"
 # include <cstring>
 # include "./HttpInclude.hpp"
+# include <unistd.h>
+
 # define PATH_TO_DOWNLOAD "./www/uploads/"
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_INVALID_BOUNDARY "invalid Boundary"
 # define EXC_BODY_NEG_SIZE "Negative body size"
 # define EXC_BODY_NOLIMITER "No body delimiter"
 # define EXC_HEADER_NOHOST "No host header"
+# define EXC_BODY_WRITE "Error on body writting"
 
 class HttpRequest {
 	private:
