@@ -15,6 +15,7 @@
 # include <fstream>
 # include "./HttpResponse.hpp"
 # include <sys/stat.h>
+# include "./ListingBuilder.hpp"
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
@@ -33,11 +34,13 @@ class Runtime;
 
 // Unique temporary data
 struct s_clientBuffer {
-	std::string *requestBuffer; // pas bon (a refaire)
-	std::ifstream fileStream;
+	std::string *requestBuffer;
+	std::string internalBody;
+	std::ifstream externalBody;
 	s_clientBuffer():
 		requestBuffer(0),
-		fileStream() {}
+		internalBody(),
+		externalBody() {}
 };
 
 // Unique client address identifier
@@ -77,9 +80,9 @@ class ClientHandler
 		// Send response header to client
 		// @throw `EXC_SEND_ERROR`
 		void sendHeader_();
-		// Send playload to client
+		// Send payload to client
 		// @throw `EXC_SEND_ERROR`
-		void sendPlayload_();
+		void sendpayload_();
 
 
 		// Properties
@@ -94,8 +97,6 @@ class ClientHandler
 		int8_t flags_;
 		unsigned long long last_alive_;
 
-		std::string	_cgiOutput ;
-
 	public:
 		// Canonical
 
@@ -104,7 +105,7 @@ class ClientHandler
 
 		//Member functions
 
-		// Send full response to client (header and chunks of playload)
+		// Send full response to client (header and chunks of payload)
 		// @throw `EXC_SEND_ERROR`
 		// @throw `buildResponse()` throws
 		void sendResponse();
