@@ -191,8 +191,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	}
 	std::ifstream& externalBody = this->buffer_.externalBody;
 
-	std::cout << this->buffer_.internalBody.empty() << std::endl;
-	std::cout << !externalBody.good() << std::endl;
 	// Build 404 - Not Found
 	if (response.getUrl() && request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
 		if (externalBody.is_open())
