@@ -238,7 +238,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
 	// ici ?
-	if (matchingRoot && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
+	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
 		try {
 			CgiHandler	cgi( this, matchingRoot ) ;
 			cgi.run() ; 
