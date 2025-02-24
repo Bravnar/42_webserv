@@ -10,6 +10,7 @@ FILES =	main \
 		classes/ServerManager \
 		classes/HttpRequest \
 		classes/HttpResponse \
+		classes/ListingBuilder \
 		classes/ConfigManager \
 		classes/ConfigParser \
 		classes/Runtime \
