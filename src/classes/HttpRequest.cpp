@@ -126,7 +126,7 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 					size_t len = buffer->find(boundary, cursor_pos) - cursor_pos - 2;
 					file_dl.write(buffer->c_str() + cursor_pos, len);
 					if (file_dl.fail())
-						throw std::runtime_error("error");
+						throw std::runtime_error(EXC_BODY_WRITE);
 					file_dl.close();
 				}
 			}

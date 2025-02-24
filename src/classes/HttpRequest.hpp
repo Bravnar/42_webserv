@@ -14,6 +14,7 @@
 # define EXC_BODY_NEG_SIZE "Negative body size"
 # define EXC_BODY_NOLIMITER "No body delimiter"
 # define EXC_HEADER_NOHOST "No host header"
+# define EXC_BODY_WRITE "Error on body writting"
 
 class HttpRequest {
 	private:
