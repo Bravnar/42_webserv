@@ -241,7 +241,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
-	// ici ?
+	// declare CgiHandler here ? if there is a throw it will handle
+	// run after check!
 	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty() && checkShebang_( matchingRoot )) {
 		try {
 			Logger::warning(request_.getUrl()) ;
