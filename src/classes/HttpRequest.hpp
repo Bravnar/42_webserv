@@ -29,8 +29,9 @@ class HttpRequest {
 		std::string url_;
 		std::string httpVersion_;
 		std::map<std::string, std::string> headers_;
-		const unsigned char *body_;
 		std::string reqLine_;
+		std::string *_allBody;
+		std::string _boundary;
 
 	public:
 		// canonical
@@ -47,12 +48,13 @@ class HttpRequest {
 		// Getters
 
 		const std::string& getMethod() const;
+		const std::string* getAllBody() const;
+		const std::string& getBoundary() const;
 		const std::map<std::string, std::string>& getHeaders() const;
-		const unsigned char *getBody() const;
-		const std::string getStringBody() const;
 		const std::string& getUrl() const;
 		const std::string& getHttpVersion() const;
 		const std::string& getReqLine() const;
+		void buildBody(std::string location, std::string path);
 };
 
 #endif

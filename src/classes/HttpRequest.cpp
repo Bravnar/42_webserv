@@ -4,15 +4,23 @@
 #include <fstream>
 #include <ios>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 HttpRequest::HttpRequest():
 	method_(""),
 	url_(""),
 	httpVersion_(""),
-	body_(0) {}
+	_allBody(0),
+	_boundary(""){}
 
-HttpRequest::HttpRequest(const std::string *buffer) : body_(0){
+HttpRequest::HttpRequest(const std::string *buffer):
+	method_(""),
+	url_(""),
+	httpVersion_(""),
+	_allBody(0),
+	_boundary("")
+{
 	buildFromBuffer_(buffer);
 }
 
@@ -21,22 +29,27 @@ HttpRequest::HttpRequest(const HttpRequest& copy):
 	url_(copy.url_),
 	httpVersion_(copy.httpVersion_),
 	headers_(copy.headers_),
-	body_(copy.body_),
-	reqLine_(copy.reqLine_) {}
+	reqLine_(copy.reqLine_),
+	_allBody(copy._allBody),
+	_boundary(copy._boundary)
+	{}
 
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
-	if (this == &assign)
-		return *this;
-	this->method_ = assign.method_;
-	this->url_ = assign.url_;
-	this->httpVersion_ = assign.httpVersion_;
-	this->headers_ = assign.headers_;
-	this->body_ = assign.body_;
-	this->reqLine_ = assign.reqLine_;
+	if (this != &assign){
+		this->method_ = assign.method_;
+		this->url_ = assign.url_;
+		this->httpVersion_ = assign.httpVersion_;
+		this->headers_ = assign.headers_;
+		this->reqLine_ = assign.reqLine_;
+		this->_allBody = assign._allBody;
+		this->_boundary = assign._boundary;
+	}
 	return *this;
 }
 
 HttpRequest::~HttpRequest() {
+	if (_allBody)
+		delete _allBody;
 }
 
 void HttpRequest::parseRequestLine_(const std::string& line) {
@@ -65,11 +78,60 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
 }
 
+void HttpRequest::buildBody(std::string location, std::string path){
+	if (!_allBody)
+		throw std::runtime_error("No body set");
+	std::stringstream ss(_allBody->c_str());
+	std::ofstream	file_dl;
+	std::string line;
+
+	if (!_boundary.empty() && std::getline(ss, line)){
+		line = line.substr(0, line.size() - 1);
+		if (this->headers_.find(H_CONTENT_LENGTH) != this->headers_.end())
+			if (Convert::ToInt(this->headers_[H_CONTENT_LENGTH]) < 0)
+				throw std::runtime_error(EXC_BODY_NEG_SIZE);
+		if (line == _boundary){
+			if (std::getline(ss, line)){
+				std::stringstream os(line);
+				line.clear();
+				while (line.find("name=") == line.npos)
+					os >> line;
+				if (line.find("fileToUpload") != line.npos){
+					while (line.find("filename=") == line.npos)
+						os >> line;
+					for (std::string tmp = line; line.find("\"") == line.rfind("\""); line += " " + tmp)
+						os >> tmp;
+					line = line.substr(line.find("\"")+1, line.size() - line.find("\"") - 2);
+					#if LOGGER_DEBUG
+						Logger::debug(location + "/" + path + "/" + line) << std::endl;
+					#endif
+					file_dl.open(location + "/" + path + "/" + line, std::ios::out | std::ios::binary);
+					if (!file_dl.is_open())
+						throw std::runtime_error("can\'t open/create the file");
+					while(std::getline(ss, line)){
+						line = line.substr(0, line.size() - 1);
+						if (line.empty())
+							break ;
+					}
+					std::streamoff cursor_pos = ss.tellg();
+					size_t len = _allBody->find(_boundary, cursor_pos) - cursor_pos - 2;
+					file_dl.write(_allBody->c_str() + cursor_pos, len);
+					if (file_dl.fail()) {
+						unlink(line.c_str());
+						throw std::runtime_error(EXC_BODY_WRITE);
+					}
+					file_dl.close();
+				}
+			}
+		}
+		else throw (std::runtime_error(EXC_INVALID_BOUNDARY));
+	}
+}
+
+
 int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 	std::stringstream ss(*buffer);
 	std::string line;
-	std::string boundary;
-	std::ofstream	file_dl;
 
 	size_t idx = 0;
 	while (std::getline(ss, line))
@@ -86,66 +148,24 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 				std::string key = line.substr(0, sep);
 				std::string value = line.substr(sep + 2, line.size() - sep - 2);
 				if (key == "Content-Type" && value.find("multipart/form-data") != value.npos)
-					boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
+					_boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
 				this->headers_[key] = value;
 			}
 		}
 		idx++;
 	}
-	if (!boundary.empty() && std::getline(ss, line)){
-		line = line.substr(0, line.size() - 1);
-		if (this->headers_.find(H_CONTENT_LENGTH) != this->headers_.end()){
-			long long bodySize = Convert::ToInt(this->headers_[H_CONTENT_LENGTH]);
-			if (bodySize < 0) { throw std::runtime_error(EXC_BODY_NEG_SIZE); }
-		}
-		if (line == boundary){
-			if (std::getline(ss, line)){
-				std::stringstream os(line);
-				line.clear();
-				while (line.find("name=") == line.npos)
-					os >> line;
-				if (line.find("fileToUpload") != line.npos){
-					while (line.find("filename=") == line.npos)
-						os >> line;
-					for (std::string tmp = line; line.find("\"") == line.rfind("\""); line += " " + tmp)
-						os >> tmp;
-					line = PATH_TO_DOWNLOAD + line.substr(line.find("\"")+1, line.size() - line.find("\"") - 2);
-					#if LOGGER_DEBUG
-						Logger::debug(line) << std::endl;
-					#endif
-					file_dl.open(line.c_str(), std::ios::out | std::ios::binary);
-					// file_dl.open(line.c_str());
-					if (!file_dl.is_open())
-						throw std::runtime_error("can\'t open/create the file");
-					while(std::getline(ss, line)){
-						line = line.substr(0, line.size() - 1);
-						if (line.empty())
-							break ;
-					}
-					std::streamoff cursor_pos = ss.tellg();
-					size_t len = buffer->find(boundary, cursor_pos) - cursor_pos - 2;
-					file_dl.write(buffer->c_str() + cursor_pos, len);
-					if (file_dl.fail()) {
-						unlink(line.c_str());
-						throw std::runtime_error(EXC_BODY_WRITE);
-					}
-					file_dl.close();
-				}
-			}
-		}
-		else throw (std::runtime_error(EXC_INVALID_BOUNDARY));
+	if (!_boundary.empty()){
+		std::streamoff cursor_pos = ss.tellg();
+		_allBody = new std::string(std::string(buffer->c_str() + cursor_pos));
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;
 }
 
 const std::string& HttpRequest::getMethod() const { return this->method_; }
+const std::string* HttpRequest::getAllBody() const { return this->_allBody; }
+const std::string& HttpRequest::getBoundary() const { return this->_boundary; }
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const { return this->headers_; }
-const unsigned char * HttpRequest::getBody() const { return this->body_; }
-const std::string HttpRequest::getStringBody() const {
-	if (this->body_) return std::string(reinterpret_cast<const char *>(this->body_), Convert::ToInt(this->headers_.at(H_CONTENT_LENGTH)));
-	return "";
-}
 const std::string& HttpRequest::getUrl() const { return this->url_; }
 const std::string& HttpRequest::getHttpVersion() const { return this->httpVersion_; }
 const std::string& HttpRequest::getReqLine() const { return this->reqLine_; }

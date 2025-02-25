@@ -63,9 +63,14 @@ re:
 	@make fclean
 	@make all
 
-debug:  $(HEADERS) $(SRCS) $(OBJS)
-		@$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1
-		@echo "\033[0;32m ✅ Compilation done (debug mode)! ✅ \033[0m"
+debug : $(HEADERS) $(SRCS) $(OBJS)
+	@if [ "$(shell uname)" = "Linux" ]; then\
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1; \
+		echo " \t$(NAME) compiled with debug for linux ✅"; \
+	elif [ "$(shell uname)" = "Darwin" ]; then \
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -fsanitize=address -D LOGGER_DEBUG=1; \
+		echo " \t$(NAME) compiled with debug for MacOS ✅"; \
+	fi
 
 up: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
 		@docker compose up --build -d
