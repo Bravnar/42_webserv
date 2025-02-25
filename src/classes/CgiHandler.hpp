@@ -30,11 +30,13 @@ class CgiHandler {
 
 		
 
-		void						_setEnvVariables() ;
-		void						_execProcess( const std::string &scriptPath ) ;
+		void						_setGetEnvVariables() ;
+		void						_setPostEnvVariables() ;
+
+		void						_execGet( const std::string &scriptPath ) ;
+		void						_execPost( const std::string &scriptPath ) ;
+
 		void						_parseOutput( const std::string &output ) ;
-		// std::string				_executeCgiGet() ;
-		// std::string				_executeCgiPost() ;
 		
 		CgiHandler( void ) ;
 
@@ -44,7 +46,7 @@ class CgiHandler {
 		CgiHandler& operator=( const CgiHandler &other ) ;
 		~CgiHandler( void ) ;
 
-		std::string			run() ;
+		void										run() ;
 		const std::map<std::string, std::string>	&getOutputHeaders( void ) const ;
 		long long int								getContentSize( void ) const ;
 		const std::string							&getOutputBody( void ) const ;

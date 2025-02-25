@@ -249,9 +249,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
 			} */
 			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-			if (matchingRoot->getCgi() == "/usr/bin/php-cgi")  // TODO: is it possible to detect it using cgi file instead of root ?
-				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
-			else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
 		}
 		catch(const std::exception& e) {
 			std::string	errMessage = e.what() ;

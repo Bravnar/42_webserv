@@ -40,7 +40,11 @@ CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 
 /* Helper private functions */
 
-void	CgiHandler::_setEnvVariables( void ) {
+void	CgiHandler::_setPostEnvVariables( void ) {
+	return ;
+}
+
+void	CgiHandler::_setGetEnvVariables( void ) {
 
 	_cgiStrVect.clear() ;
 	_envp.clear() ;
@@ -82,6 +86,8 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 		iss >> key ;
 		key = trim(key) ;
 		if (key.at(key.size() - 1) == ':') key.resize(key.size() - 1) ;
+		if (key == "Content-type") key = "Content-Type" ;
+		std::cout << "Header key: " << key << std::endl ;
 		std::getline( iss, value ) ;
 		value = trim(value) ;
 		_outputHeaders[key] = value ;
@@ -92,7 +98,7 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 	} */
 }
 
-void	CgiHandler::_execProcess( const std::string &scriptPath ) {
+void	CgiHandler::_execGet( const std::string &scriptPath ) {
 
 	Logger::debug("Script path: ") << scriptPath << std::endl ;
 	int 	pipefd[2] ;
@@ -120,24 +126,44 @@ void	CgiHandler::_execProcess( const std::string &scriptPath ) {
 
 		close( pipefd[0] ) ;
 		waitpid( pid, NULL, 0 ) ;
+		// TODO: handle infinite loop in the script
 		_parseOutput( output ) ;
 		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
 		// Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
 	}
 }
 
+void	CgiHandler::_execPost( const std::string &scriptPath ) {
+	return ; // temporary
+	Logger::debug("Script path: ") << scriptPath << std::endl ;
+
+	int	pipefd[2] ;
+	if (pipe(pipefd) == -1) throw std::runtime_error( "Failed to create pipe." ) ;
+
+	pid_t	pid = fork() ;
+	if ( pid == -1 ) throw std::runtime_error( "Failed to fork process" ) ;
+	else if ( pid == 0 ) {
+		// child
+	} else {
+		//parent
+	}
+}
+
 /* Main function run */
 
-std::string	CgiHandler::run( void ) {
+void	CgiHandler::run( void ) {
 
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
-	_setEnvVariables() ;
-	_execProcess( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
-
+	if (_method == "GET") {
+		_setGetEnvVariables() ;
+		_execGet( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+	}
+	else if (_method == "POST") {
+		_setPostEnvVariables() ;
+		_execPost( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+	}
 	/* for ( size_t i = 0; i < _envp.size(); i++)
 		std::cout << _envp[i] << std::endl ; */
-	
-	return "Work in Progress\n" ;
 }
 
 /* Getters */
