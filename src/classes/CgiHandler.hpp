@@ -39,6 +39,7 @@ class CgiHandler {
 		void						_execPost( const std::string &scriptPath ) ;
 
 		void						_parseOutput( const std::string &output ) ;
+		bool						_checkShebang( const std::string &filePath ) ;
 		
 		CgiHandler( void ) ;
 
@@ -48,7 +49,7 @@ class CgiHandler {
 		CgiHandler& operator=( const CgiHandler &other ) ;
 		~CgiHandler( void ) ;
 
-		static bool									isValidCgi() ; // can I do a static ?
+		bool										isValidCgi() ;
 		void										run() ;
 		const std::map<std::string, std::string>	&getOutputHeaders( void ) const ;
 		long long int								getContentSize( void ) const ;

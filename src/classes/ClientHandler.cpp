@@ -243,18 +243,20 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// declare CgiHandler here ? if there is a throw it will handle
 	// run after check!
-	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty() && checkShebang_( matchingRoot )) {
+	// CgiHandler	cgi ( this, matchingRoot ) ;
+	// std::cout << cgi.isValidCgi() << std::endl ;
+	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty()) {
 		try {
-			Logger::warning(request_.getUrl()) ;
-			CgiHandler	cgi( this, matchingRoot ) ;
-			cgi.run() ; 
-			
-			this->buffer_.internalBody = cgi.getOutputBody();
-			/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
-				std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
-			} */
-			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-			response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			CgiHandler	cgi ( this, matchingRoot ) ;
+			if (cgi.isValidCgi()) {
+				cgi.run() ; 
+				this->buffer_.internalBody = cgi.getOutputBody();
+				/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
+					std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
+				} */
+				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
+				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			}
 		}
 		catch(const std::exception& e) {
 			std::string	errMessage = e.what() ;

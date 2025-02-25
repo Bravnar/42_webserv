@@ -90,7 +90,6 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 		key = trim(key) ;
 		if (key.at(key.size() - 1) == ':') key.resize(key.size() - 1) ;
 		if (key == "Content-type") key = "Content-Type" ;
-		std::cout << "Header key: " << key << std::endl ;
 		std::getline( iss, value ) ;
 		value = trim(value) ;
 		_outputHeaders[key] = value ;
@@ -186,3 +185,25 @@ long long int								CgiHandler::getContentSize( void ) const {
 	return result ;
 }
 
+bool	CgiHandler::_checkShebang( const std::string& filePath ) {
+	std::ifstream	file( filePath.c_str() ) ;
+	if (!file.is_open()) { Logger::error("Failed to open file for shebang check.\n"); return false ; }
+	if (file.peek() == std::ifstream::traits_type::eof()) return false ;
+	std::string		line ;
+
+	while (std::getline( file, line ) && line.empty())
+		continue ;
+	size_t	shebangPos = line.find("#!") ;
+	std::string shebang = trim(line.substr(shebangPos + 2)) ;
+	if (shebangPos == std::string::npos) return false ;
+	if (shebangPos + 2 >= line.size()) return false ;
+	return (shebang == _cgi) ;
+}
+
+bool	CgiHandler::isValidCgi( ) { 
+	std::string	script = _route->getLocationRoot() + _client->getRequest().getUrl() ;
+	size_t	dotPos = script.find_last_of('.') ;
+	std::string extension = ( dotPos != std::string::npos ) ? script.substr(dotPos + 1) : "" ;
+	if (extension == _extension || _checkShebang( script )) return true;
+	else throw std::runtime_error("cgi script and location mismatch") ;
+}
