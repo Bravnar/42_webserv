@@ -185,3 +185,4 @@ long long int								CgiHandler::getContentSize( void ) const {
 	if (*endptr != '\0') throw std::runtime_error("Invalid Content-Length value.");
 	return result ;
 }
+

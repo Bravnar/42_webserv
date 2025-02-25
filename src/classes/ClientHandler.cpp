@@ -170,8 +170,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			struct stat s;
 			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
 				// matchingRoot.getIndex() replace line below this->server_.getConfig().getIndex()
-				if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
-					rootFile.append("/" + this->server_.getConfig().getIndex());
+				// if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
+				Logger::warning(matchingRoot->getIndex()) << std::endl ;
+				if (access((rootFile + "/" + matchingRoot->getIndex()).c_str(), O_RDONLY ) == 0 )
+					// rootFile.append("/" + this->server_.getConfig().getIndex());
+					rootFile.append("/" + matchingRoot->getIndex()) ;
 				else
 					rootFile.append("/");
 			}
