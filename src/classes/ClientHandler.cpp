@@ -233,7 +233,12 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			}
 			response.setStatus(204);
-		}
+		} /*else if (this->request_.getMethod() == "POST") {
+			//TODO: POST Upload Ilyanar: a ce stade, toujours avoir le body "non parse"
+			// le parser correctement et le crer dans le chemin: `matchingRoot->getLocationRoot() + matchingRoot->getUploadPath() + filename`
+			// je regarde avec stan pour ensuite faire une separation POST webserv et POST CGI -> t'as pas besoin de faire le check toi meme
+			// matchingroot contient toutes les configurations de la location
+		}*/
 	}
 	
 
