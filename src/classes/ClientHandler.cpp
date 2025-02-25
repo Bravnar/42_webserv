@@ -238,11 +238,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
 	// ici ?
-	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
+	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty() && checkShebang_( matchingRoot )) {
 		try {
+			Logger::warning(request_.getUrl()) ;
 			CgiHandler	cgi( this, matchingRoot ) ;
 			cgi.run() ; 
-			// TODO: check if the script file is actually the one being requested !
 			
 			this->buffer_.internalBody = cgi.getOutputBody();
 			/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
@@ -323,4 +323,19 @@ void ClientHandler::updateLastAlive() {
 	struct timeval tv;
 	gettimeofday(&tv, 0);
 	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+bool	ClientHandler::checkShebang_( const RouteConfig* path) {
+
+	std::ifstream	file( (path->getLocationRoot() + request_.getUrl()).c_str() ) ;
+	if (!file.is_open()) { Logger::error("Failed to open file for shebang check.\n"); return false ; }
+	std::string		line ;
+
+	while (std::getline( file, line ) && line.empty())
+		continue ;
+	if (line.find("#!/bin/bash") == 0 ||
+		line.find("#!/usr/bin/php-cgi") == 0 || 
+		line.find("#!/usr/bin/python") == 0 )
+		return true ;
+	return false ;
 }

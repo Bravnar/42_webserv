@@ -84,6 +84,8 @@ class ClientHandler
 		// @throw `EXC_SEND_ERROR`
 		void sendpayload_();
 
+		bool checkShebang_( const RouteConfig* ) ; //for cgi files
+
 
 		// Properties
 

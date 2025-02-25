@@ -8,6 +8,7 @@
 # include <unistd.h>
 # include <fcntl.h>
 # include <sys/wait.h>
+# include <sys/stat.h>
 # include <exception>
 # include "../utils/Logger.hpp"
 # include "../utils/ParseUtils.hpp"

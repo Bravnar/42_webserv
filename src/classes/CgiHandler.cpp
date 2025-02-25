@@ -153,6 +153,9 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 
 void	CgiHandler::run( void ) {
 
+	
+
+
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
 	if (_method == "GET") {
 		_setGetEnvVariables() ;
