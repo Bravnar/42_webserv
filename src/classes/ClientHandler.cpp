@@ -236,6 +236,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	
 
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
+	// TODO: Do we need an upload limit on the server ?
 
 	// ici ?
 	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty() && checkShebang_( matchingRoot )) {
