@@ -169,19 +169,15 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
 			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
-				// matchingRoot.getIndex() replace line below this->server_.getConfig().getIndex()
-				// if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
-				Logger::warning(matchingRoot->getIndex()) << std::endl ;
 				if (access((rootFile + "/" + matchingRoot->getIndex()).c_str(), O_RDONLY ) == 0 )
-					// rootFile.append("/" + this->server_.getConfig().getIndex());
 					rootFile.append("/" + matchingRoot->getIndex()) ;
 				else
 					rootFile.append("/");
 			}
 		}
 		else {
-			if (access((rootFile + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
-				rootFile.append(this->server_.getConfig().getIndex());
+			if (access((rootFile + matchingRoot->getIndex()).c_str(), O_RDONLY) == 0)
+				rootFile.append(matchingRoot->getIndex());
 		}
 		if (this->buffer_.externalBody.is_open())
 			this->buffer_.externalBody.close();
@@ -241,19 +237,12 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
-	// declare CgiHandler here ? if there is a throw it will handle
-	// run after check!
-	// CgiHandler	cgi ( this, matchingRoot ) ;
-	// std::cout << cgi.isValidCgi() << std::endl ;
 	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty()) {
 		try {
 			CgiHandler	cgi ( this, matchingRoot ) ;
 			if (cgi.isValidCgi()) {
 				cgi.run() ; 
 				this->buffer_.internalBody = cgi.getOutputBody();
-				/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
-					std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
-				} */
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
 				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
 			}

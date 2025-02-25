@@ -29,6 +29,7 @@ class CgiHandler {
 		std::string							_extension ;
 		std::map<std::string, std::string>	_outputHeaders ;
 		std::string							_outputBody ;
+		std::string							_script ;
 
 		
 

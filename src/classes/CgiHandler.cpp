@@ -13,7 +13,8 @@ _method( client->getRequest().getMethod() ),
 _cgi( route->getCgi().first ),
 _extension( route->getCgi().second ),
 _outputHeaders(),
-_outputBody("") { }
+_outputBody(""),
+_script( route->getLocationRoot() + client->getRequest().getUrl() ) { }
 
 CgiHandler::CgiHandler( const CgiHandler& other ) :
 _cgiStrVect( other._cgiStrVect ),
@@ -23,7 +24,8 @@ _method( other._method ),
 _cgi( other._cgi ),
 _extension( other._extension ),
 _outputHeaders( other._outputHeaders ),
-_outputBody( other._outputBody) { }
+_outputBody( other._outputBody),
+_script( other._script ) { }
 
 CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
 	if (this != &other ) {
@@ -35,6 +37,7 @@ CgiHandler& CgiHandler::operator=( const CgiHandler& other ) {
 		_extension = other._extension ;
 		_outputHeaders = other._outputHeaders ;
 		_outputBody = other._outputBody ;
+		_script = other._script ;
 	}
 	return *this ; 
 }
@@ -54,7 +57,7 @@ void	CgiHandler::_setGetEnvVariables( void ) {
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
-	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
+	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _script) ;
 	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
@@ -94,10 +97,6 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 		value = trim(value) ;
 		_outputHeaders[key] = value ;
 	}
-
-	/* for (std::map<std::string, std::string>::iterator it = _outputHeaders.begin() ; it != _outputHeaders.end() ; it++) {
-		std::cout << "KEY: " << it->first << " | " << "VALUE: " << it->second << std::endl ; 
-	} */
 }
 
 void	CgiHandler::_execGet( const std::string &scriptPath ) {
@@ -127,13 +126,9 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
-		/* clock_t	start = clock() ;
-		while ( (static_cast<double>(clock() - start) / CLOCKS_PER_SEC * 1000) < 5000 ) */
 			waitpid( pid, NULL, WNOHANG ) ;
 		// TODO: handle infinite loop in the script
 		_parseOutput( output ) ;
-		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
-		// Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
 	}
 }
 
@@ -160,14 +155,12 @@ void	CgiHandler::run( void ) {
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
 	if (_method == "GET") {
 		_setGetEnvVariables() ;
-		_execGet( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+		_execGet( _script ) ;
 	}
 	else if (_method == "POST") {
 		_setPostEnvVariables() ;
-		_execPost( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
+		_execPost( _script ) ;
 	}
-	/* for ( size_t i = 0; i < _envp.size(); i++)
-		std::cout << _envp[i] << std::endl ; */
 }
 
 /* Getters */
@@ -201,9 +194,8 @@ bool	CgiHandler::_checkShebang( const std::string& filePath ) {
 }
 
 bool	CgiHandler::isValidCgi( ) { 
-	std::string	script = _route->getLocationRoot() + _client->getRequest().getUrl() ;
-	size_t	dotPos = script.find_last_of('.') ;
-	std::string extension = ( dotPos != std::string::npos ) ? script.substr(dotPos + 1) : "" ;
-	if (extension == _extension || _checkShebang( script )) return true;
-	else throw std::runtime_error("cgi script and location mismatch") ;
+	if (_script == _route->getFinalPath()) _script += _route->getIndex() ;
+	size_t	dotPos = _script.find_last_of('.') ;
+	std::string extension = ( dotPos != std::string::npos ) ? _script.substr(dotPos + 1) : "" ;
+	return (extension == _extension || _checkShebang( _script )) ;
 }

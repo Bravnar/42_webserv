@@ -1,7 +1,6 @@
 # include "RouteConfig.hpp"
 
-//TODO: Add Index per RouteConfig
-
+//TODO: Remove ServerIndex
 /* Default Constructor */
 RouteConfig::RouteConfig( void ) :
 _path(""),
@@ -62,7 +61,7 @@ void	RouteConfig::setCgi( const std::string &path, const std::string &ext ) { _c
 
 void	RouteConfig::setReturn( const std::string &path ) { _return = path ; }
 void	RouteConfig::setUploadPath( const std::string &path ) { _uploadPath = path ; }
-void	RouteConfig::setFinalPath( const std::string &path ) { _finalPath = path ; } 
+void	RouteConfig::setFinalPath( const std::string &path ) { _finalPath = path + "/" ; } 
 void	RouteConfig::setIndex( const std::string &path ) { _index = path ; }
 
 /* GETTERS */

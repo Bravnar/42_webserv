@@ -51,8 +51,8 @@ CONTENT=$(cat <<EOF
                 <a href="/404notfound">Get a 404 Error!</a>                
             </div>
             <div class="buttons cgi-buttons">
-                <a href="../cgi-python/index.py">PYTHON CGI</a>
-                <a href="../cgi-php/index.php">PHP CGI</a>
+                <a href="../cgi-python/">PYTHON CGI</a>
+                <a href="../cgi-php/">PHP CGI</a>
             </div>
         </div>
     </section>
