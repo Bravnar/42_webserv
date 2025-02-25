@@ -118,7 +118,7 @@ void	setError( ServerConfig& server, const std::string &str ) {
 }
 
 
-void	setIndex( ServerConfig& server, const std::string &str) {
+void	setServerIndex( ServerConfig& server, const std::string &str) {
 	server.setIndex( str ) ;
 }
 
@@ -140,15 +140,24 @@ void	setMethods( RouteConfig& route, const std::string &str) {
 
 void	setCgi( RouteConfig& route, const std::string &str ) {
 	if (access( str.c_str(), F_OK | X_OK ) ) throw std::runtime_error("invalid cgi-file provided: " + str);
-	route.setCgi( str ) ;
+	std::string last = str.substr( str.find_last_of('/') + 1, str.size() ) ;
+	last = trim(last) ;
+	if (last == "python" || last == "python3") route.setCgi( str, "py" ) ;
+	else if (last == "php-cgi") route.setCgi( str, "php" ) ;
+	else if (last == "bash") route.setCgi( str, "sh") ;
+	else throw std::runtime_error("Failed to identify valid cgi agent: " + str ) ;
 }
+
+/* void	setCgiExtension( RouteConfig& route, const std::string &str ) {
+	route.setCgiExt( str ) ;
+} */
 
 void	setReturn( RouteConfig& route, const std::string &str ) {
 	std::cout << "SALUT!" << std::endl ;
 	route.setReturn( str ) ;
 }
 
-void	setDirectoryListing( RouteConfig& route, const std::string &str) {
+void	setDirectoryListing( RouteConfig& route, const std::string &str ) {
 	if ( str == "on" ) route.setDirectoryListing(true) ;
 	else if ( str == "off" ) route.setDirectoryListing(false) ;
 	else throw std::runtime_error("invalid directory listing value: must be 'on' or 'off'.") ;
@@ -162,4 +171,8 @@ void	setAcceptUploads( RouteConfig& route, const std::string &str) {
 
 void	setUploadPath( RouteConfig& route, const std::string &str) {
 	route.setUploadPath( str ) ;
+}
+
+void	setLocationIndex( RouteConfig& route, const std::string &str ) {
+	route.setIndex( str ) ;
 }

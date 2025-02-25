@@ -27,16 +27,20 @@ void	ConfigParser::_initMaps( void ) {
 	_serverKeyHandlers["client_body_limit"] = setClientBodyLimit ;
 	_serverKeyHandlers["max_clients"] = setMaxClients ;
 	_serverKeyHandlers["timeout"] = setTimeout ;
-	_serverKeyHandlers["index"] = setIndex ;
+	_serverKeyHandlers["index"] = setServerIndex ;
 	_serverKeyHandlers["errors"] = setError ;
 
 	_routeKeyHandlers["root"] = setLocationRoot ;
 	_routeKeyHandlers["methods"] = setMethods ;
+
 	_routeKeyHandlers["cgi"] = setCgi ;
+	// _routeKeyHandlers["cgi_extension"] = NULL ; // no crash ? test
+
 	_routeKeyHandlers["return"] = setReturn ;
 	_routeKeyHandlers["directory_listing"] = setDirectoryListing ;
 	_routeKeyHandlers["accept_uploads"] = setAcceptUploads ;
 	_routeKeyHandlers["upload_path"] = setUploadPath ;
+	_routeKeyHandlers["index"] = setLocationIndex ;
 }
 
 

@@ -169,6 +169,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
 			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
+				// matchingRoot.getIndex() replace line below this->server_.getConfig().getIndex()
 				if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
 					rootFile.append("/" + this->server_.getConfig().getIndex());
 				else
@@ -236,10 +237,9 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	
 
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
-	// TODO: Do we need an upload limit on the server ?
 
 	// ici ?
-	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty() && checkShebang_( matchingRoot )) {
+	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty() && checkShebang_( matchingRoot )) {
 		try {
 			Logger::warning(request_.getUrl()) ;
 			CgiHandler	cgi( this, matchingRoot ) ;

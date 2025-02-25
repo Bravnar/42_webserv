@@ -45,14 +45,14 @@ CONTENT=$(cat <<EOF
             <img src="/winnie_bash.jpg" alt="Image Placeholder">
             <br>
             <p>The main website is at <strong>http://127.0.0.1/</strong></p>
-            <p>But this one is at <strong>http://127.0.0.1/cgi-bash/hello.sh</strong>!</p>
+            <p>But this one is at <strong>http://127.0.0.1/cgi-bash/index.sh</strong>!</p>
             <div class="buttons">
                 <a href="/">Go To Main Site</a>
                 <a href="/404notfound">Get a 404 Error!</a>                
             </div>
             <div class="buttons cgi-buttons">
-                <a href="../cgi-python/py-cgi">PYTHON CGI</a>
-                <a href="../cgi-php/hello.php">PHP CGI</a>
+                <a href="../cgi-python/index.py">PYTHON CGI</a>
+                <a href="../cgi-php/index.php">PHP CGI</a>
             </div>
         </div>
     </section>

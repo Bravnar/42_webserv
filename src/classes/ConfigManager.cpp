@@ -106,11 +106,11 @@ void ConfigManager::printConfig( void ) const {
                 << (it2->isDirectoryListingEnabled() ? "ON" : "OFF") 
                 << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             // Is CGI ON/OFF
-            if (!it2->getCgi().empty()) 
+            if (!it2->getCgi().first.empty()) 
                 std::cout << C_RED "│ " C_CYAN "│" C_RESET 
                     << std::left << std::setw(21) << C_BOLD << "CGI:\t\t\t" C_RESET 
                     << std::left << std::setw(totalWidth - 43) 
-                    << it2->getCgi() << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
+                    << it2->getCgi().first << C_CYAN "│" C_RED " │" C_RESET << std::endl ;
             // Is Upload Accepted ON/OFF
             if (it2->isUploadAccepted())
                 std::cout << C_RED "│ " C_CYAN "│" C_RESET 

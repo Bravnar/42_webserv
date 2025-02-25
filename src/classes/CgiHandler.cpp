@@ -10,7 +10,8 @@ _cgiStrVect(),
 _client( client ),
 _route( route ),
 _method( client->getRequest().getMethod() ),
-_cgi( route->getCgi() ),
+_cgi( route->getCgi().first ),
+_extension( route->getCgi().second ),
 _outputHeaders(),
 _outputBody("") { }
 
@@ -20,6 +21,7 @@ _client( other._client ),
 _route( other._route ),
 _method( other._method ),
 _cgi( other._cgi ),
+_extension( other._extension ),
 _outputHeaders( other._outputHeaders ),
 _outputBody( other._outputBody) { }
 
@@ -30,6 +32,7 @@ CgiHandler& CgiHandler::operator=( const CgiHandler& other ) {
 		_route = other._route ;
 		_method =  other._method  ;
 		_cgi = other._cgi ;
+		_extension = other._extension ;
 		_outputHeaders = other._outputHeaders ;
 		_outputBody = other._outputBody ;
 	}
@@ -125,7 +128,9 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
-		waitpid( pid, NULL, 0 ) ;
+		/* clock_t	start = clock() ;
+		while ( (static_cast<double>(clock() - start) / CLOCKS_PER_SEC * 1000) < 5000 ) */
+			waitpid( pid, NULL, WNOHANG ) ;
 		// TODO: handle infinite loop in the script
 		_parseOutput( output ) ;
 		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
@@ -152,9 +157,6 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 /* Main function run */
 
 void	CgiHandler::run( void ) {
-
-	
-
 
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
 	if (_method == "GET") {

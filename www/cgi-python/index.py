@@ -113,14 +113,14 @@ content = f"""
             <img src="/winnie_python.jpg" alt="Image Placeholder">
             <br>
             <p>The main website is at <strong>http://127.0.0.1/</strong></p>
-            <p>But this one is at <strong>http://127.0.0.1/cgi-python/hello.py</strong>!</p>
+            <p>But this one is at <strong>http://127.0.0.1/cgi-python/index.py</strong>!</p>
             <div class="buttons">
                 <a href="/">Go To Main Site</a>
                 <a href="/404notfound">Get a 404 Error!</a>                
             </div>
             <div class="buttons cgi-buttons">
-                <a href="../cgi-php/hello.php">PHP CGI</a>
-                <a href="../cgi-bash/hello.sh">BASH CGI</a>
+                <a href="../cgi-php/index.php">PHP CGI</a>
+                <a href="../cgi-bash/index.sh">BASH CGI</a>
             </div>
         </div>
     </section>

@@ -70,8 +70,6 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 	#if LOGGER_DEBUG < 0
 		Logger::debug("removing query from url") << std::endl;
 	#endif
-	// TODO: CGI -> Currently I ignore the ? query from the url; otherwhise it would get me a 404 page because webserv would look for a file called "file?req"
-	// Instead, you can store it in a new response parameter string/vector and make a getter for it while still removing it from url, so the server will still ignore this when making a query to a non-cgi location
 	if (this->url_.find('?', 0) != std::string::npos) {
 		this->url_ = this->url_.substr(0, this->url_.find('?', 0));
 	}

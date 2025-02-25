@@ -26,6 +26,7 @@ class CgiHandler {
 		const RouteConfig					*_route ;
 		std::string							_method ;
 		std::string							_cgi ;
+		std::string							_extension ;
 		std::map<std::string, std::string>	_outputHeaders ;
 		std::string							_outputBody ;
 
@@ -47,6 +48,7 @@ class CgiHandler {
 		CgiHandler& operator=( const CgiHandler &other ) ;
 		~CgiHandler( void ) ;
 
+		static bool									isValidCgi() ; // can I do a static ?
 		void										run() ;
 		const std::map<std::string, std::string>	&getOutputHeaders( void ) const ;
 		long long int								getContentSize( void ) const ;
