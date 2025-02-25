@@ -13,7 +13,7 @@ $content = "
     <link rel=\"icon\" href=\"/winnie_php.jpg\">
     <meta charset=\"UTF-8\">
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>PythonCGI!</title>
+    <title>PhP-CGI!</title>
     <style>
         * {
             margin: 0;
@@ -95,7 +95,7 @@ $content = "
 <body>
     <section>
         <div class=\"container\">
-            <h1>WebServ-PythonCGI</h1>
+            <h1>WebServ-PHP-CGI</h1>
             <h2>Happy <span style=\"color: blue;\">$day_message</span> Hope you're having a great day!</h2>
         </div>
         <div class=\"container\">
