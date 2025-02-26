@@ -142,7 +142,6 @@ void	setCgi( RouteConfig& route, const std::string &str ) {
 	if (access( str.c_str(), F_OK | X_OK ) ) throw std::runtime_error("invalid cgi-file provided: " + str);
 	std::string last = str.substr( str.find_last_of('/') + 1, str.size() ) ;
 	last = trim(last) ;
-	std::cout << "LAST: " << last << std::endl ;
 	if (last == "python" || last == "python3") route.setCgi( str, "py" ) ;
 	else if (last == "php-cgi") route.setCgi( str, "php" ) ;
 	else if (last == "bash") route.setCgi( str, "sh") ;
@@ -154,7 +153,6 @@ void	setCgi( RouteConfig& route, const std::string &str ) {
 } */
 
 void	setReturn( RouteConfig& route, const std::string &str ) {
-	std::cout << "SALUT!" << std::endl ;
 	route.setReturn( str ) ;
 }
 

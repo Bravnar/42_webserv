@@ -13,18 +13,51 @@ if not os.path.exists(upload_dir):
 form = cgi.FieldStorage()
 file_item = form["uploaded_file"]
 
+def get_unique_filename(directory, filename):
+	base, ext = os.path.splitext(filename)
+	counter = 1
+	new_filename = filename
+	while os.path.exists(os.path.join(directory, new_filename)):
+		new_filename = f"{base}_{counter}{ext}"
+		counter += 1
+
+	return new_filename
+
 if file_item.filename:
 	filename = os.path.basename(file_item.filename)
+	filename = get_unique_filename(upload_dir, filename)
 	file_path = os.path.join(upload_dir, filename)
 
-	with open(file_path, "wb") as f:
-		f.write(file_item.file.read())
-
-	print("Content-Type: text/html\r\n")
-	print("<html><body>")
-	print(f"<h2>File '{filename}' uploaded successfully!</h2>")
-	print(f"<p>Saved at: {file_path}</p>")
-	print("</body></html>")
+	try:
+		with open(file_path, "wb") as f:
+			f.write(file_item.file.read())
+		content = f"""
+		<!DOCTYPE html>
+		<html lang="en">
+			<body>
+				<h2>File '{filename}' uploaded successfully!</h2>
+				<p>Saved at: {file_path}</p>
+				<a href="/cgi-python/">Go Back.</a>
+			</body>
+		</html>
+		"""
+	except Exception as e:
+		if os.path.exists(file_path):
+			os.remove(file_path)
+		content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+            <body>
+                <h2>Error uploading file!</h2>
+                <p>Reason: {str(e)}</p>
+                <a href="/cgi-python/">Go Back.</a>
+            </body>
+        </html>
+        """
 else:
-	print("Content-Type: text/html\r\n")
-	print("<html><body><h2>No file uploaded.</h2></body></html>")
+	content = "<!DOCTYPE html><html lang=\"en\"><body><h2>No file uploaded.</h2></body></html>"
+
+print("Content-Type: text/html")
+print(f"Content-Length: {len(content) + 1}")
+print()
+print(content)

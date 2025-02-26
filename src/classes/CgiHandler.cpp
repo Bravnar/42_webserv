@@ -51,10 +51,6 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_envp.clear() ;
 	
 	std::string	contentType = _client->getRequest().getHeaders().at("Content-Type") ;
-	// size_t boundaryPos = contentType.find("boundary=") ;
-	// if (boundaryPos != std::string::npos) {
-	// 	contentType = contentType.substr(0, boundaryPos - 2) ;
-	// }
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
@@ -64,11 +60,11 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
 	_cgiStrVect.push_back("CONTENT_LENGTH=" + _client->getRequest().getHeaders().at("Content-Length")) ;
 	_cgiStrVect.push_back("UPLOAD_DIR=" + _route->getFinalPath() + _route->getUploadPath()) ;
+	_cgiStrVect.push_back("UPLOAD_DIR_PHP=." + _route->getUploadPath()) ;
 	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
 	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
-		std::cout << _cgiStrVect[i] << std::endl ;
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
 	}
 	_envp.push_back(NULL) ;
@@ -125,7 +121,7 @@ void	CgiHandler::_parseOutput( const std::string &outputPipe ) {
 
 void	CgiHandler::_execGet( const std::string &scriptPath ) {
 
-	Logger::debug("Script path: ") << scriptPath << std::endl ;
+	Logger::warning("Script path: ") << scriptPath << std::endl ;
 	int 	pipefd[2] ;
 	if (pipe(pipefd) == -1) throw std::runtime_error("Failed to create pipe.") ;
 
@@ -172,7 +168,7 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		close(inputPipe[0]) ;
 
 		close(outputPipe[0]) ;
-		dup2(inputPipe[1], STDOUT_FILENO) ;
+		dup2(outputPipe[1], STDOUT_FILENO) ;
 		close(outputPipe[1]) ;
 
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;

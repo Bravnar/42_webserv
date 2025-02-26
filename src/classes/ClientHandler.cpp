@@ -240,9 +240,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 		}
 	}
-	
-
-	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
 	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty()) {
 		try {
