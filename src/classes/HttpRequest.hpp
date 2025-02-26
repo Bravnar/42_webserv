@@ -9,6 +9,9 @@
 # include <cstring>
 # include "./HttpInclude.hpp"
 # include <unistd.h>
+#include <sstream>
+#include <fstream>
+#include <sys/stat.h>
 
 # define PATH_TO_DOWNLOAD "./www/uploads/"
 # define EXC_INVALID_RL "invalid RequestLine"
@@ -54,7 +57,7 @@ class HttpRequest {
 		const std::string& getUrl() const;
 		const std::string& getHttpVersion() const;
 		const std::string& getReqLine() const;
-		void buildBody(std::string location, std::string path);
+		void buildBody(std::string location, std::string path) const;
 };
 
 #endif

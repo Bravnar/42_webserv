@@ -1,11 +1,5 @@
 #include "./HttpRequest.hpp"
-#include <algorithm>
-#include <cstddef>
-#include <fstream>
-#include <ios>
-#include <sstream>
 #include <stdexcept>
-#include <string>
 
 HttpRequest::HttpRequest():
 	method_(""),
@@ -41,7 +35,12 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 		this->httpVersion_ = assign.httpVersion_;
 		this->headers_ = assign.headers_;
 		this->reqLine_ = assign.reqLine_;
-		this->_allBody = assign._allBody;
+		if (_allBody)
+			delete _allBody;
+		if (assign._allBody)
+			this->_allBody = new std::string(assign._allBody->c_str(), assign._allBody->size());
+		else
+			_allBody = 0;
 		this->_boundary = assign._boundary;
 	}
 	return *this;
@@ -50,6 +49,18 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 HttpRequest::~HttpRequest() {
 	if (_allBody)
 		delete _allBody;
+}
+
+bool checkFolder(const char* chemin) {
+	struct stat s;
+
+	if (!stat(chemin, &s)){
+		if (!(s.st_mode & S_IFDIR))
+			throw std::runtime_error("The path is not a directory");
+		else
+			return false;
+	}
+	return true;
 }
 
 void HttpRequest::parseRequestLine_(const std::string& line) {
@@ -78,18 +89,17 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
 }
 
-void HttpRequest::buildBody(std::string location, std::string path){
+void HttpRequest::buildBody(std::string location, std::string path) const{
 	if (!_allBody)
-		throw std::runtime_error("No body set");
-	std::stringstream ss(_allBody->c_str());
+		throw std::runtime_error("No Body set");
+	if (checkFolder((location + "/" + path).c_str()))
+		mkdir((location + "/" + path).c_str(), 0755);
+	std::stringstream ss(*_allBody);
 	std::ofstream	file_dl;
-	std::string line;
+	std::string line("");
 
 	if (!_boundary.empty() && std::getline(ss, line)){
 		line = line.substr(0, line.size() - 1);
-		if (this->headers_.find(H_CONTENT_LENGTH) != this->headers_.end())
-			if (Convert::ToInt(this->headers_[H_CONTENT_LENGTH]) < 0)
-				throw std::runtime_error(EXC_BODY_NEG_SIZE);
 		if (line == _boundary){
 			if (std::getline(ss, line)){
 				std::stringstream os(line);
@@ -105,7 +115,7 @@ void HttpRequest::buildBody(std::string location, std::string path){
 					#if LOGGER_DEBUG
 						Logger::debug(location + "/" + path + "/" + line) << std::endl;
 					#endif
-					file_dl.open(location + "/" + path + "/" + line, std::ios::out | std::ios::binary);
+					file_dl.open((location + "/" + path + "/" + line), std::ios::out | std::ios::binary);
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
@@ -114,10 +124,11 @@ void HttpRequest::buildBody(std::string location, std::string path){
 							break ;
 					}
 					std::streamoff cursor_pos = ss.tellg();
+
 					size_t len = _allBody->find(_boundary, cursor_pos) - cursor_pos - 2;
 					file_dl.write(_allBody->c_str() + cursor_pos, len);
 					if (file_dl.fail()) {
-						unlink(line.c_str());
+						unlink((location + "/" + path + "/" + line).c_str());
 						throw std::runtime_error(EXC_BODY_WRITE);
 					}
 					file_dl.close();
@@ -156,7 +167,8 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 	}
 	if (!_boundary.empty()){
 		std::streamoff cursor_pos = ss.tellg();
-		_allBody = new std::string(std::string(buffer->c_str() + cursor_pos));
+		// _allBody = new std::string(buffer->substr(cursor_pos, buffer->size()));
+		_allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;
