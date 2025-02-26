@@ -121,7 +121,7 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 
 void	CgiHandler::_execGet( const std::string &scriptPath ) {
 
-	Logger::warning("Script path: ") << scriptPath << std::endl ;
+	Logger::debug("Script path: ") << scriptPath << std::endl ;
 	int 	pipefd[2] ;
 	if (pipe(pipefd) == -1) throw std::runtime_error("Failed to create pipe.") ;
 

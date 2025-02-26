@@ -3,8 +3,6 @@
 
 $upload_dir = rtrim(getenv("UPLOAD_DIR_PHP") ?: "./www/uploads", "/");
 
-echo $upload_dir ;
-
 if (!file_exists($upload_dir)) {
 	mkdir($upload_dir, 0777, true) ;
 }
