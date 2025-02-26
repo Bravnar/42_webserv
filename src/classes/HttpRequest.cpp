@@ -51,10 +51,10 @@ HttpRequest::~HttpRequest() {
 		delete _allBody;
 }
 
-bool checkFolder(const char* chemin) {
+bool checkFolder(const char* path) {
 	struct stat s;
 
-	if (!stat(chemin, &s)){
+	if (!stat(path, &s)){
 		if (!(s.st_mode & S_IFDIR))
 			throw std::runtime_error("The path is not a directory");
 		else
