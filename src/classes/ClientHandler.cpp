@@ -229,7 +229,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			if (unlink(rootFile.c_str()) < 0)
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			response.setStatus(204);
-		} else if (this->request_.getMethod() == "POST") {
+		} else if (this->request_.getMethod() == "POST" && !matchingRoot->getCgi().first.empty()) {
 			try{
 				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
 				response.setStatus(201);
@@ -240,9 +240,6 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 		}
 	}
-	
-
-	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
 	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty()) {
 		try {

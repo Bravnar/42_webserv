@@ -113,6 +113,14 @@ $content = "
                 <a href=\"../cgi-bash/\">BASH CGI</a>
             </div>
         </div>
+        <div class=\"container\">
+            <h3>Upload your file!</h3>
+			<br>
+			<form action=\"/cgi-php/upload.php\" method=\"post\" enctype=\"multipart/form-data\">
+                <input type=\"file\" name=\"uploaded_file\">
+                <input type=\"submit\" value=\"Upload\">
+            </form>
+		</div>
     </section>
 </body>
 </html>

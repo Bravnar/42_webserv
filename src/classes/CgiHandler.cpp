@@ -47,7 +47,27 @@ CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 /* Helper private functions */
 
 void	CgiHandler::_setPostEnvVariables( void ) {
-	return ;
+	_cgiStrVect.clear() ;
+	_envp.clear() ;
+	
+	std::string	contentType = _client->getRequest().getHeaders().at("Content-Type") ;
+
+	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
+	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
+	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _script) ;
+	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
+	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
+	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
+	_cgiStrVect.push_back("CONTENT_LENGTH=" + _client->getRequest().getHeaders().at("Content-Length")) ;
+	_cgiStrVect.push_back("UPLOAD_DIR=" + _route->getFinalPath() + _route->getUploadPath()) ;
+	_cgiStrVect.push_back("UPLOAD_DIR_PHP=." + _route->getUploadPath()) ;
+	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
+	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
+	
+	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
+		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
+	}
+	_envp.push_back(NULL) ;
 }
 
 void	CgiHandler::_setGetEnvVariables( void ) {
@@ -133,18 +153,46 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 }
 
 void	CgiHandler::_execPost( const std::string &scriptPath ) {
-	return ; // temporary
+
 	Logger::debug("Script path: ") << scriptPath << std::endl ;
 
-	int	pipefd[2] ;
-	if (pipe(pipefd) == -1) throw std::runtime_error( "Failed to create pipe." ) ;
+	int	inputPipe[2], outputPipe[2];
+	if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1 ) throw std::runtime_error( "Failed to create pipes." ) ;
 
 	pid_t	pid = fork() ;
 	if ( pid == -1 ) throw std::runtime_error( "Failed to fork process" ) ;
 	else if ( pid == 0 ) {
 		// child
+		close(inputPipe[1]) ;
+		dup2(inputPipe[0], STDIN_FILENO) ;
+		close(inputPipe[0]) ;
+
+		close(outputPipe[0]) ;
+		dup2(outputPipe[1], STDOUT_FILENO) ;
+		close(outputPipe[1]) ;
+
+		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
+		execve(_cgi.c_str(), av, &_envp[0]) ;
+		Logger::fatal("Execve failed.") ;
+		exit(EXIT_FAILURE) ;
+
 	} else {
 		//parent
+		close(inputPipe[0]) ;
+		close(outputPipe[1]) ;
+
+		std::string body = *_client->getRequest().getAllBody() ;
+		write(inputPipe[1], body.c_str(), body.size()) ;
+		close(inputPipe[1]) ;
+
+		char		buffer[1024] ;
+		std::string	output ;
+		ssize_t		bytesRead ;
+
+		while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ;
+		close(outputPipe[0]) ;
+		waitpid( pid, NULL, WNOHANG ) ;
+		_parseOutput( output ) ;
 	}
 }
 
