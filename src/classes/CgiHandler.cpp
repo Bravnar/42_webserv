@@ -87,17 +87,17 @@ void	CgiHandler::_setGetEnvVariables( void ) {
 	_envp.push_back(NULL) ;
 }
 
-void	CgiHandler::_parseOutput( const std::string &outputPipe ) {
+void	CgiHandler::_parseOutput( const std::string &output ) {
 
-	size_t	header_end = outputPipe.find("\r\n\r\n") ;
+	size_t	header_end = output.find("\r\n\r\n") ;
 	size_t	offset = 4 ;
 	if ( header_end == std::string::npos ) {
-		header_end = outputPipe.find("\n\n") ;
+		header_end = output.find("\n\n") ;
 		offset = 2 ;
 	}
 
-	std::string	headers = outputPipe.substr( 0, header_end ) ;
-	_outputBody = outputPipe.substr( header_end + offset );
+	std::string	headers = output.substr( 0, header_end ) ;
+	_outputBody = output.substr( header_end + offset );
 
 	_outputHeaders.clear() ;
 	std::istringstream	headerStream(headers) ;
