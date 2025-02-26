@@ -223,19 +223,19 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 		}
 	} else {
-		// Handle delete method
 		if (this->request_.getMethod() == "DELETE") {
 			if (this->buffer_.externalBody.is_open())
 				this->buffer_.externalBody.close();
-			if (unlink(rootFile.c_str()) < 0) {
+			if (unlink(rootFile.c_str()) < 0)
 				return this->buildResponse(HttpResponse(this->request_, 404));
-			}
 			response.setStatus(204);
 		} else if (this->request_.getMethod() == "POST" && !matchingRoot->getCgi().first.empty()) { // added condition to allow CGI post requests to pass to line 247
 			try{
 				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
+				response.setStatus(201);
 			}
-			catch (const std::exception &e){
+			catch (const std::exception &e) {
+				this->error("POST: ") << e.what() << std::endl;
 				return buildResponse(HttpResponse(request_, 500));
 			}
 		}
@@ -252,8 +252,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			}
 		}
 		catch(const std::exception& e) {
-			std::string	errMessage = e.what() ;
-			Logger::error("CGI Error: " + errMessage + "\n") ;
+			Logger::error("CGI Error: ") << e.what() << std::endl;
 			return buildResponse(HttpResponse(this->request_, 500));
 		}
 	}
