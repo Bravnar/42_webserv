@@ -209,14 +209,12 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			client->readSocket();
 		} catch (const std::exception& e) {
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
-			#if LOGGER_DEBUG
-				this->debug("client ") << client->getFd() << ": " << e.what() << std::endl;
-			#endif
+			this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
 			return 1;
 		}
 		client->updateLastAlive();
 	} else {
-		if (client->getFlags() & READING || client->getFlags() & FETCHED) {
+		if (client->getFlags() & READING) {
 			socket->events = POLLOUT | POLLHUP;
 			#if LOGGER_DEBUG
 				this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
@@ -225,6 +223,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 				client->buildRequest();
 				this->handleRequest_(client);
 			} catch (const std::exception& e) {
+				this->error(e.what()) << std::endl;
 				std::string exception(e.what());
 				
 				if (exception == EXC_NOT_VALID_SERVERNAME) {
