@@ -3,6 +3,8 @@
 # OK DE FAIRE UN TRUC PLUS POTENT
 
 CXX = c++
+GXX = /opt/homebrew/opt/gcc@14/bin/g++-14
+
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 NAME = webserv
 FILES =	main \
@@ -43,6 +45,11 @@ $(NAME): $(HEADERS) $(SRCS) $(OBJS)
 		@$(CXX) $(CXXFLAGS) -OFast -funroll-loops -finline-functions -o $(NAME) $(OBJS)
 		@echo "\033[0;32m ✅ Compilation done! ✅ \033[0m"
 
+gnu: $(HEADERS) $(SRCS) $(OBJS)
+# @$(CXX) $(CXXFLAGS) $(INCLUDE_PATHS) -o $@ $(SRCS)
+		@$(GXX) $(CXXFLAGS) -OFast -funroll-loops -finline-functions -o $(NAME) $(OBJS)
+		@echo "\033[0;32m ✅ Compilation done! ✅ \033[0m"
+
 clean:
 		@rm -rf objs
 		@echo "\033[0;32m🧹🧼All cleaned!🧹🧼\033[0m"
@@ -50,12 +57,20 @@ clean:
 fclean: clean
 		@rm -rf $(NAME)
 		@rm -rf ./www/siege/randomfile
+		@rm -rf $(NAME).dSYM
 
-re: fclean all
+re:
+	@make fclean
+	@make all
 
-debug:  $(HEADERS) $(SRCS) $(OBJS)
-		@$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1
-		@echo "\033[0;32m ✅ Compilation done (debug mode)! ✅ \033[0m"
+debug : $(HEADERS) $(SRCS) $(OBJS)
+	@if [ "$(shell uname)" = "Linux" ]; then\
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1; \
+		echo " \t$(NAME) compiled with debug for linux ✅"; \
+	elif [ "$(shell uname)" = "Darwin" ]; then \
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -fsanitize=address -D LOGGER_DEBUG=1; \
+		echo " \t$(NAME) compiled with debug for MacOS ✅"; \
+	fi
 
 up: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
 		@docker compose up --build -d

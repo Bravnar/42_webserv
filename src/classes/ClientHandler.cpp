@@ -231,6 +231,13 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			}
 			response.setStatus(204);
+		} else if (this->request_.getMethod() == "POST") {
+			try{
+				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
+			}
+			catch (const std::exception &e){
+				return buildResponse(HttpResponse(request_, 500));
+			}
 		}
 	}
 	
@@ -303,15 +310,12 @@ void ClientHandler::readSocket() {
 		this->buffer_.requestBuffer = new std::string("");
 	ssize_t bytesRead;
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		this->buffer_.requestBuffer->append(buffer, bytesRead);
-		#if LOGGER_LEVEL > 0
-			this->debug("Syncing") << std::endl;
-		#endif
-		this->runtime_.Sync();
+		this->buffer_.requestBuffer->append(buffer, bytesRead); //
 	}
 	else if (bytesRead < 0) {
 		this->flags_ |= FETCHED;
-		throw std::runtime_error(EXC_SOCKET_READ); }
+		throw std::runtime_error(EXC_SOCKET_READ);
+	}
 	else { this->buildRequest(); }
 }
 
