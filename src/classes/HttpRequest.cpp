@@ -51,10 +51,10 @@ HttpRequest::~HttpRequest() {
 		delete _allBody;
 }
 
-bool checkFolder(const char* chemin) {
+bool checkFolder(const char* path) {
 	struct stat s;
 
-	if (!stat(chemin, &s)){
+	if (!stat(path, &s)){
 		if (!(s.st_mode & S_IFDIR))
 			throw std::runtime_error("The path is not a directory");
 		else
@@ -115,7 +115,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 					#if LOGGER_DEBUG
 						Logger::debug(location + "/" + path + "/" + line) << std::endl;
 					#endif
-					file_dl.open((location + "/" + path + "/" + line), std::ios::out | std::ios::binary);
+					file_dl.open((location + "/" + path + "/" + line).c_str(), std::ios::out | std::ios::binary);
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
