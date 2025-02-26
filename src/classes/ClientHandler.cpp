@@ -231,7 +231,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			}
 			response.setStatus(204);
-		} else if (this->request_.getMethod() == "POST") {
+		} else if (this->request_.getMethod() == "POST" && !matchingRoot->getCgi().first.empty()) { // added condition to allow CGI post requests to pass to line 247
 			try{
 				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
 			}
