@@ -115,7 +115,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 					#if LOGGER_DEBUG
 						Logger::debug(location + "/" + path + "/" + line) << std::endl;
 					#endif
-					file_dl.open((location + "/" + path + "/" + line), std::ios::out | std::ios::binary);
+					file_dl.open((location + "/" + path + "/" + line).c_str(), std::ios::out | std::ios::binary);
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
