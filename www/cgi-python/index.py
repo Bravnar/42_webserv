@@ -1,38 +1,48 @@
-#!/usr/bin/php-cgi
+#!/usr/bin/python3
 
-<?php
+import datetime
 
-$day_of_week = date("l");
+now = datetime.datetime.now()
+formatted_time = now.strftime("%H:%M")
 
-$day_message = "$day_of_week!";
+hour = now.hour 
 
-$content = "
+if 5 <= hour < 12:
+	greeting = "Good Morning!"
+elif 12 <= hour < 18:
+	greeting = "Good Afternoon!"
+elif 18 <= hour < 22:
+	greeting = "Good Evening!"
+else:
+    greeting = "Good Night!"
+
+content = f"""
 <!DOCTYPE html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-    <link rel=\"icon\" href=\"/winnie_php.jpg\">
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <link rel="icon" href="/winnie_python.jpg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PythonCGI!</title>
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
-        }
-        body {
+        }}
+        body {{
             background-color: #fff;
             color: #000;
-        }
-        section {
+        }}
+        section {{
             width: 100%;
             min-height: 80vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        .container {
+        }}
+        .container {{
             margin-top: 100px;
             max-height: fit-content;
             width: 60%;
@@ -44,26 +54,26 @@ $content = "
             flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-        h1 {
+        }}
+        h1 {{
             border-bottom: 2px solid black;
             padding-bottom: 10px;
             margin-bottom: 20px;
-        }
-        img {
+        }}
+        img {{
             width: 100%;
             max-width: 400px;
             height: auto;
             border: 2px solid black;
             margin: 20px 0;
-        }
-        p {
+        }}
+        p {{
             line-height: 1.6;
-        }
-        .buttons {
+        }}
+        .buttons {{
             margin-top: 20px;
-        }
-        .buttons a {
+        }}
+        .buttons a {{
             display: inline-block;
             text-decoration: none;
             color: black;
@@ -71,12 +81,12 @@ $content = "
             padding: 10px 20px;
             margin: 10px;
             font-size: 16px;
-        }
-        .buttons a:hover {
+        }}
+        .buttons a:hover {{
             background: black;
             color: white;
-        }
-        .cgi-buttons a {
+        }}
+        .cgi-buttons a {{
             display: inline-block;
             text-decoration: none;
             color: black;
@@ -85,41 +95,39 @@ $content = "
             padding: 10px 20px;
             margin: 10px;
             font-size: 16px;
-        }
-        .cgi-buttons a:hover {
+        }}
+        .cgi-buttons a:hover {{
             background: #022449;
             color: white;
-        }
+        }}
     </style>
 </head>
 <body>
     <section>
-        <div class=\"container\">
+        <div class="container">
             <h1>WebServ-PythonCGI</h1>
-            <h2>Happy <span style=\"color: blue;\">$day_message</span> Hope you're having a great day!</h2>
+			<h2><span style="color: blue;">{greeting}</span> It is now: <span style="color: blue;">{formatted_time}</span>!</h2>
         </div>
-        <div class=\"container\">
+        <div class="container">
             <h1>Welcome to Python CGI Page!</h1>
-            <img src=\"/winnie_php.jpg\" alt=\"Image Placeholder\">
+            <img src="/winnie_python.jpg" alt="Image Placeholder">
             <br>
             <p>The main website is at <strong>http://127.0.0.1/</strong></p>
-            <p>But this one is at <strong>http://127.0.0.1/cgi-php/hello.php</strong>!</p>
-            <div class=\"buttons\">
-                <a href=\"/\">Go To Main Site</a>
-                <a href=\"/404notfound\">Get a 404 Error!</a>                
+            <p>But this one is at <strong>http://127.0.0.1/cgi-python/index.py</strong>!</p>
+            <div class="buttons">
+                <a href="/">Go To Main Site</a>
+                <a href="/404notfound">Get a 404 Error!</a>                
             </div>
-            <div class=\"buttons cgi-buttons\">
-                <a href=\"../cgi-python/hello.py\">PYTHON CGI</a>
-                <a href=\"../cgi-bash/hello.sh\">BASH CGI</a>
+            <div class="buttons cgi-buttons">
+                <a href="../cgi-php/">PHP CGI</a>
+                <a href="../cgi-bash/">BASH CGI</a>
             </div>
         </div>
     </section>
 </body>
 </html>
-";
-
-header("Content-Type: text/html");
-header("Content-Length: " . strlen($content));
-
-echo $content;
-?>
+"""
+print("Content-Type: text/html")
+print(f"Content-Length: {len(content) + 1}")
+print()
+print(content)

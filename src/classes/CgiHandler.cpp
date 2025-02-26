@@ -10,9 +10,11 @@ _cgiStrVect(),
 _client( client ),
 _route( route ),
 _method( client->getRequest().getMethod() ),
-_cgi( route->getCgi() ),
+_cgi( route->getCgi().first ),
+_extension( route->getCgi().second ),
 _outputHeaders(),
-_outputBody("") { }
+_outputBody(""),
+_script( route->getLocationRoot() + client->getRequest().getUrl() ) { }
 
 CgiHandler::CgiHandler( const CgiHandler& other ) :
 _cgiStrVect( other._cgiStrVect ),
@@ -20,8 +22,10 @@ _client( other._client ),
 _route( other._route ),
 _method( other._method ),
 _cgi( other._cgi ),
+_extension( other._extension ),
 _outputHeaders( other._outputHeaders ),
-_outputBody( other._outputBody) { }
+_outputBody( other._outputBody),
+_script( other._script ) { }
 
 CgiHandler& CgiHandler::operator=( const CgiHandler& other ) { 
 	if (this != &other ) {
@@ -30,8 +34,10 @@ CgiHandler& CgiHandler::operator=( const CgiHandler& other ) {
 		_route = other._route ;
 		_method =  other._method  ;
 		_cgi = other._cgi ;
+		_extension = other._extension ;
 		_outputHeaders = other._outputHeaders ;
 		_outputBody = other._outputBody ;
+		_script = other._script ;
 	}
 	return *this ; 
 }
@@ -40,14 +46,18 @@ CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 
 /* Helper private functions */
 
-void	CgiHandler::_setEnvVariables( void ) {
+void	CgiHandler::_setPostEnvVariables( void ) {
+	return ;
+}
+
+void	CgiHandler::_setGetEnvVariables( void ) {
 
 	_cgiStrVect.clear() ;
 	_envp.clear() ;
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
-	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _route->getLocationRoot() + _client->getRequest().getUrl()) ;
+	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _script) ;
 	_cgiStrVect.push_back("SERVER_PROTOCOL=" + _client->getRequest().getHttpVersion()) ;
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
@@ -82,17 +92,14 @@ void	CgiHandler::_parseOutput( const std::string &output ) {
 		iss >> key ;
 		key = trim(key) ;
 		if (key.at(key.size() - 1) == ':') key.resize(key.size() - 1) ;
+		if (key == "Content-type") key = "Content-Type" ;
 		std::getline( iss, value ) ;
 		value = trim(value) ;
 		_outputHeaders[key] = value ;
 	}
-
-	/* for (std::map<std::string, std::string>::iterator it = _outputHeaders.begin() ; it != _outputHeaders.end() ; it++) {
-		std::cout << "KEY: " << it->first << " | " << "VALUE: " << it->second << std::endl ; 
-	} */
 }
 
-void	CgiHandler::_execProcess( const std::string &scriptPath ) {
+void	CgiHandler::_execGet( const std::string &scriptPath ) {
 
 	Logger::debug("Script path: ") << scriptPath << std::endl ;
 	int 	pipefd[2] ;
@@ -119,25 +126,41 @@ void	CgiHandler::_execProcess( const std::string &scriptPath ) {
 		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
-		waitpid( pid, NULL, 0 ) ;
+			waitpid( pid, NULL, WNOHANG ) ;
+		// TODO: handle infinite loop in the script
 		_parseOutput( output ) ;
-		// Logger::info("Content-Length: ") << this->getContentSize() << std::endl ;
-		// Logger::info("CGI output:\n") << this->getOutputBody() << std::endl ;
+	}
+}
+
+void	CgiHandler::_execPost( const std::string &scriptPath ) {
+	return ; // temporary
+	Logger::debug("Script path: ") << scriptPath << std::endl ;
+
+	int	pipefd[2] ;
+	if (pipe(pipefd) == -1) throw std::runtime_error( "Failed to create pipe." ) ;
+
+	pid_t	pid = fork() ;
+	if ( pid == -1 ) throw std::runtime_error( "Failed to fork process" ) ;
+	else if ( pid == 0 ) {
+		// child
+	} else {
+		//parent
 	}
 }
 
 /* Main function run */
 
-std::string	CgiHandler::run( void ) {
+void	CgiHandler::run( void ) {
 
 	if (_method != "GET" && _method != "POST") throw std::runtime_error("Invalid method for CGI.") ;
-	_setEnvVariables() ;
-	_execProcess( _route->getLocationRoot() + _client->getRequest().getUrl() ) ;
-
-	/* for ( size_t i = 0; i < _envp.size(); i++)
-		std::cout << _envp[i] << std::endl ; */
-	
-	return "Work in Progress\n" ;
+	if (_method == "GET") {
+		_setGetEnvVariables() ;
+		_execGet( _script ) ;
+	}
+	else if (_method == "POST") {
+		_setPostEnvVariables() ;
+		_execPost( _script ) ;
+	}
 }
 
 /* Getters */
@@ -153,4 +176,26 @@ long long int								CgiHandler::getContentSize( void ) const {
 	result = std::strtoll( it->second.c_str(), &endptr, 10 ) ;
 	if (*endptr != '\0') throw std::runtime_error("Invalid Content-Length value.");
 	return result ;
+}
+
+bool	CgiHandler::_checkShebang( const std::string& filePath ) {
+	std::ifstream	file( filePath.c_str() ) ;
+	if (!file.is_open()) { Logger::error("Failed to open file for shebang check.\n"); return false ; }
+	if (file.peek() == std::ifstream::traits_type::eof()) return false ;
+	std::string		line ;
+
+	while (std::getline( file, line ) && line.empty())
+		continue ;
+	size_t	shebangPos = line.find("#!") ;
+	std::string shebang = trim(line.substr(shebangPos + 2)) ;
+	if (shebangPos == std::string::npos) return false ;
+	if (shebangPos + 2 >= line.size()) return false ;
+	return (shebang == _cgi) ;
+}
+
+bool	CgiHandler::isValidCgi( ) { 
+	if (_script == _route->getFinalPath()) _script += _route->getIndex() ;
+	size_t	dotPos = _script.find_last_of('.') ;
+	std::string extension = ( dotPos != std::string::npos ) ? _script.substr(dotPos + 1) : "" ;
+	return (extension == _extension || _checkShebang( _script )) ;
 }

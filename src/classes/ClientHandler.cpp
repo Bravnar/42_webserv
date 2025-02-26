@@ -169,15 +169,15 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
 			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
-				if (access((rootFile + "/" + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
-					rootFile.append("/" + this->server_.getConfig().getIndex());
+				if (access((rootFile + "/" + matchingRoot->getIndex()).c_str(), O_RDONLY ) == 0 )
+					rootFile.append("/" + matchingRoot->getIndex()) ;
 				else
 					rootFile.append("/");
 			}
 		}
 		else {
-			if (access((rootFile + this->server_.getConfig().getIndex()).c_str(), O_RDONLY) == 0)
-				rootFile.append(this->server_.getConfig().getIndex());
+			if (access((rootFile + matchingRoot->getIndex()).c_str(), O_RDONLY) == 0)
+				rootFile.append(matchingRoot->getIndex());
 		}
 		if (this->buffer_.externalBody.is_open())
 			this->buffer_.externalBody.close();
@@ -244,21 +244,15 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// TODO: Implement POST (both CGI and builtin, we need to discuss about it)
 
-	// ici ?
-	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().empty()) { //TODO: can I break the condition if I check the isCgiFile (similar to the other todo)
+	if (matchingRoot && this->buffer_.internalBody.empty() && !matchingRoot->getCgi().first.empty()) {
 		try {
-			CgiHandler	cgi( this, matchingRoot ) ;
-			cgi.run() ; 
-			// TODO: check if the script file is actually the one being requested !
-			
-			this->buffer_.internalBody = cgi.getOutputBody();
-			/* for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ; it != cgi.getOutputHeaders().end() ; ++it ) {
-				std::cout << "Key: " << it->first << " | " << "Value: " << it->second << std::endl ;
-			} */
-			response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-			if (matchingRoot->getCgi() == "/usr/bin/php-cgi")  // TODO: is it possible to detect it using cgi file instead of root ?
-				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at("Content-type") ;
-			else response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			CgiHandler	cgi ( this, matchingRoot ) ;
+			if (cgi.isValidCgi()) {
+				cgi.run() ; 
+				this->buffer_.internalBody = cgi.getOutputBody();
+				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
+				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+			}
 		}
 		catch(const std::exception& e) {
 			std::string	errMessage = e.what() ;

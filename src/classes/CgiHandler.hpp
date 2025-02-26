@@ -8,6 +8,7 @@
 # include <unistd.h>
 # include <fcntl.h>
 # include <sys/wait.h>
+# include <sys/stat.h>
 # include <exception>
 # include "../utils/Logger.hpp"
 # include "../utils/ParseUtils.hpp"
@@ -25,16 +26,21 @@ class CgiHandler {
 		const RouteConfig					*_route ;
 		std::string							_method ;
 		std::string							_cgi ;
+		std::string							_extension ;
 		std::map<std::string, std::string>	_outputHeaders ;
 		std::string							_outputBody ;
+		std::string							_script ;
 
 		
 
-		void						_setEnvVariables() ;
-		void						_execProcess( const std::string &scriptPath ) ;
+		void						_setGetEnvVariables() ;
+		void						_setPostEnvVariables() ;
+
+		void						_execGet( const std::string &scriptPath ) ;
+		void						_execPost( const std::string &scriptPath ) ;
+
 		void						_parseOutput( const std::string &output ) ;
-		// std::string				_executeCgiGet() ;
-		// std::string				_executeCgiPost() ;
+		bool						_checkShebang( const std::string &filePath ) ;
 		
 		CgiHandler( void ) ;
 
@@ -44,7 +50,8 @@ class CgiHandler {
 		CgiHandler& operator=( const CgiHandler &other ) ;
 		~CgiHandler( void ) ;
 
-		std::string			run() ;
+		bool										isValidCgi() ;
+		void										run() ;
 		const std::map<std::string, std::string>	&getOutputHeaders( void ) const ;
 		long long int								getContentSize( void ) const ;
 		const std::string							&getOutputBody( void ) const ;

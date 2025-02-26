@@ -15,8 +15,6 @@ static std::string getCurrentDateTime() {
 	return (ss.str());
 }
 
-// TODO: if possible better optimized code
-// TODO: adding a format for ip addresses to show in color
 std::string Logger::formatLog(const std::string& msg) {
 	std::string output = msg;
 	std::size_t pos = 0;

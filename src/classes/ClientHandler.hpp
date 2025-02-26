@@ -84,7 +84,6 @@ class ClientHandler
 		// @throw `EXC_SEND_ERROR`
 		void sendpayload_();
 
-
 		// Properties
 
 		const int socket_fd_;
