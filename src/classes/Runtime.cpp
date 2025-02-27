@@ -178,37 +178,37 @@ void Runtime::handleRequest_(ClientHandler *client, const std::string& exception
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	int status = 0;
-	if (socket->revents & POLLIN && client->getFlags() & READING) {
-		try {
-			client->readSocket();
-		} catch (const std::exception& e) {
-			client->clearFlag(READING);
-			client->buildResponse(HttpResponse(client->getRequest(), 500));
-			socket->events = POLLOUT | POLLHUP;
-			this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
-			status = 1;
-		}
-		if (client->getFlags() & READING) {
-			client->updateLastAlive();
-			return status;
-		}
+	if (!(socket->revents & POLLIN) || !(client->getFlags() & READING))
+		return status;
+	try {
+		client->readSocket();
+	} catch (const std::exception& e) {
+		client->clearFlag(READING);
+		client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;
-		try {
-			client->buildRequest();
-			this->handleRequest_(client);
-		} catch (const std::exception& e) {
-			this->error(e.what()) << std::endl;
-			std::string exception(e.what());
-			
-			if (exception == EXC_NOT_VALID_SERVERNAME) {
-				delete client;
-				return -1;
-			}
-			this->handleRequest_(client, exception);
-			status = 1;
-		}
-		client->updateLastAlive();
+		this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
+		status = 1;
 	}
+	if (client->getFlags() & READING) {
+		client->updateLastAlive();
+		return status;
+	}
+	socket->events = POLLOUT | POLLHUP;
+	try {
+		client->buildRequest();
+		this->handleRequest_(client);
+	} catch (const std::exception& e) {
+		this->error(e.what()) << std::endl;
+		std::string exception(e.what());
+		
+		if (exception == EXC_NOT_VALID_SERVERNAME) {
+			delete client;
+			return -1;
+		}
+		this->handleRequest_(client, exception);
+		status = 1;
+	}
+	client->updateLastAlive();
 	return status;
 }
 
