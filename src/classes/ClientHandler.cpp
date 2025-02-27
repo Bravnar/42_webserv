@@ -19,7 +19,7 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	runtime_(runtime),
 	server_(server),
 	address_(addr, addrlen),
-	flags_(0) {
+	flags_(READING) {
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
@@ -145,6 +145,8 @@ const HttpRequest& ClientHandler::buildRequest() {
 		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
 	#endif
 	this->request_ = HttpRequest(this->buffer_.requestBuffer);
+	// TODO: ilyanar
+	// this->request_ = HttpRequest(this->buffer_.requestBuffer, this->buffer_.bodyBuffer);
 	return this->request_;
 }
 
@@ -307,6 +309,21 @@ void ClientHandler::readSocket() {
 		throw std::runtime_error(EXC_SOCKET_READ);
 	}
 	else { this->buildRequest(); }
+
+	// TODO: ilyanar
+	// while reading header (no \r\n\r\n found) -> fill buffer_.requestBuffer
+	// when \r\n\r\n found -> mini parse header : does it have body ?
+	// if yes: will now fill buffer_.body instead of fill buffer_.requestBuffer
+	// if the last requestBuffer contained \r\n\r\n, move the data after the delimiter to buffer_.body
+	// if body->size is greater than this->getServerConfig().getClientBodyLimit();, throw with EXC_BODY_TOO_LARGE
+	// we also know it's finished when webkit has the finish delimiter --
+	// once finished -> remove READING from this->flags_;
+	// this->flags_ &= ~READING; remove READING -> when done
+	// (you can call this->runtime.Sync(); (try without and with))
+
+	// not to forget:
+	// you can make requestBuffer not pointer since strings are on heap
+	// httprequest -> remove the delete deleting the buffers/body/etc allbody since they all come from client and no copy should be done
 }
 
 int8_t ClientHandler::getFlags() const { return this->flags_; }

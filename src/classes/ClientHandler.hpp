@@ -20,6 +20,7 @@
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
 # define EXC_NO_ROUTE "No valid route found"
+# define EXC_BODY_TOO_LARGE "The request body is too large"
 
 // Flags for state
 
