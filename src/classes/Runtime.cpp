@@ -213,8 +213,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return 1;
 		}
 		client->updateLastAlive();
-	}
-	else if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
+	} else if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
 		int status = 0;
 		socket->events = POLLOUT | POLLHUP;
 		#if LOGGER_DEBUG
