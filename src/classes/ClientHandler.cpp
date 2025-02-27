@@ -329,8 +329,8 @@ void ClientHandler::readSocket(){
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
 		if (buffer_.bodyReading)
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
-		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
-			char *tmp = strnstr(buffer, "\r\n\r\n", bytesRead);
+		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
+			char *tmp = strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
