@@ -327,8 +327,10 @@ void ClientHandler::readSocket(){
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
-		if (buffer_.bodyReading){
+		if (buffer_.bodyReading)
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
+			char *tmp = strnstr(buffer, "\r\n\r\n", bytesRead);
 			if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
 				this->flags_ &= ~READING;
 				buffer_.bodyReading = false;
@@ -345,11 +347,18 @@ void ClientHandler::readSocket(){
 				buffer_.bodyBuffer.append(buffer + (tmp - buffer + 4), bytesRead - (tmp - buffer - 4));
 				buffer_.bodyReading = true;
 			}
-			else
+			else{
 				this->flags_ &= ~READING;
+				return ;
+			}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
+		if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
+			this->flags_ &= ~READING;
+			buffer_.bodyReading = false;
+			return ;
+		}
 	}
 	else if (bytesRead < 0) {
 		this->flags_ |= FETCHED;
