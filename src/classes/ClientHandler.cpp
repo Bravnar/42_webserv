@@ -332,15 +332,6 @@ void ClientHandler::readSocket(){
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
 		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
 			char *tmp = strnstr(buffer, "\r\n\r\n", bytesRead);
-			if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
-				this->flags_ &= ~READING;
-				buffer_.bodyReading = false;
-				//std::cout << "\n\n\n\n" << buffer_.bodyBuffer << "\n\n\n\n";
-				return ;
-			}
-		}
-		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
-			char *tmp = strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
