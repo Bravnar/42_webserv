@@ -27,8 +27,6 @@ class Runtime {
 		void initializeServers_(const std::vector<ServerConfig>&);
 		// Properly handle exit
 		void handleExit_();
-		// Handle polling SyncPipe
-		void checkSyncPipeSocket_();
 		// Handle polling Servers
 		void checkServersSocket_();
 		// Handle polling Clients
@@ -57,9 +55,6 @@ class Runtime {
 		std::map<int, ServerManager *> servers_map_;
 		std::map<int, ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
-		int syncPipe_[2];
-		pollfd syncPoll_;
-		bool isSyncing_;
 		unsigned long long lat_tick_;
 	public:
 		Runtime(const ConfigManager&);
@@ -75,9 +70,6 @@ class Runtime {
 		std::vector<pollfd>& getSockets();
 		// Get clients as `vector<ClientHandler *>` reference
 		std::map<int, ClientHandler *>& getClients();
-		// Force a Sync on poll
-		// @note Will write on SyncPipe[1] which is checked by Poll
-		void Sync();
 };
 
 #endif
