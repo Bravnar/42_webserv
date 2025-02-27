@@ -326,25 +326,29 @@ void ClientHandler::readSocket(){
 	bzero(buffer, DF_MAX_BUFFER + 1);
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
+
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
 		if (buffer_.bodyReading)
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+
 		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
-			char *tmp = strstr(buffer, "\r\n\r\n");
-			buffer_.requestBuffer->append(buffer, tmp - buffer);
+			char *tmp = strstr(buffer, "\r\n\r\n") + 4;
+			buffer_.requestBuffer->append(buffer, (tmp - 4 ) - buffer);
+
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
-					throw std::runtime_error("Content-length exceed thw Body limit");
-				buffer_.bodyBuffer.append(buffer + (tmp - buffer + 4), bytesRead - (tmp - buffer - 4));
-				buffer_.bodyReading = true;
+					throw std::runtime_error("Content-length exceed the Body limit");
+				int len = (tmp - buffer);
+				if (len > 0){
+					buffer_.bodyBuffer.append(buffer + len, bytesRead - len);
+					buffer_.bodyReading = true;
+				}
 			}
-			else{
-				this->flags_ &= ~READING;
-				return ;
-			}
+			else{ this->flags_ &= ~READING; return ;}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
+
 		if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
 			this->flags_ &= ~READING;
 			buffer_.bodyReading = false;
