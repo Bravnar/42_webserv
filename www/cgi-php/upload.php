@@ -34,7 +34,7 @@ $errorContent = "
 <html lang=\"en\">
 <head>
 	<link rel=\"icon\" href=\"/winnie.jpg\">
-	<link rel=\"stylesheet\" href=\"./upload/style.css\">
+	<link rel=\"stylesheet\" href=\"./upload_assets/style.css\">
     <meta charset=\"UTF-8\">
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
     <title>WebservSIR</title>
@@ -44,7 +44,7 @@ $errorContent = "
 		<div class=\"container\">
 			<h1>Oh noo!</h1>
 			<p>An error occured while uploading the file!</p>
-			<img src=\"./upload/sad_winnie.jpg\" alt=\"Placeholder Image\">
+			<img src=\"./upload_assets/sad_winnie.jpg\" alt=\"Placeholder Image\">
 			<hr>
 			<p>Take a look at uploaded files</p>
 			<div class=\"buttons cgi-buttons\">
