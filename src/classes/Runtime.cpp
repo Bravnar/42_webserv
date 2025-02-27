@@ -221,6 +221,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			#endif
 			try {
 				client->buildRequest();
+				client->setFlag(FETCHED);
 				this->handleRequest_(client);
 			} catch (const std::exception& e) {
 				this->error(e.what()) << std::endl;
@@ -231,6 +232,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 					return -1;
 				}
 				this->handleRequest_(client, exception);
+				client->setFlag(FETCHED);
 				client->updateLastAlive();
 				return 1;
 			}

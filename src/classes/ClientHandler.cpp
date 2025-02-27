@@ -144,7 +144,6 @@ const HttpRequest& ClientHandler::buildRequest() {
 	if (this->flags_ & FETCHED)
 		return this->request_;
 	this->flags_ &= ~READING;
-	this->flags_ |= FETCHED;
 	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
 	return this->request_;
 }
@@ -356,8 +355,8 @@ void ClientHandler::readSocket(){
 		this->flags_ |= FETCHED;
 		throw std::runtime_error(EXC_SOCKET_READ);
 	}
-	else { this->buildRequest(); }
-}
+	else { this->flags_ &= ~READING; return; }
+} 
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
