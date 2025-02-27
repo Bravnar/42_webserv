@@ -214,15 +214,18 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		}
 		client->updateLastAlive();
 	}
-	if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
+	else if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
+		int status = 0;
 		socket->events = POLLOUT | POLLHUP;
 		#if LOGGER_DEBUG
 			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
 		#endif
 		try {
 			client->buildRequest();
+			client->setFlag(FETCHED);
 			this->handleRequest_(client);
 		} catch (const std::exception& e) {
+			client->setFlag(FETCHED);
 			this->error(e.what()) << std::endl;
 			std::string exception(e.what());
 			
@@ -231,10 +234,11 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 				return -1;
 			}
 			this->handleRequest_(client, exception);
-			client->updateLastAlive();
-			return 1;
+			status = 1;
 		}
 		client->updateLastAlive();
+		client->setFlag(FETCHED);
+		return status;
 	}
 	return 0;
 }
