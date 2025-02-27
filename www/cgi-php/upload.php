@@ -83,7 +83,7 @@ if (!empty($_FILES['uploaded_file']['name'])) {
 	$filename = get_unique_filename($upload_dir, $filename) ;
 	$file_path = $upload_dir . "/" . $filename ;
 	if (move_uploaded_file($_FILES['uploaded_file']['tmp_name'], $file_path)) {
-		$content = str_replace("<filename>", $filename, $successContent);
+		$content = str_replace("{filename}", $filename, $successContent);
 	} else {
 		$content = $errorContent;
 	} 
