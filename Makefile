@@ -22,7 +22,6 @@ FILES =	main \
 		utils/ParseUtils \
 		utils/Logger \
 		utils/Convert \
-		utils/ft_strnstr \
 
 
 SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))

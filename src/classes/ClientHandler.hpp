@@ -16,7 +16,6 @@
 # include "./HttpResponse.hpp"
 # include <sys/stat.h>
 # include "./ListingBuilder.hpp"
-# include "../utils/ft_strnstr.hpp"
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"

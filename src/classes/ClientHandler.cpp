@@ -337,8 +337,8 @@ void ClientHandler::readSocket(){
 				return ;
 			}
 		}
-		else if (!buffer_.bodyReading && ft_strnstr(buffer, "\r\n\r\n", bytesRead)){
-			char *tmp = ft_strnstr(buffer, "\r\n\r\n", bytesRead);
+		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
+			char *tmp = strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
