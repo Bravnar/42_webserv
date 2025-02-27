@@ -109,7 +109,7 @@ class ClientHandler
 		~ClientHandler();
 
 		//Member functions
-		int parseBodyInfo(std::string *request, bool bodyLen);
+		unsigned long long parseBodyInfo(std::string *request, bool bodyLen);
 		// Send full response to client (header and chunks of payload)
 		// @throw `EXC_SEND_ERROR`
 		// @throw `buildResponse()` throws

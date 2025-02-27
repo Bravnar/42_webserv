@@ -144,7 +144,6 @@ const HttpRequest& ClientHandler::buildRequest() {
 	if (this->flags_ & FETCHED)
 		return this->request_;
 	this->flags_ &= ~READING;
-	this->flags_ |= FETCHED;
 	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
 	return this->request_;
 }
@@ -295,7 +294,7 @@ void ClientHandler::flush() {
 	this->flags_ = READING;
 }
 
-int ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
+unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
 	if (!request || request->empty())
 		throw (std::runtime_error("Empty request"));
 	
@@ -312,7 +311,7 @@ int ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
 			std::string key = line.substr(0, sep);
 			std::string value = line.substr(sep + 2, line.size() - sep - 2);
 			if (bodyLen && key == "Content-Length")
-				return Convert::ToInt(value);
+				return Convert::ToT<unsigned long long, const std::string>(value);
 			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos)
 				return true;
 		}
@@ -334,7 +333,7 @@ void ClientHandler::readSocket(){
 			char *tmp = strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
-				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
+				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
 					throw std::runtime_error("Content-length exceed thw Body limit");
 				buffer_.bodyBuffer.append(buffer + (tmp - buffer + 4), bytesRead - (tmp - buffer - 4));
 				buffer_.bodyReading = true;
@@ -356,8 +355,8 @@ void ClientHandler::readSocket(){
 		this->flags_ |= FETCHED;
 		throw std::runtime_error(EXC_SOCKET_READ);
 	}
-	else { this->buildRequest(); }
-}
+	else { this->flags_ &= ~READING; return; }
+} 
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
