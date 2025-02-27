@@ -321,7 +321,7 @@ int ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
 }
 
 void ClientHandler::readSocket(){
-	char buffer[DF_MAX_BUFFER];
+	char buffer[DF_MAX_BUFFER] = {0};
 	ssize_t bytesRead = 0;
 
 	bzero(buffer, DF_MAX_BUFFER);
@@ -337,8 +337,8 @@ void ClientHandler::readSocket(){
 				return ;
 			}
 		}
-		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
-			char *tmp = strnstr(buffer, "\r\n\r\n", bytesRead);
+		else if (!buffer_.bodyReading && std::strstr(buffer, "\r\n\r\n")){
+			char *tmp = std::strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
