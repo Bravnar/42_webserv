@@ -9,7 +9,7 @@ _isDefault(true),
 _serverRoot(""),
 _clientBodyLimit(1024),
 _maxClients(100),
-_timeout(100),
+_timeout(2000),
 _index("/index.html"),
 _errorPages(),
 _routes() { 
