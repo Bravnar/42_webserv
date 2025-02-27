@@ -110,7 +110,8 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 					#if LOGGER_DEBUG
 						Logger::debug(location + "/" + path + "/" + line) << std::endl;
 					#endif
-					file_dl.open((location + "/" + path + "/" + line).c_str(), std::ios::out | std::ios::binary);
+					const std::string fileName = location + "/" + path + "/" + line;
+					file_dl.open(fileName.c_str(), std::ios::out | std::ios::binary);
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
@@ -123,7 +124,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 					size_t len = _allBody->find(_boundary, cursor_pos) - cursor_pos - 2;
 					file_dl.write(_allBody->c_str() + cursor_pos, len);
 					if (file_dl.fail()) {
-						unlink((location + "/" + path + "/" + line).c_str());
+						unlink(fileName.c_str());
 						throw std::runtime_error(EXC_BODY_WRITE);
 					}
 					file_dl.close();
