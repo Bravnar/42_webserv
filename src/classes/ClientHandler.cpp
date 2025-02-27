@@ -1,4 +1,7 @@
 #include "./ClientHandler.hpp"
+#include <cstring>
+#include <stdexcept>
+#include <string>
 
 std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
 std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
@@ -141,12 +144,7 @@ const HttpRequest& ClientHandler::buildRequest() {
 		return this->request_;
 	this->flags_ &= ~READING;
 	this->flags_ |= FETCHED;
-	#if LOGGER_DEBUG
-		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
-	#endif
-	this->request_ = HttpRequest(this->buffer_.requestBuffer);
-	// TODO: ilyanar
-	// this->request_ = HttpRequest(this->buffer_.requestBuffer, this->buffer_.bodyBuffer);
+	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
 	return this->request_;
 }
 
@@ -288,43 +286,77 @@ void ClientHandler::flush() {
 		delete this->buffer_.requestBuffer;
 		this->buffer_.requestBuffer = 0;
 	}
+	buffer_.bodyBuffer.clear();
+	buffer_.boundary.clear();
+	buffer_.bodyReading = false;
 	this->request_ = HttpRequest();
 	this->response_ = HttpResponse();
-	this->flags_ = 0;
+	this->flags_ = READING;
 }
 
-HttpResponse& ClientHandler::getResponse() { return this->response_; }
-const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
+int ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
+	if (!request || request->empty())
+		throw (std::runtime_error("Empty request"));
+	
+	std::stringstream ss(*request);
+	std::string line;
 
-void ClientHandler::readSocket() {
+	while (std::getline(ss, line))
+	{
+		line = line.substr(0, line.size() - 1);
+		if (line.empty())
+			break;
+		size_t sep = line.find(':', 0);
+		if (sep != line.npos){
+			std::string key = line.substr(0, sep);
+			std::string value = line.substr(sep + 2, line.size() - sep - 2);
+			if (bodyLen && key == "Content-Length")
+				return Convert::ToInt(value);
+			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos)
+				return true;
+		}
+	}
+	return false;
+}
+
+void ClientHandler::readSocket(){
 	char buffer[DF_MAX_BUFFER];
+	ssize_t bytesRead = 0;
+
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
-	ssize_t bytesRead;
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		this->buffer_.requestBuffer->append(buffer, bytesRead); //
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
+		if (buffer_.bodyReading){
+			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+			if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
+				this->flags_ &= ~READING;
+				return ;
+			}
+		}
+		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
+			char *tmp = strstr(buffer, "\r\n\r\n");
+			buffer_.requestBuffer->append(buffer, tmp - buffer);
+			if (parseBodyInfo(buffer_.requestBuffer, false)){
+				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
+					throw std::runtime_error("Content-length exceed thw Body limit");
+				buffer_.bodyBuffer.append(buffer + (tmp - buffer + 4), strlen(tmp + 4));
+				buffer_.bodyReading = true;
+			}
+			else
+				this->flags_ &= ~READING;
+		}
+		else
+			this->buffer_.requestBuffer->append(buffer, bytesRead);
 	}
 	else if (bytesRead < 0) {
 		this->flags_ |= FETCHED;
 		throw std::runtime_error(EXC_SOCKET_READ);
 	}
 	else { this->buildRequest(); }
-
-	// TODO: ilyanar
-	// while reading header (no \r\n\r\n found) -> fill buffer_.requestBuffer
-	// when \r\n\r\n found -> mini parse header : does it have body ?
-	// if yes: will now fill buffer_.body instead of fill buffer_.requestBuffer
-	// if the last requestBuffer contained \r\n\r\n, move the data after the delimiter to buffer_.body
-	// if body->size is greater than this->getServerConfig().getClientBodyLimit();, throw with EXC_BODY_TOO_LARGE
-	// we also know it's finished when webkit has the finish delimiter --
-	// once finished -> remove READING from this->flags_;
-	// this->flags_ &= ~READING; remove READING -> when done
-	// (you can call this->runtime.Sync(); (try without and with))
-
-	// not to forget:
-	// you can make requestBuffer not pointer since strings are on heap
-	// httprequest -> remove the delete deleting the buffers/body/etc allbody since they all come from client and no copy should be done
 }
+
+HttpResponse& ClientHandler::getResponse() { return this->response_; }
+const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }

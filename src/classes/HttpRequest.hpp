@@ -26,7 +26,7 @@ class HttpRequest {
 		// Parse request line
 		// @throws `EXC_INVALID_RL`
 		void parseRequestLine_(const std::string&);
-		int buildFromBuffer_(const std::string *);
+		int buildFromBuffer_(const std::string *, std::string *);
 
 		std::string method_;
 		std::string url_;
@@ -41,7 +41,7 @@ class HttpRequest {
 
 		HttpRequest();
 		// @throws `EXC_INVALID_RL`
-		HttpRequest(const std::string *);
+		HttpRequest(const std::string *, std::string *);
 		HttpRequest(const HttpRequest&);
 		HttpRequest& operator=(const HttpRequest&);
 		~HttpRequest();

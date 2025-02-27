@@ -8,14 +8,14 @@ HttpRequest::HttpRequest():
 	_allBody(0),
 	_boundary(""){}
 
-HttpRequest::HttpRequest(const std::string *buffer):
+HttpRequest::HttpRequest(const std::string *buffer, std::string *bodyBuffer):
 	method_(""),
 	url_(""),
 	httpVersion_(""),
 	_allBody(0),
 	_boundary("")
 {
-	buildFromBuffer_(buffer);
+	buildFromBuffer_(buffer, bodyBuffer);
 }
 
 HttpRequest::HttpRequest(const HttpRequest& copy):
@@ -46,10 +46,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	return *this;
 }
 
-HttpRequest::~HttpRequest() {
-	if (_allBody)
-		delete _allBody;
-}
+HttpRequest::~HttpRequest() {}
 
 bool checkFolder(const char* path) {
 	struct stat s;
@@ -138,7 +135,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 }
 
 
-int HttpRequest::buildFromBuffer_(const std::string *buffer) {
+int HttpRequest::buildFromBuffer_(const std::string *buffer, std::string *bodyBuffer){
 	std::stringstream ss(*buffer);
 	std::string line;
 
@@ -163,10 +160,9 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 		}
 		idx++;
 	}
-	if (!_boundary.empty()){
-		std::streamoff cursor_pos = ss.tellg();
-		// _allBody = new std::string(buffer->substr(cursor_pos, buffer->size()));
-		_allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
+	if (!bodyBuffer->empty()){
+		// _allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
+		_allBody = bodyBuffer;
 	}
 	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
 	return 0;

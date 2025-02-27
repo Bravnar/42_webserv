@@ -36,12 +36,17 @@ class Runtime;
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
+	std::string bodyBuffer;
 	std::string internalBody;
+	std::string boundary;
 	std::ifstream externalBody;
+	bool bodyReading;
 	s_clientBuffer():
 		requestBuffer(0),
+		bodyBuffer(""),
 		internalBody(),
-		externalBody() {}
+		externalBody(),
+		bodyReading(false){}
 };
 
 // Unique client address identifier
@@ -104,7 +109,7 @@ class ClientHandler
 		~ClientHandler();
 
 		//Member functions
-
+		int parseBodyInfo(std::string *request, bool bodyLen);
 		// Send full response to client (header and chunks of payload)
 		// @throw `EXC_SEND_ERROR`
 		// @throw `buildResponse()` throws
