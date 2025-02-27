@@ -321,10 +321,10 @@ int ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
 }
 
 void ClientHandler::readSocket(){
-	char buffer[DF_MAX_BUFFER];
+	char buffer[DF_MAX_BUFFER + 1];
 	ssize_t bytesRead = 0;
 
-	bzero(buffer, DF_MAX_BUFFER);
+	bzero(buffer, DF_MAX_BUFFER + 1);
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
@@ -332,6 +332,15 @@ void ClientHandler::readSocket(){
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
 		else if (!buffer_.bodyReading && strnstr(buffer, "\r\n\r\n", bytesRead)){
 			char *tmp = strnstr(buffer, "\r\n\r\n", bytesRead);
+			if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
+				this->flags_ &= ~READING;
+				buffer_.bodyReading = false;
+				//std::cout << "\n\n\n\n" << buffer_.bodyBuffer << "\n\n\n\n";
+				return ;
+			}
+		}
+		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
+			char *tmp = strstr(buffer, "\r\n\r\n");
 			buffer_.requestBuffer->append(buffer, tmp - buffer);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if ((unsigned long long)parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
