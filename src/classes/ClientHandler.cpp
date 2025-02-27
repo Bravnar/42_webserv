@@ -210,14 +210,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (externalBody.is_open()) {
-				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
+			if (externalBody.is_open())
 				externalBody.close();
-			}
-				externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
+			externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
 			if (externalBody.is_open()) {
-				if (!externalBody.good())
+				if (externalBody.fail()) {
+					this->error(strerror(errno)) << std::endl;
 					externalBody.close();
+				}
 				else
 					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
