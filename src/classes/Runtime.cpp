@@ -214,7 +214,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		}
 		client->updateLastAlive();
 	} else {
-		if (!(client->getFlags() & READING)) {
+		if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
 			socket->events = POLLOUT | POLLHUP;
 			#if LOGGER_DEBUG
 				this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
