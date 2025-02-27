@@ -196,35 +196,26 @@ void Runtime::handleRequest_(ClientHandler *client, const std::string& exception
 }
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLIN) {
-		if (client->getFlags() & FETCHED) {
-			#if LOGGER_DEBUG
-				this->debug("throwing sticky client") << " (fd: " << client->getFd() << ")" << std::endl;
-			#endif
-			delete client;
-			return -1;
-		}
-		if(!(client->getFlags() & READING)) client->setFlag(READING);
+	int status = 0;
+	if (socket->revents & POLLIN && client->getFlags() & READING) {
 		try {
 			client->readSocket();
 		} catch (const std::exception& e) {
+			client->clearFlag(READING);
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
+			socket->events = POLLOUT | POLLHUP;
 			this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
-			return 1;
+			status = 1;
 		}
-		client->updateLastAlive();
-	} else if (!(client->getFlags() & FETCHED) && !(client->getFlags() & READING)) {
-		int status = 0;
+		if (client->getFlags() & READING) {
+			client->updateLastAlive();
+			return status;
+		}
 		socket->events = POLLOUT | POLLHUP;
-		#if LOGGER_DEBUG
-			this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
-		#endif
 		try {
 			client->buildRequest();
-			client->setFlag(FETCHED);
 			this->handleRequest_(client);
 		} catch (const std::exception& e) {
-			client->setFlag(FETCHED);
 			this->error(e.what()) << std::endl;
 			std::string exception(e.what());
 			
@@ -236,10 +227,8 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			status = 1;
 		}
 		client->updateLastAlive();
-		client->setFlag(FETCHED);
-		return status;
 	}
-	return 0;
+	return status;
 }
 
 void Runtime::logResponse_(ClientHandler *client) {
@@ -260,7 +249,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLOUT && client->getFlags() & FETCHED) {
+	if (socket->revents & POLLOUT && !(client->getFlags() & READING)) {
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {
