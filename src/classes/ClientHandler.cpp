@@ -107,7 +107,6 @@ void ClientHandler::sendpayload_() {
 		std::ifstream& file = this->buffer_.externalBody;
 		char buffer[DF_MAX_BUFFER + 1] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
-			std::cerr << "sended " << buffer << std::endl;
 			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
 		}
@@ -115,11 +114,6 @@ void ClientHandler::sendpayload_() {
 			file.close();
 			this->flags_ |= SENT;
 		}
-		#if LOGGER_DEBUG
-			if (this->request_.getUrl().find(".html") != std::string::npos) {
-				this->debug("sended: ") << buffer << std::endl;
-			}
-		#endif
 	}
 }
 
@@ -184,7 +178,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::ifstream& externalBody = this->buffer_.externalBody;
 
 	// Build 404 - Not Found
-	if (response.getUrl() && request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
 		if (externalBody.is_open())
 			externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
@@ -296,13 +290,14 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 
 	while (std::getline(ss, line))
 	{
-		line = line.substr(0, line.size() - 1);
+		if (line.at(line.size() - 1) == '\r')
+			line = line.substr(0, line.size() - 1);
 		if (line.empty())
 			break;
 		size_t sep = line.find(':', 0);
 		if (sep != line.npos){
 			std::string key = line.substr(0, sep);
-			std::string value = line.substr(sep + 2, line.size() - sep - 2);
+			std::string value = line.substr(sep + 2);
 			if (bodyLen && key == "Content-Length") {
 				if (value.empty())
 					return 0;
