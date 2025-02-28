@@ -60,10 +60,17 @@ errorContent = " \
 </html> \
 "
 
+if os.getenv("REQUEST_METHOD", "") != "POST":
+	content = errorContent
+	print("Content-Type: text/html")
+	print(f"Content-Length: {len(content) + 1}")
+	print()
+	print(content)
+	exit(0)
 
 upload_dir = os.getenv("UPLOAD_DIR", "./www/uploads")
 boundary = os.getenv("HTTP_BOUNDARY", "")
-print(f"DEBUG: Boundary from env -> {boundary}")
+# print(f"DEBUG: Boundary from env -> {boundary}")
 
 if not os.path.exists(upload_dir):
 	os.makedirs(upload_dir)

@@ -57,6 +57,15 @@ $errorContent = "
 </html>";
 
 // code
+if (rtrim(getenv("REQUEST_METHOD") != "POST")) {
+	$content = $errorContent ;
+	header("Content-Type: text/html");
+	header("Content-Length: " . strlen($content));
+
+	echo $content;
+	exit(0) ;
+}
+
 $upload_dir = rtrim(getenv("UPLOAD_DIR_PHP") ?: "./www/uploads", "/");
 
 if (!file_exists($upload_dir)) {
