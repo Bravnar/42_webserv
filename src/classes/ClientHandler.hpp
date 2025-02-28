@@ -22,6 +22,7 @@
 # define EXC_NO_ROUTE "No valid route found"
 # define EXC_BODY_TOO_LARGE "The request body is too large"
 # define EXC_NO_BUFFER "No request buffer"
+# define EXC_BODY_NO_SIZE "The body has nos size"
 
 // Flags for state
 
@@ -140,6 +141,7 @@ class ClientHandler
 		int getFd() const;
 		unsigned long long getLastAlive() const;
 		void updateLastAlive();
+		const s_clientBuffer& getBuffer() const;
 };
 
 #endif

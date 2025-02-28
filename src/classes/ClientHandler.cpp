@@ -308,11 +308,16 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 		if (sep != line.npos){
 			std::string key = line.substr(0, sep);
 			std::string value = line.substr(sep + 2, line.size() - sep - 2);
-			if (bodyLen && key == "Content-Length")
+			if (bodyLen && key == "Content-Length") {
+				if (value.empty())
+					return 0;
 				return Convert::ToT<unsigned long long, const std::string>(value);
-			if (buffer_.boundary.empty() && key == "Content-Type" && value.find("multipart/form-data") != value.npos){
-				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
-				buffer_.boundaryEnd = buffer_.boundary + "--";
+			}
+			if (!bodyLen && buffer_.boundary.empty() && key == "Content-Type") {
+				if (value.find("multipart/form-data") != value.npos) {
+					buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
+					buffer_.boundaryEnd = buffer_.boundary + "--";
+				}
 				return true;
 			}
 		}
@@ -344,8 +349,11 @@ void ClientHandler::readSocket(){
 			cursor = buffer_cursor - buffer + 4;
 			buffer_.requestBuffer->append(buffer, cursor - 4);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
-				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
+				unsigned long long size = parseBodyInfo(buffer_.requestBuffer, true);
+				if (size > getServerConfig().getClientBodyLimit())
 					throw std::runtime_error(EXC_BODY_TOO_LARGE);
+				else if (!size)
+					throw std::runtime_error(EXC_BODY_NO_SIZE);
 				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
 				buffer_.bodyReading = true;
 			}
@@ -382,3 +390,4 @@ void ClientHandler::updateLastAlive() {
 	gettimeofday(&tv, 0);
 	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+const s_clientBuffer& ClientHandler::getBuffer() const { return this->buffer_; }

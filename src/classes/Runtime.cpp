@@ -191,6 +191,8 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		client->clearFlag(READING);
 		if (msg == EXC_BODY_TOO_LARGE)
 			client->buildResponse(HttpResponse(client->getRequest(), 413));
+		else if (msg == EXC_BODY_NO_SIZE)
+			client->buildResponse(HttpResponse(client->getRequest(), 411));
 		else
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;
