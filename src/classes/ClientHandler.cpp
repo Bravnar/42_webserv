@@ -90,25 +90,32 @@ void ClientHandler::sendHeader_() {
 		this->flags_ |= SENT;
 	}
 	header = oss.str();
-	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0)
+	ssize_t bytesSent = 0;
+	if ((bytesSent = send(this->socket_fd_, header.data(), header.size(), 0)) < 0)
 		throw std::runtime_error(EXC_SEND_ERROR);
+	else if (bytesSent || !bytesSent)
+		return;
 }
 
 void ClientHandler::sendpayload_() {
 	#if LOGGER_DEBUG
 		this->debug("sending payload ") << std::endl;
 	#endif
+	ssize_t bytesSent = 0;
 	if (!this->buffer_.internalBody.empty()) {
-		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0)
+		if ((bytesSent = send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0)) < 0)
 			throw std::runtime_error(EXC_SEND_ERROR);
-		this->buffer_.internalBody.clear();
-		this->flags_ |= SENT;
+		else if (bytesSent || !bytesSent) {
+			this->buffer_.internalBody.clear();
+			this->flags_ |= SENT;
+		}
 	} else {
 		std::ifstream& file = this->buffer_.externalBody;
 		char buffer[DF_MAX_BUFFER + 1] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
-			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
+			if ((bytesSent = send(this->socket_fd_, buffer, file.gcount(), 0)) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
+			else if (bytesSent || !bytesSent) (void)bytesSent;
 		}
 		if (!file) {
 			file.close();
@@ -124,7 +131,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
+	else if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }
