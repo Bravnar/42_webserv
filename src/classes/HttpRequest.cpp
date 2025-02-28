@@ -89,7 +89,8 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 		throw std::runtime_error("No Body set");
 	if (checkFolder((location + "/" + path).c_str()))
 		mkdir((location + "/" + path).c_str(), 0755);
-	std::stringstream ss(*_allBody);
+	std::stringstream ss(_allBody->substr(0, _allBody->find("\r\n\r\n")));
+	// std::stringstream ss(*_allBody);
 	std::ofstream	file_dl;
 	std::string line("");
 
@@ -119,7 +120,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 						if (line.empty())
 							break ;
 					}
-					std::streamoff cursor_pos = ss.tellg();
+					size_t cursor_pos = _allBody->find("\r\n\r\n") + 4;
 
 					size_t len = _allBody->find(_boundary, cursor_pos) - cursor_pos - 2;
 					file_dl.write(_allBody->c_str() + cursor_pos, len);
