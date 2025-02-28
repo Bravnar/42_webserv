@@ -124,7 +124,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
+	else if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }
