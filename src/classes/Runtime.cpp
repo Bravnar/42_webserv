@@ -7,12 +7,6 @@ std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runti
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
 Runtime::Runtime(const ConfigManager& config): config_(config) {	
-	pipe(this->syncPipe_);
-	this->syncPoll_.events = POLLIN;
-	this->syncPoll_.revents = 0;
-	this->syncPoll_.fd = this->syncPipe_[0];
-	this->sockets_.push_back(this->syncPoll_);
-	this->isSyncing_ = false;
 	this->initializeServers_(this->config_.getServers());
 }
 
@@ -20,7 +14,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 	for(std::vector<ServerConfig>::const_iterator config = configs.begin(); config != configs.end(); config++) {
 		this->servers_.push_back(ServerManager(*config));
 	}
-	size_t socket_reserved = 1;
+	size_t socket_reserved = 0;
 	for(std::vector<ServerManager>::iterator server = this->servers_.begin(); server != this->servers_.end(); server++) {
 		try {
 			server->init();
@@ -68,7 +62,6 @@ void Runtime::runServers() {
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		this->lat_tick_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-		this->checkSyncPipeSocket_();
 		this->checkServersSocket_();
 		this->checkClientsSockets_();
 	}
@@ -91,22 +84,11 @@ void Runtime::handleExit_() {
 	for(std::vector<pollfd>::iterator it = this->sockets_.begin(); it != this->sockets_.end(); it++) {
 		close(it->fd);
 	}
-	close(this->syncPipe_[1]);
-	close(this->syncPipe_[0]);
 	this->sockets_.clear();
 }
 
-void Runtime::checkSyncPipeSocket_() {
-	if (this->sockets_[0].revents & POLLIN) {
-		char flush;
-		read (this->syncPipe_[0], &flush, 1);
-		this->isSyncing_ = false;
-	}
-}
-
 void Runtime::checkClientsSockets_() {
-	// starting at idx 1 + servers size since 0 and next are reserved
-	for(size_t i = 1 + this->servers_map_.size(); i < this->sockets_.size(); i++) {
+	for(size_t i = this->servers_map_.size(); i < this->sockets_.size(); i++) {
 		pollfd *socket;
 		ClientHandler *client;
 
@@ -143,8 +125,7 @@ int Runtime::handleClientPollhup_(ClientHandler *client, pollfd *socket) {
 }
 
 void Runtime::checkServersSocket_() {
-	// starting at idx 1 since idx 0 is reserved to syncPipe
-	for (size_t i = 1; i < this->servers_map_.size() + 1; i++) {
+	for (size_t i = 0; i < this->servers_map_.size(); i++) {
 		if (this->sockets_[i].revents & POLLIN) {
 			int socket_fd = -1;
 			sockaddr_in client_addr;
@@ -196,48 +177,47 @@ void Runtime::handleRequest_(ClientHandler *client, const std::string& exception
 }
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLIN) {
-		if (client->getFlags() & FETCHED) {
-			#if LOGGER_DEBUG
-				this->debug("throwing sticky client") << " (fd: " << client->getFd() << ")" << std::endl;
-			#endif
+	int status = 0;
+	if (!(socket->revents & POLLIN) || !(client->getFlags() & READING))
+		return status;
+	try {
+		client->readSocket();
+	} catch (const std::exception& e) {
+		const std::string msg(e.what());
+		if (msg == EXC_NO_BUFFER) {
 			delete client;
 			return -1;
 		}
-		if(!(client->getFlags() & READING)) client->setFlag(READING);
-		try {
-			client->readSocket();
-		} catch (const std::exception& e) {
+		client->clearFlag(READING);
+		if (msg == EXC_BODY_TOO_LARGE)
+			client->buildResponse(HttpResponse(client->getRequest(), 413));
+		else
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
-			this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
-			return 1;
-		}
-		client->updateLastAlive();
-	} else {
-		if (client->getFlags() & READING) {
-			socket->events = POLLOUT | POLLHUP;
-			#if LOGGER_DEBUG
-				this->debug("pollin end client (fd: ") << client->getFd() << ")" << std::endl;
-			#endif
-			try {
-				client->buildRequest();
-				this->handleRequest_(client);
-			} catch (const std::exception& e) {
-				this->error(e.what()) << std::endl;
-				std::string exception(e.what());
-				
-				if (exception == EXC_NOT_VALID_SERVERNAME) {
-					delete client;
-					return -1;
-				}
-				this->handleRequest_(client, exception);
-				client->updateLastAlive();
-				return 1;
-			}
-			client->updateLastAlive();
-		}
+		socket->events = POLLOUT | POLLHUP;
+		this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
+		status = 1;
 	}
-	return 0;
+	if (client->getFlags() & READING) {
+		client->updateLastAlive();
+		return status;
+	}
+	socket->events = POLLOUT | POLLHUP;
+	try {
+		client->buildRequest();
+		this->handleRequest_(client);
+	} catch (const std::exception& e) {
+		this->error(e.what()) << std::endl;
+		std::string exception(e.what());
+		
+		if (exception == EXC_NOT_VALID_SERVERNAME) {
+			delete client;
+			return -1;
+		}
+		this->handleRequest_(client, exception);
+		status = 1;
+	}
+	client->updateLastAlive();
+	return status;
 }
 
 void Runtime::logResponse_(ClientHandler *client) {
@@ -258,7 +238,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLOUT && client->getFlags() & FETCHED) {
+	if (socket->revents & POLLOUT && !(client->getFlags() & READING)) {
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {
@@ -286,13 +266,6 @@ std::vector<pollfd>& Runtime::getSockets() {
 
 std::map<int, ClientHandler *>& Runtime::getClients() {
 	return this->clients_;
-}
-
-void Runtime::Sync() {
-	if (this->isSyncing_) return;
-	this->isSyncing_ = true;
-	write(this->syncPipe_[1], "\0", 1);
-	this->sockets_[0].fd = this->syncPipe_[0];
 }
 
 pollfd *Runtime::getSocket_(int socket_fd_) {

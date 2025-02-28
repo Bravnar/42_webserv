@@ -6,6 +6,7 @@ webserv
 *.log
 *.~*
 *.tmp
+uploads/
 
 .vscode/
 .idea/

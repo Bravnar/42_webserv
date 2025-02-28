@@ -1,4 +1,8 @@
 #include "./ClientHandler.hpp"
+#include "ServerManager.hpp"
+#include <cstring>
+#include <stdexcept>
+#include <string>
 
 std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
 std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
@@ -19,7 +23,7 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 	runtime_(runtime),
 	server_(server),
 	address_(addr, addrlen),
-	flags_(0) {
+	flags_(READING) {
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
@@ -137,14 +141,7 @@ void ClientHandler::sendResponse() {
 }
 
 const HttpRequest& ClientHandler::buildRequest() {
-	if (this->flags_ & FETCHED)
-		return this->request_;
-	this->flags_ &= ~READING;
-	this->flags_ |= FETCHED;
-	#if LOGGER_DEBUG
-		this->debug("Request: ") << std::endl << C_ORANGE << this->buffer_.requestBuffer->data() << C_RESET << std::endl;
-	#endif
-	this->request_ = HttpRequest(this->buffer_.requestBuffer);
+	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
 	return this->request_;
 }
 
@@ -210,14 +207,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (externalBody.is_open()) {
-				this->fatal("error on reading file: '" + rootFile + "': ") << strerror(errno) << std::endl;
+			if (externalBody.is_open())
 				externalBody.close();
-			}
-				externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
+			externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
 			if (externalBody.is_open()) {
-				if (!externalBody.good())
+				if (externalBody.fail()) {
+					this->error(strerror(errno)) << std::endl;
 					externalBody.close();
+				}
 				else
 					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 			}
@@ -286,28 +283,93 @@ void ClientHandler::flush() {
 		delete this->buffer_.requestBuffer;
 		this->buffer_.requestBuffer = 0;
 	}
+	buffer_.bodyBuffer.clear();
+	buffer_.boundary.clear();
+	buffer_.boundaryEnd.clear();
+	buffer_.bodyReading = false;
 	this->request_ = HttpRequest();
 	this->response_ = HttpResponse();
-	this->flags_ = 0;
+	this->flags_ = READING;
 }
+
+unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyLen){
+	if (!request || request->empty())
+		throw (std::runtime_error("Empty request"));
+	
+	std::stringstream ss(*request);
+	std::string line;
+
+	while (std::getline(ss, line))
+	{
+		line = line.substr(0, line.size() - 1);
+		if (line.empty())
+			break;
+		size_t sep = line.find(':', 0);
+		if (sep != line.npos){
+			std::string key = line.substr(0, sep);
+			std::string value = line.substr(sep + 2, line.size() - sep - 2);
+			if (bodyLen && key == "Content-Length")
+				return Convert::ToT<unsigned long long, const std::string>(value);
+			if (buffer_.boundary.empty() && key == "Content-Type" && value.find("multipart/form-data") != value.npos){
+				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
+				buffer_.boundaryEnd = buffer_.boundary + "--";
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void ClientHandler::readSocket(){
+	char buffer[DF_MAX_BUFFER + 1];
+	ssize_t bytesRead = 0;
+	size_t cursor = 0;
+	char *buffer_cursor = 0;
+
+	bzero(buffer, DF_MAX_BUFFER + 1);
+	if (!this->buffer_.requestBuffer)
+		this->buffer_.requestBuffer = new std::string("");
+
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
+		buffer_cursor = strstr(buffer, "\r\n\r\n");
+		if (buffer_.bodyReading) {
+			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()) {
+				this->buffer_.bodyBuffer.clear();
+				this->buffer_.bodyReading = false;
+				throw std::runtime_error(EXC_BODY_TOO_LARGE);
+			}
+		}
+		else if (!buffer_.bodyReading && buffer_cursor){
+			cursor = buffer_cursor - buffer + 4;
+			buffer_.requestBuffer->append(buffer, cursor - 4);
+			if (parseBodyInfo(buffer_.requestBuffer, false)){
+				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
+					throw std::runtime_error(EXC_BODY_TOO_LARGE);
+				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
+				buffer_.bodyReading = true;
+			}
+			else{ this->flags_ &= ~READING; return ;}
+		}
+		else
+			this->buffer_.requestBuffer->append(buffer, bytesRead);
+		if (memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+			this->flags_ &= ~READING;
+			buffer_.bodyReading = false;
+			return ;
+		}
+	}
+	else if (bytesRead < 0)
+		throw std::runtime_error(EXC_SOCKET_READ);
+	else {
+		if (!this->buffer_.requestBuffer || this->buffer_.requestBuffer->empty())
+			throw std::runtime_error(EXC_NO_BUFFER);
+		this->flags_ &= ~READING; return;
+	}
+} 
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
-
-void ClientHandler::readSocket() {
-	char buffer[DF_MAX_BUFFER];
-	if (!this->buffer_.requestBuffer)
-		this->buffer_.requestBuffer = new std::string("");
-	ssize_t bytesRead;
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		this->buffer_.requestBuffer->append(buffer, bytesRead); //
-	}
-	else if (bytesRead < 0) {
-		this->flags_ |= FETCHED;
-		throw std::runtime_error(EXC_SOCKET_READ);
-	}
-	else { this->buildRequest(); }
-}
 
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }

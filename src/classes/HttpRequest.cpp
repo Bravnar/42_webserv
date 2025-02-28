@@ -8,14 +8,14 @@ HttpRequest::HttpRequest():
 	_allBody(0),
 	_boundary(""){}
 
-HttpRequest::HttpRequest(const std::string *buffer):
+HttpRequest::HttpRequest(const std::string *buffer, std::string *bodyBuffer):
 	method_(""),
 	url_(""),
 	httpVersion_(""),
 	_allBody(0),
 	_boundary("")
 {
-	buildFromBuffer_(buffer);
+	buildFromBuffer_(buffer, bodyBuffer);
 }
 
 HttpRequest::HttpRequest(const HttpRequest& copy):
@@ -46,10 +46,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 	return *this;
 }
 
-HttpRequest::~HttpRequest() {
-	if (_allBody)
-		delete _allBody;
-}
+HttpRequest::~HttpRequest() {}
 
 bool checkFolder(const char* path) {
 	struct stat s;
@@ -92,7 +89,8 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 		throw std::runtime_error("No Body set");
 	if (checkFolder((location + "/" + path).c_str()))
 		mkdir((location + "/" + path).c_str(), 0755);
-	std::stringstream ss(*_allBody);
+	std::stringstream ss(_allBody->substr(0, _allBody->find("\r\n\r\n")));
+	// std::stringstream ss(*_allBody);
 	std::ofstream	file_dl;
 	std::string line("");
 
@@ -113,7 +111,8 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 					#if LOGGER_DEBUG
 						Logger::debug(location + "/" + path + "/" + line) << std::endl;
 					#endif
-					file_dl.open((location + "/" + path + "/" + line).c_str(), std::ios::out | std::ios::binary);
+					const std::string fileName = location + "/" + path + "/" + line;
+					file_dl.open(fileName.c_str(), std::ios::out | std::ios::binary);
 					if (!file_dl.is_open())
 						throw std::runtime_error("can\'t open/create the file");
 					while(std::getline(ss, line)){
@@ -121,12 +120,12 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 						if (line.empty())
 							break ;
 					}
-					std::streamoff cursor_pos = ss.tellg();
+					size_t cursor_pos = _allBody->find("\r\n\r\n") + 4;
 
 					size_t len = _allBody->find(_boundary, cursor_pos) - cursor_pos - 2;
 					file_dl.write(_allBody->c_str() + cursor_pos, len);
 					if (file_dl.fail()) {
-						unlink((location + "/" + path + "/" + line).c_str());
+						unlink(fileName.c_str());
 						throw std::runtime_error(EXC_BODY_WRITE);
 					}
 					file_dl.close();
@@ -138,7 +137,7 @@ void HttpRequest::buildBody(std::string location, std::string path) const{
 }
 
 
-int HttpRequest::buildFromBuffer_(const std::string *buffer) {
+int HttpRequest::buildFromBuffer_(const std::string *buffer, std::string *bodyBuffer){
 	std::stringstream ss(*buffer);
 	std::string line;
 
@@ -163,12 +162,11 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer) {
 		}
 		idx++;
 	}
-	if (!_boundary.empty()){
-		std::streamoff cursor_pos = ss.tellg();
-		// _allBody = new std::string(buffer->substr(cursor_pos, buffer->size()));
-		_allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
+	if (!bodyBuffer->empty()){
+		// _allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
+		_allBody = bodyBuffer;
 	}
-	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
+	if (this->headers_.find(H_HOST) == this->headers_.end()) throw std::runtime_error(EXC_HEADER_NOHOST);
 	return 0;
 }
 

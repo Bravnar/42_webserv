@@ -20,14 +20,15 @@
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
 # define EXC_NO_ROUTE "No valid route found"
+# define EXC_BODY_TOO_LARGE "The request body is too large"
+# define EXC_NO_BUFFER "No request buffer"
 
 // Flags for state
 
-# define FETCHED 0x01 // Has a request
-# define READING 0x02 // Still reading request
-# define SENT 0x04 // Response sent
-# define SENDING 0x08 // Still sending response
-# define RESPONSE 0x10 // Has a response
+# define READING 0x01 // Still reading request
+# define SENT 0x02 // Response sent
+# define SENDING 0x04 // Still sending response
+# define RESPONSE 0x8 // Has a response
 
 
 class Runtime;
@@ -35,12 +36,20 @@ class Runtime;
 // Unique temporary data
 struct s_clientBuffer {
 	std::string *requestBuffer;
+	std::string bodyBuffer;
 	std::string internalBody;
+	std::string boundary;
+	std::string boundaryEnd;
 	std::ifstream externalBody;
+	bool bodyReading;
 	s_clientBuffer():
 		requestBuffer(0),
+		bodyBuffer(),
 		internalBody(),
-		externalBody() {}
+		boundary(),
+		boundaryEnd(),
+		externalBody(),
+		bodyReading(false){}
 };
 
 // Unique client address identifier
@@ -103,7 +112,7 @@ class ClientHandler
 		~ClientHandler();
 
 		//Member functions
-
+		unsigned long long parseBodyInfo(std::string *request, bool bodyLen);
 		// Send full response to client (header and chunks of payload)
 		// @throw `EXC_SEND_ERROR`
 		// @throw `buildResponse()` throws
@@ -112,7 +121,6 @@ class ClientHandler
 		// @throw `EXC_SOCKET_READ`
 		void readSocket();
 		// Build request from request buffer
-		// Returns the request if already fetched
 		// @throw `HttpRequest(const std::string*)` constructor exceptions
 		const HttpRequest& buildRequest();
 		// Build client response from `HttpResponse` template
