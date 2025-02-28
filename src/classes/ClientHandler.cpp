@@ -84,31 +84,38 @@ void ClientHandler::sendHeader_() {
 	std::ostringstream oss;
 	oss << this->getResponse().str();
 
-	if (this->buffer_.externalBody) {
+	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty()) {
 		this->flags_ |= SENDING;
 	} else {
 		this->flags_ |= SENT;
 	}
 	header = oss.str();
-	if (send(this->socket_fd_, header.data(), header.size(), 0) < 0)
+	ssize_t bytesSent = 0;
+	if ((bytesSent = send(this->socket_fd_, header.data(), header.size(), 0)) < 0)
 		throw std::runtime_error(EXC_SEND_ERROR);
+	else if (bytesSent || !bytesSent)
+		return;
 }
 
 void ClientHandler::sendpayload_() {
 	#if LOGGER_DEBUG
 		this->debug("sending payload ") << std::endl;
 	#endif
+	ssize_t bytesSent = 0;
 	if (!this->buffer_.internalBody.empty()) {
-		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0)
+		if ((bytesSent = send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0)) < 0)
 			throw std::runtime_error(EXC_SEND_ERROR);
-		this->buffer_.internalBody.clear();
-		this->flags_ |= SENT;
+		else if (bytesSent || !bytesSent) {
+			this->buffer_.internalBody.clear();
+			this->flags_ |= SENT;
+		}
 	} else {
 		std::ifstream& file = this->buffer_.externalBody;
 		char buffer[DF_MAX_BUFFER + 1] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
-			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
+			if ((bytesSent = send(this->socket_fd_, buffer, file.gcount(), 0)) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
+			else if (bytesSent || !bytesSent) (void)bytesSent;
 		}
 		if (!file) {
 			file.close();
@@ -124,7 +131,7 @@ void ClientHandler::sendResponse() {
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
+	else if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }
@@ -175,12 +182,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 		
 	}
-	std::ifstream& externalBody = this->buffer_.externalBody;
 
 	// Build 404 - Not Found
-	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
-		if (externalBody.is_open())
-			externalBody.close();
+	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!this->buffer_.externalBody.good() || !this->buffer_.externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+		if (this->buffer_.externalBody.is_open())
+			this->buffer_.externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
@@ -196,18 +202,17 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (externalBody.is_open())
-				externalBody.close();
-			externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (externalBody.is_open()) {
-				if (externalBody.fail()) {
-					this->error(strerror(errno)) << std::endl;
-					externalBody.close();
-				}
-				else
-					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
-			}
-		}
+			if (this->buffer_.externalBody.is_open())
+				this->buffer_.externalBody.close();
+			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (this->buffer_.externalBody.fail()) {
+				this->error(strerror(errno)) << std::endl;
+				this->buffer_.externalBody.close();
+			} else
+				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+		} 
+		if (!this->buffer_.externalBody.is_open())
+			this->buffer_.internalBody = ErrorBuilder::buildBody(response);
 	} else {
 		if (this->request_.getMethod() == "DELETE") {
 			if (this->buffer_.externalBody.is_open())
@@ -245,11 +250,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 	}
 
-	// Final build (may need some modifications if building internal html)
-	if (this->buffer_.internalBody.empty() && externalBody.is_open()) {
-		externalBody.seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(externalBody.tellg());
-		externalBody.seekg(0, std::ios::beg);
+	// Final build
+	if (this->buffer_.internalBody.empty() && this->buffer_.externalBody.is_open()) {
+		this->buffer_.externalBody.seekg(0, std::ios::end);
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.externalBody.tellg());
+		this->buffer_.externalBody.seekg(0, std::ios::beg);
 		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
 			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}

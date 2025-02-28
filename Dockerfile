@@ -20,7 +20,12 @@ RUN apk update \
 	&& apk upgrade \
 	&& apk add --no-cache \
 		libstdc++ \
-		libgcc
+		libgcc \
+		python3 \
+		php-cgi \
+		bash
+
+RUN ln -s /bin/bash /usr/bin/bash
 
 COPY --from=builder /usr/webserv/webserv /usr/webserv/webserv
 
@@ -28,4 +33,4 @@ COPY ./config_files /usr/webserv/config_files
 
 WORKDIR /usr/webserv/
 
-CMD ["/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]
+ENTRYPOINT ["/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]
