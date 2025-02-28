@@ -288,6 +288,7 @@ void ClientHandler::flush() {
 	}
 	buffer_.bodyBuffer.clear();
 	buffer_.boundary.clear();
+	buffer_.boundaryEnd.clear();
 	buffer_.bodyReading = false;
 	this->request_ = HttpRequest();
 	this->response_ = HttpResponse();
