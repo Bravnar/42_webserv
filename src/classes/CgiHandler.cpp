@@ -3,6 +3,8 @@
 #include "RouteConfig.hpp"
 #include <cstring>
 
+# define ERR_SCRIPT_TIMEOUT "Infinite loop in script.\n" 
+
 /* Constructors / Destructors */
 
 CgiHandler::CgiHandler( ClientHandler *client, const RouteConfig *route ) : 
@@ -141,12 +143,15 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		dup2( pipefd[1], STDOUT_FILENO ) ;
 		close( pipefd[1] ) ;  
 
+		alarm(5) ;
+
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
 		Logger::fatal("Execve failed.");
 		exit(EXIT_FAILURE) ;
 	} else {
 		close(pipefd[1]) ;
+
 
 		char		buffer[1024] ;
 		std::string	output ;
@@ -155,8 +160,21 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
-			waitpid( pid, NULL, WNOHANG ) ;
-		// TODO: handle infinite loop in the script
+
+		int status ;
+		time_t	startTime = time(NULL) ;
+		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
+			if (time(NULL) - startTime > 5 ) {
+				Logger::error("CGI Execution timed out!\n") ;
+				kill( pid, SIGKILL ) ;
+				waitpid( pid, &status, 0 ) ;
+				break ;
+			}
+			usleep(100000) ;
+		}
+		if (status != 0)
+			throw std::runtime_error(ERR_SCRIPT_TIMEOUT) ;
+
 		_parseOutput( output ) ;
 	}
 }
@@ -180,6 +198,8 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		dup2(outputPipe[1], STDOUT_FILENO) ;
 		close(outputPipe[1]) ;
 
+		alarm(5) ;
+
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
 		Logger::fatal("Execve failed.") ;
@@ -200,7 +220,21 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 
 		while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ;
 		close(outputPipe[0]) ;
-		waitpid( pid, NULL, WNOHANG ) ;
+
+		int status ;
+		time_t	startTime = time(NULL) ;
+		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
+			if (time(NULL) - startTime > 5 ) {
+				Logger::error("CGI Execution timed out!\n") ;
+				kill( pid, SIGKILL ) ;
+				waitpid( pid, &status, 0 ) ;
+				break ;
+			}
+			usleep(100000) ;
+		}
+		if (status != 0)
+			throw std::runtime_error(ERR_SCRIPT_TIMEOUT) ;
+			
 		_parseOutput( output ) ;
 	}
 }
