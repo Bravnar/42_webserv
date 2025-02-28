@@ -312,8 +312,10 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 			std::string value = line.substr(sep + 2, line.size() - sep - 2);
 			if (bodyLen && key == "Content-Length")
 				return Convert::ToT<unsigned long long, const std::string>(value);
-			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos)
+			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos){
+				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
 				return true;
+			}
 		}
 	}
 	return false;
@@ -322,43 +324,38 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 void ClientHandler::readSocket(){
 	char buffer[DF_MAX_BUFFER + 1];
 	ssize_t bytesRead = 0;
+	std::string tmp;
+	size_t cursor = 0;
 
 	bzero(buffer, DF_MAX_BUFFER + 1);
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
+		tmp = std::string(buffer, bytesRead);
 		if (buffer_.bodyReading)
-			this->buffer_.bodyBuffer.append(buffer, bytesRead);
-
-		else if (!buffer_.bodyReading && strstr(buffer, "\r\n\r\n")){
-			char *tmp = strstr(buffer, "\r\n\r\n") + 4;
-			buffer_.requestBuffer->append(buffer, (tmp - 4 ) - buffer);
-
+			this->buffer_.bodyBuffer.append(tmp.c_str(), bytesRead);
+		else if (!buffer_.bodyReading && tmp.find("\r\n\r\n") != std::string::npos){
+			cursor = tmp.find("\r\n\r\n") + 4;
+			buffer_.requestBuffer->append(tmp.c_str(), cursor - 4);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
 					throw std::runtime_error("Content-length exceed the Body limit");
-				int len = (tmp - buffer);
-				if (len > 0){
-					buffer_.bodyBuffer.append(buffer + len, bytesRead - len);
-					buffer_.bodyReading = true;
-				}
+				buffer_.bodyBuffer = tmp.substr(cursor, bytesRead - cursor);
+				buffer_.bodyReading = true;
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-
-		if (buffer_.bodyBuffer.find(buffer_.boundary + "--") != std::string::npos){
+		if (tmp.find(buffer_.boundary + "--") != std::string::npos){
 			this->flags_ &= ~READING;
 			buffer_.bodyReading = false;
 			return ;
 		}
 	}
-	else if (bytesRead < 0) {
-		this->flags_ |= FETCHED;
+	else if (bytesRead < 0)
 		throw std::runtime_error(EXC_SOCKET_READ);
-	}
 	else { this->flags_ &= ~READING; return; }
 } 
 
