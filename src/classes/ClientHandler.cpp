@@ -84,7 +84,7 @@ void ClientHandler::sendHeader_() {
 	std::ostringstream oss;
 	oss << this->getResponse().str();
 
-	if (this->buffer_.externalBody) {
+	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty()) {
 		this->flags_ |= SENDING;
 	} else {
 		this->flags_ |= SENT;
@@ -182,12 +182,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 		
 	}
-	std::ifstream& externalBody = this->buffer_.externalBody;
 
 	// Build 404 - Not Found
-	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
-		if (externalBody.is_open())
-			externalBody.close();
+	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!this->buffer_.externalBody.good() || !this->buffer_.externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+		if (this->buffer_.externalBody.is_open())
+			this->buffer_.externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
 	}
 
@@ -203,18 +202,17 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (externalBody.is_open())
-				externalBody.close();
-			externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (externalBody.is_open()) {
-				if (externalBody.fail()) {
-					this->error(strerror(errno)) << std::endl;
-					externalBody.close();
-				}
-				else
-					response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
-			}
-		}
+			if (this->buffer_.externalBody.is_open())
+				this->buffer_.externalBody.close();
+			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
+			if (this->buffer_.externalBody.fail()) {
+				this->error(strerror(errno)) << std::endl;
+				this->buffer_.externalBody.close();
+			} else
+				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+		} 
+		if (!this->buffer_.externalBody.is_open())
+			this->buffer_.internalBody = ErrorBuilder::buildBody(response);
 	} else {
 		if (this->request_.getMethod() == "DELETE") {
 			if (this->buffer_.externalBody.is_open())
@@ -252,11 +250,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		}
 	}
 
-	// Final build (may need some modifications if building internal html)
-	if (this->buffer_.internalBody.empty() && externalBody.is_open()) {
-		externalBody.seekg(0, std::ios::end);
-		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(externalBody.tellg());
-		externalBody.seekg(0, std::ios::beg);
+	// Final build
+	if (this->buffer_.internalBody.empty() && this->buffer_.externalBody.is_open()) {
+		this->buffer_.externalBody.seekg(0, std::ios::end);
+		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.externalBody.tellg());
+		this->buffer_.externalBody.seekg(0, std::ios::beg);
 		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
 			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}

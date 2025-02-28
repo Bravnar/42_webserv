@@ -14,6 +14,7 @@ FILES =	main \
 		classes/HttpResponse \
 		classes/ListingBuilder \
 		classes/ConfigManager \
+		classes/ErrorBuilder \
 		classes/ConfigParser \
 		classes/Runtime \
 		classes/ServerConfig \
