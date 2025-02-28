@@ -96,20 +96,18 @@ void ClientHandler::sendHeader_() {
 
 void ClientHandler::sendpayload_() {
 	#if LOGGER_DEBUG
-		std::ostream& stream = this->debug("sending payload ");
-		if (!this->getRequest().getReqLine().empty())
-			stream << this->getRequest().getUrl();
-		stream << std::endl;
+		this->debug("sending payload ") << std::endl;
 	#endif
 	if (!this->buffer_.internalBody.empty()) {
 		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0)
 			throw std::runtime_error(EXC_SEND_ERROR);
 		this->buffer_.internalBody.clear();
 		this->flags_ |= SENT;
-	} else if (this->buffer_.externalBody.is_open()) {
+	} else {
 		std::ifstream& file = this->buffer_.externalBody;
-		char buffer[DF_MAX_BUFFER] = {0};
+		char buffer[DF_MAX_BUFFER + 1] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
+			std::cerr << "sended " << buffer << std::endl;
 			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
 		}
@@ -126,16 +124,13 @@ void ClientHandler::sendpayload_() {
 }
 
 void ClientHandler::sendResponse() {
-	#if LOGGER_DEBUG
-		this->debug("sending response") << std::endl;
-	#endif
 	if (this->flags_ & SENT) return;
 	if (!(this->flags_ & SENDING)) {
 		if (!(this->flags_ & RESPONSE))
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty())
+	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }

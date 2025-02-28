@@ -240,7 +240,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLOUT && !(client->getFlags() & READING)) {
+	if (socket->revents & POLLOUT) {
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {
