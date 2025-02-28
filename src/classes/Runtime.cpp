@@ -189,7 +189,10 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return -1;
 		}
 		client->clearFlag(READING);
-		client->buildResponse(HttpResponse(client->getRequest(), 500));
+		if (msg == EXC_BODY_TOO_LARGE)
+			client->buildResponse(HttpResponse(client->getRequest(), 413));
+		else
+			client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;
 		this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
 		status = 1;

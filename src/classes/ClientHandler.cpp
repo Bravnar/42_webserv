@@ -339,7 +339,7 @@ void ClientHandler::readSocket(){
 			buffer_.requestBuffer->append(buffer, cursor - 4);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
-					throw std::runtime_error("Content-length exceed the Body limit");
+					throw std::runtime_error(EXC_BODY_TOO_LARGE);
 				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
 				buffer_.bodyReading = true;
 			}
