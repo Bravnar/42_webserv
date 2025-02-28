@@ -47,6 +47,8 @@ content = f"""
                 <a href="../cgi-bash/">BASH CGI</a>
             </div>
         </div>
+    </section>
+	<section>
 		<div class="container">
             <h3>Upload your file!</h3>
 			<br>
@@ -55,7 +57,7 @@ content = f"""
                 <input type="submit" value="Upload">
             </form>
 		</div>
-    </section>
+	</section>
 </body>
 </html>
 """

@@ -49,7 +49,15 @@ CgiHandler::~CgiHandler( void ) { _cgiStrVect.clear() ; _envp.clear() ;}
 void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.clear() ;
 	_envp.clear() ;
+
+	std::string	phpIniPath = "" ;
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    	phpIniPath = std::string(cwd) + "/www/cgi-php/php.ini";
+		std::cout << phpIniPath << std::endl ;
+	}
 	
+	std::cout << phpIniPath << "!!!\n" ;
 	std::string	contentType = _client->getRequest().getHeaders().at("Content-Type") ;
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
@@ -63,6 +71,7 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("UPLOAD_DIR_PHP=." + _route->getUploadPath()) ;
 	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
 	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
+	_cgiStrVect.push_back("PHPRC=" + phpIniPath); 
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
