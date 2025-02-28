@@ -17,6 +17,7 @@
 # include <sys/stat.h>
 # include "./ListingBuilder.hpp"
 # include "./ErrorBuilder.hpp"
+# include <climits>
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"
