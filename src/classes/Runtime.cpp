@@ -191,6 +191,8 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		client->clearFlag(READING);
 		if (msg == EXC_BODY_TOO_LARGE)
 			client->buildResponse(HttpResponse(client->getRequest(), 413));
+		else if (msg == EXC_BODY_NO_SIZE)
+			client->buildResponse(HttpResponse(client->getRequest(), 411));
 		else
 			client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;
@@ -238,7 +240,7 @@ void Runtime::logResponse_(ClientHandler *client) {
 }
 
 int Runtime::handleClientPollout_(ClientHandler *client, pollfd *socket) {
-	if (socket->revents & POLLOUT && !(client->getFlags() & READING)) {
+	if (socket->revents & POLLOUT) {
 		try {
 			client->sendResponse();
 		} catch(const std::exception& e) {

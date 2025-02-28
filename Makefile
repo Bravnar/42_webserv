@@ -65,7 +65,7 @@ re:
 
 debug : $(HEADERS) $(SRCS) $(OBJS)
 	@if [ "$(shell uname)" = "Linux" ]; then\
-		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g -D LOGGER_DEBUG=1; \
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -D LOGGER_DEBUG=1; \
 		echo " \t$(NAME) compiled with debug for linux ✅"; \
 	elif [ "$(shell uname)" = "Darwin" ]; then \
 		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -fsanitize=address -D LOGGER_DEBUG=1; \

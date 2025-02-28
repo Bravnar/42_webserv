@@ -96,19 +96,16 @@ void ClientHandler::sendHeader_() {
 
 void ClientHandler::sendpayload_() {
 	#if LOGGER_DEBUG
-		std::ostream& stream = this->debug("sending payload ");
-		if (!this->getRequest().getReqLine().empty())
-			stream << this->getRequest().getUrl();
-		stream << std::endl;
+		this->debug("sending payload ") << std::endl;
 	#endif
 	if (!this->buffer_.internalBody.empty()) {
 		if (send(this->socket_fd_, this->buffer_.internalBody.c_str(), this->buffer_.internalBody.length(), 0) < 0)
 			throw std::runtime_error(EXC_SEND_ERROR);
 		this->buffer_.internalBody.clear();
 		this->flags_ |= SENT;
-	} else if (this->buffer_.externalBody.is_open()) {
+	} else {
 		std::ifstream& file = this->buffer_.externalBody;
-		char buffer[DF_MAX_BUFFER] = {0};
+		char buffer[DF_MAX_BUFFER + 1] = {0};
 		if (file.read(buffer, DF_MAX_BUFFER) || file.gcount() > 0) {
 			if (send(this->socket_fd_, buffer, file.gcount(), 0) < 0)
 				throw std::runtime_error(EXC_SEND_ERROR);
@@ -117,25 +114,17 @@ void ClientHandler::sendpayload_() {
 			file.close();
 			this->flags_ |= SENT;
 		}
-		#if LOGGER_DEBUG
-			if (this->request_.getUrl().find(".html") != std::string::npos) {
-				this->debug("sended: ") << buffer << std::endl;
-			}
-		#endif
 	}
 }
 
 void ClientHandler::sendResponse() {
-	#if LOGGER_DEBUG
-		this->debug("sending response") << std::endl;
-	#endif
 	if (this->flags_ & SENT) return;
 	if (!(this->flags_ & SENDING)) {
 		if (!(this->flags_ & RESPONSE))
 			this->buildResponse(HttpResponse(this->request_));
 		this->sendHeader_();
 	}
-	if (this->buffer_.externalBody || !this->buffer_.internalBody.empty())
+	if (this->buffer_.externalBody.is_open() || !this->buffer_.internalBody.empty())
 		sendpayload_();
 	return;
 }
@@ -189,7 +178,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	std::ifstream& externalBody = this->buffer_.externalBody;
 
 	// Build 404 - Not Found
-	if (response.getUrl() && request_.getMethod() == "GET" && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
+	if (response.getUrl() && (request_.getMethod() == "GET" || request_.getMethod() == "POST") && (!externalBody.good() || !externalBody.is_open()) && this->buffer_.internalBody.empty() && response.getStatus() != 404) {
 		if (externalBody.is_open())
 			externalBody.close();
 		return this->buildResponse(HttpResponse(this->getRequest(), 404));
@@ -226,7 +215,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			if (unlink(rootFile.c_str()) < 0)
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			response.setStatus(204);
-		} else if (this->request_.getMethod() == "POST" && matchingRoot->getCgi().first.empty()) {
+		} else if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty() && matchingRoot->getCgi().first.empty()) {
 			try{
 				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
 				response.setStatus(201);
@@ -243,9 +232,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			CgiHandler	cgi ( this, matchingRoot ) ;
 			if (cgi.isValidCgi()) {
 				cgi.run() ; 
-				this->buffer_.internalBody = cgi.getOutputBody();
+				this->buffer_.internalBody = cgi.getOutputBody(); // TODO: only upload file on POST method. Currently, GET method is allowing uploads if a body exists -> it doesnt mean it's a POST tho. If boundary is empty, there is no need tu upload the file, you will receive the body as binary in raw, without multipart
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
 				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+				if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty())
+					response.setStatus(201);
 			}
 		}
 		catch(const std::exception& e) {
@@ -301,18 +292,24 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 
 	while (std::getline(ss, line))
 	{
-		line = line.substr(0, line.size() - 1);
+		if (line.at(line.size() - 1) == '\r')
+			line = line.substr(0, line.size() - 1);
 		if (line.empty())
 			break;
 		size_t sep = line.find(':', 0);
 		if (sep != line.npos){
 			std::string key = line.substr(0, sep);
-			std::string value = line.substr(sep + 2, line.size() - sep - 2);
-			if (bodyLen && key == "Content-Length")
+			std::string value = line.substr(sep + 2);
+			if (bodyLen && key == "Content-Length") {
+				if (value.empty())
+					return 0;
 				return Convert::ToT<unsigned long long, const std::string>(value);
-			if (buffer_.boundary.empty() && key == "Content-Type" && value.find("multipart/form-data") != value.npos){
-				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
-				buffer_.boundaryEnd = buffer_.boundary + "--";
+			}
+			if (!bodyLen && buffer_.boundary.empty() && key == "Content-Type") {
+				if (value.find("multipart/form-data") != value.npos) {
+					buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
+					buffer_.boundaryEnd = buffer_.boundary + "--";
+				}
 				return true;
 			}
 		}
@@ -344,8 +341,11 @@ void ClientHandler::readSocket(){
 			cursor = buffer_cursor - buffer + 4;
 			buffer_.requestBuffer->append(buffer, cursor - 4);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
-				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
+				unsigned long long size = parseBodyInfo(buffer_.requestBuffer, true);
+				if (size > getServerConfig().getClientBodyLimit())
 					throw std::runtime_error(EXC_BODY_TOO_LARGE);
+				else if (!size)
+					throw std::runtime_error(EXC_BODY_NO_SIZE);
 				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
 				buffer_.bodyReading = true;
 			}
@@ -382,3 +382,4 @@ void ClientHandler::updateLastAlive() {
 	gettimeofday(&tv, 0);
 	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+const s_clientBuffer& ClientHandler::getBuffer() const { return this->buffer_; }
