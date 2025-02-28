@@ -39,12 +39,15 @@ struct s_clientBuffer {
 	std::string bodyBuffer;
 	std::string internalBody;
 	std::string boundary;
+	std::string boundaryEnd;
 	std::ifstream externalBody;
 	bool bodyReading;
 	s_clientBuffer():
 		requestBuffer(0),
-		bodyBuffer(""),
+		bodyBuffer(),
 		internalBody(),
+		boundary(),
+		boundaryEnd(),
 		externalBody(),
 		bodyReading(false){}
 };

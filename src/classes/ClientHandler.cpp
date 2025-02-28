@@ -314,6 +314,7 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 				return Convert::ToT<unsigned long long, const std::string>(value);
 			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos){
 				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
+				buffer_.boundaryEnd = buffer_.boundary + "--";
 				return true;
 			}
 		}
@@ -324,31 +325,31 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 void ClientHandler::readSocket(){
 	char buffer[DF_MAX_BUFFER + 1];
 	ssize_t bytesRead = 0;
-	std::string tmp;
 	size_t cursor = 0;
+	char *buffer_cursor = 0;
 
 	bzero(buffer, DF_MAX_BUFFER + 1);
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
-		tmp = std::string(buffer, bytesRead);
+		buffer_cursor = strstr(buffer, "\r\n\r\n");
 		if (buffer_.bodyReading)
-			this->buffer_.bodyBuffer.append(tmp.c_str(), bytesRead);
-		else if (!buffer_.bodyReading && tmp.find("\r\n\r\n") != std::string::npos){
-			cursor = tmp.find("\r\n\r\n") + 4;
-			buffer_.requestBuffer->append(tmp.c_str(), cursor - 4);
+			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+		else if (!buffer_.bodyReading && buffer_cursor){
+			cursor = buffer_cursor - buffer + 4;
+			buffer_.requestBuffer->append(buffer, cursor - 4);
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				if (parseBodyInfo(buffer_.requestBuffer, true) > getServerConfig().getClientBodyLimit())
 					throw std::runtime_error("Content-length exceed the Body limit");
-				buffer_.bodyBuffer = tmp.substr(cursor, bytesRead - cursor);
+				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
 				buffer_.bodyReading = true;
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if (tmp.find(buffer_.boundary + "--") != std::string::npos){
+		if (memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
 			this->flags_ &= ~READING;
 			buffer_.bodyReading = false;
 			return ;

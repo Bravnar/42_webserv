@@ -35,6 +35,7 @@ class HttpRequest {
 		std::string reqLine_;
 		std::string *_allBody;
 		std::string _boundary;
+		std::string _boundaryEnd;
 
 	public:
 		// canonical
