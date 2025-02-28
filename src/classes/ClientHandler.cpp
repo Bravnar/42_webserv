@@ -310,7 +310,7 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 			std::string value = line.substr(sep + 2, line.size() - sep - 2);
 			if (bodyLen && key == "Content-Length")
 				return Convert::ToT<unsigned long long, const std::string>(value);
-			if (key == "Content-Type" && value.find("multipart/form-data") != value.npos){
+			if (buffer_.boundary.empty() && key == "Content-Type" && value.find("multipart/form-data") != value.npos){
 				buffer_.boundary = "--" + value.substr(value.find("boundary=")+9, value.size());
 				buffer_.boundaryEnd = buffer_.boundary + "--";
 				return true;
@@ -332,8 +332,14 @@ void ClientHandler::readSocket(){
 
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
 		buffer_cursor = strstr(buffer, "\r\n\r\n");
-		if (buffer_.bodyReading)
+		if (buffer_.bodyReading) {
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()) {
+				this->buffer_.bodyBuffer.clear();
+				this->buffer_.bodyReading = false;
+				throw std::runtime_error(EXC_BODY_TOO_LARGE);
+			}
+		}
 		else if (!buffer_.bodyReading && buffer_cursor){
 			cursor = buffer_cursor - buffer + 4;
 			buffer_.requestBuffer->append(buffer, cursor - 4);
