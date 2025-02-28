@@ -232,9 +232,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			CgiHandler	cgi ( this, matchingRoot ) ;
 			if (cgi.isValidCgi()) {
 				cgi.run() ; 
-				this->buffer_.internalBody = cgi.getOutputBody();
+				this->buffer_.internalBody = cgi.getOutputBody(); // TODO: only upload file on POST method. Currently, GET method is allowing uploads if a body exists -> it doesnt mean it's a POST tho
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
 				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+				if (this->request_.getMethod() == "POST")
+					response.setStatus(201);
 			}
 		}
 		catch(const std::exception& e) {
