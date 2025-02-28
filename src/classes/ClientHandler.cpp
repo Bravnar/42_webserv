@@ -141,9 +141,6 @@ void ClientHandler::sendResponse() {
 }
 
 const HttpRequest& ClientHandler::buildRequest() {
-	if (this->flags_ & FETCHED)
-		return this->request_;
-	this->flags_ &= ~READING;
 	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
 	return this->request_;
 }
@@ -358,7 +355,11 @@ void ClientHandler::readSocket(){
 	}
 	else if (bytesRead < 0)
 		throw std::runtime_error(EXC_SOCKET_READ);
-	else { this->flags_ &= ~READING; return; }
+	else {
+		if (!this->buffer_.requestBuffer || this->buffer_.requestBuffer->empty())
+			throw std::runtime_error(EXC_NO_BUFFER);
+		this->flags_ &= ~READING; return;
+	}
 } 
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }

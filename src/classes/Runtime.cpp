@@ -183,6 +183,11 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	try {
 		client->readSocket();
 	} catch (const std::exception& e) {
+		const std::string msg(e.what());
+		if (msg == EXC_NO_BUFFER) {
+			delete client;
+			return -1;
+		}
 		client->clearFlag(READING);
 		client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;

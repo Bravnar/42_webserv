@@ -166,7 +166,7 @@ int HttpRequest::buildFromBuffer_(const std::string *buffer, std::string *bodyBu
 		// _allBody = new std::string(buffer->c_str() + cursor_pos, buffer->size() - cursor_pos);
 		_allBody = bodyBuffer;
 	}
-	if (this->headers_.find(H_HOST) == this->headers_.end()) { throw std::runtime_error(EXC_HEADER_NOHOST); }
+	if (this->headers_.find(H_HOST) == this->headers_.end()) throw std::runtime_error(EXC_HEADER_NOHOST);
 	return 0;
 }
 
