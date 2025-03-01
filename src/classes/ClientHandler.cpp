@@ -367,7 +367,7 @@ void ClientHandler::readSocket(){
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if (memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+		if (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
 			if (this->flags_ & THROWING)
 				handleThrowing(*this);
 			this->flags_ &= ~READING;
@@ -382,7 +382,8 @@ void ClientHandler::readSocket(){
 			throw std::runtime_error(EXC_NO_BUFFER);
 		else if (this->flags_ & THROWING)
 			handleThrowing(*this);
-		this->flags_ &= ~READING; return;
+		this->flags_ &= ~READING;
+		return;
 	}
 }
 
