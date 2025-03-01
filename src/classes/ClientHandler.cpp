@@ -199,19 +199,15 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 
 	// Check file for http code
 	if (response.getStatus() < 200 || response.getStatus() > 299 ) {
+		if (this->buffer_.externalBody.is_open())
+			this->buffer_.externalBody.close();
 		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
-			if (this->buffer_.externalBody.is_open())
-				this->buffer_.externalBody.close();
 			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
-			if (this->buffer_.externalBody.fail()) {
-				this->error(strerror(errno)) << std::endl;
-				this->buffer_.externalBody.close();
-			} else
-				response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
+			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 		} 
-		if (!this->buffer_.externalBody.is_open())
+		if (!this->buffer_.externalBody.is_open() || this->buffer_.externalBody.fail())
 			this->buffer_.internalBody = ErrorBuilder::buildBody(response);
 	} else {
 		if (this->request_.getMethod() == "DELETE") {
@@ -371,7 +367,7 @@ void ClientHandler::readSocket(){
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if (memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+		if (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
 			if (this->flags_ & THROWING)
 				handleThrowing(*this);
 			this->flags_ &= ~READING;
@@ -386,7 +382,8 @@ void ClientHandler::readSocket(){
 			throw std::runtime_error(EXC_NO_BUFFER);
 		else if (this->flags_ & THROWING)
 			handleThrowing(*this);
-		this->flags_ &= ~READING; return;
+		this->flags_ &= ~READING;
+		return;
 	}
 }
 
