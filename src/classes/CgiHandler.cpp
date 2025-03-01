@@ -75,7 +75,6 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
 	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
 	_cgiStrVect.push_back("PHPRC=" + phpIniPath); 
-	_cgiStrVect.push_back("MAX_BODY_SIZE=" + _client->getServerConfig().getClientBodyLimit()) ;
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;

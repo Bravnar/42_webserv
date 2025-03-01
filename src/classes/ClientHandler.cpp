@@ -239,9 +239,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				if (this->buffer_.externalBody.is_open())
 					this->buffer_.externalBody.close();
 				cgi.run() ; 
-				this->buffer_.internalBody = cgi.getOutputBody(); // TODO: only upload file on POST method. Currently, GET method is allowing uploads if a body exists -> it doesnt mean it's a POST tho. If boundary is empty, there is no need tu upload the file, you will receive the body as binary in raw, without multipart
+				this->buffer_.internalBody = cgi.getOutputBody(); 
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-				response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+				if (cgi.getOutputHeaders().find(H_CONTENT_TYPE) != cgi.getOutputHeaders().end())
+					response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+				else response.getHeaders()[H_CONTENT_TYPE] = "text/html" ;
 				if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty())
 					response.setStatus(201);
 			}
