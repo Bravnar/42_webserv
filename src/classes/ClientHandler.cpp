@@ -236,6 +236,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 		try {
 			CgiHandler	cgi ( this, matchingRoot ) ;
 			if (cgi.isValidCgi()) {
+				if (this->buffer_.externalBody.is_open())
+					this->buffer_.externalBody.close();
 				cgi.run() ; 
 				this->buffer_.internalBody = cgi.getOutputBody(); 
 				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
