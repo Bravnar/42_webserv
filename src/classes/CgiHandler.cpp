@@ -3,6 +3,9 @@
 #include "RouteConfig.hpp"
 #include <cstring>
 
+# define ERR_CGI "encountered issue with script.\n" 
+# define ERR_CGI_TIMEOUT "timeout reached.\n"
+
 /* Constructors / Destructors */
 
 CgiHandler::CgiHandler( ClientHandler *client, const RouteConfig *route ) : 
@@ -72,6 +75,7 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
 	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
 	_cgiStrVect.push_back("PHPRC=" + phpIniPath); 
+	_cgiStrVect.push_back("MAX_BODY_SIZE=" + _client->getServerConfig().getClientBodyLimit()) ;
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
@@ -141,6 +145,8 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		dup2( pipefd[1], STDOUT_FILENO ) ;
 		close( pipefd[1] ) ;  
 
+		alarm(1) ;
+
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
 		Logger::fatal("Execve failed.");
@@ -148,15 +154,29 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 	} else {
 		close(pipefd[1]) ;
 
-		char		buffer[1024] ;
+
+		char		buffer[DF_MAX_BUFFER] ;
 		std::string	output ;
 		ssize_t		bytesRead ;
 
 		while ((bytesRead = read( pipefd[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ; 
 
 		close( pipefd[0] ) ;
-			waitpid( pid, NULL, WNOHANG ) ;
-		// TODO: handle infinite loop in the script
+
+		int status ;
+		time_t	startTime = time(NULL) ;
+		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
+			if (time(NULL) - startTime > 1 ) {
+				Logger::error(ERR_CGI_TIMEOUT) ;
+				kill( pid, SIGKILL ) ;
+				waitpid( pid, &status, 0 ) ;
+				break ;
+			}
+			usleep(100000) ;
+		}
+		if (status != 0)
+			throw std::runtime_error(ERR_CGI) ;
+
 		_parseOutput( output ) ;
 	}
 }
@@ -180,6 +200,8 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		dup2(outputPipe[1], STDOUT_FILENO) ;
 		close(outputPipe[1]) ;
 
+		alarm(1) ;
+
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
 		Logger::fatal("Execve failed.") ;
@@ -194,13 +216,38 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		write(inputPipe[1], body.c_str(), body.size()) ;
 		close(inputPipe[1]) ;
 
-		char		buffer[1024] ;
+		char		buffer[DF_MAX_BUFFER] ;
 		std::string	output ;
 		ssize_t		bytesRead ;
+		// ssize_t		totalBytesRead = 0;
+		int status ;
 
 		while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ;
+		// while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) {
+		// 	totalBytesRead += bytesRead ;
+		// 	if (totalBytesRead > static_cast<long int>(_client->getServerConfig().getClientBodyLimit())) {
+		// 		Logger::error("CGI exceeded body limit\n") ;
+		// 		kill( pid, SIGKILL ) ;
+		// 		waitpid( pid, &status, 0 ) ;
+		// 		throw std::runtime_error(ERR_SCRIPT_WRITE_OVERFLOW) ;
+		// 	} 
+		// 	output.append(buffer, bytesRead) ;
+		//}
 		close(outputPipe[0]) ;
-		waitpid( pid, NULL, WNOHANG ) ;
+
+		time_t	startTime = time(NULL) ;
+		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
+			if (time(NULL) - startTime > 1 ) {
+				Logger::error(ERR_CGI_TIMEOUT) ;
+				kill( pid, SIGKILL ) ;
+				waitpid( pid, &status, 0 ) ;
+				break ;
+			}
+			usleep(100000) ;
+		}
+		if (status != 0)
+			throw std::runtime_error(ERR_CGI) ;
+			
 		_parseOutput( output ) ;
 	}
 }
