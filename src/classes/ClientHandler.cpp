@@ -156,8 +156,9 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		if (!matchingRoot) throw std::runtime_error(EXC_NO_ROUTE);
-		if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
-			return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+		if (matchingRoot->getPath() != "/"
+			&& (matchingRoot->getPath() == this->request_.getUrl() || !matchingRoot->getReturn().empty()))
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 		rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
