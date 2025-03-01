@@ -3,8 +3,8 @@
 #include "RouteConfig.hpp"
 #include <cstring>
 
-# define ERR_SCRIPT_TIMEOUT "Infinite loop in script.\n" 
-# define ERR_SCRIPT_WRITE_OVERFLOW "CGI output too large.\n"
+# define ERR_CGI "encountered issue with script.\n" 
+# define ERR_CGI_TIMEOUT "timeout reached.\n"
 
 /* Constructors / Destructors */
 
@@ -145,7 +145,7 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		dup2( pipefd[1], STDOUT_FILENO ) ;
 		close( pipefd[1] ) ;  
 
-		alarm(5) ;
+		alarm(1) ;
 
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
@@ -155,7 +155,7 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		close(pipefd[1]) ;
 
 
-		char		buffer[1024] ;
+		char		buffer[DF_MAX_BUFFER] ;
 		std::string	output ;
 		ssize_t		bytesRead ;
 
@@ -166,8 +166,8 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		int status ;
 		time_t	startTime = time(NULL) ;
 		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
-			if (time(NULL) - startTime > 5 ) {
-				Logger::error("CGI Execution timed out!\n") ;
+			if (time(NULL) - startTime > 1 ) {
+				Logger::error(ERR_CGI_TIMEOUT) ;
 				kill( pid, SIGKILL ) ;
 				waitpid( pid, &status, 0 ) ;
 				break ;
@@ -175,7 +175,7 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 			usleep(100000) ;
 		}
 		if (status != 0)
-			throw std::runtime_error(ERR_SCRIPT_TIMEOUT) ;
+			throw std::runtime_error(ERR_CGI) ;
 
 		_parseOutput( output ) ;
 	}
@@ -200,7 +200,7 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		dup2(outputPipe[1], STDOUT_FILENO) ;
 		close(outputPipe[1]) ;
 
-		alarm(5) ;
+		alarm(1) ;
 
 		char	*av[] = { const_cast<char *>(_cgi.c_str()), const_cast<char *>(scriptPath.c_str()), NULL } ;
 		execve(_cgi.c_str(), av, &_envp[0]) ;
@@ -216,7 +216,7 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		write(inputPipe[1], body.c_str(), body.size()) ;
 		close(inputPipe[1]) ;
 
-		char		buffer[1024] ;
+		char		buffer[DF_MAX_BUFFER] ;
 		std::string	output ;
 		ssize_t		bytesRead ;
 		// ssize_t		totalBytesRead = 0;
@@ -237,8 +237,8 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 
 		time_t	startTime = time(NULL) ;
 		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
-			if (time(NULL) - startTime > 5 ) {
-				Logger::error("CGI Execution timed out!\n") ;
+			if (time(NULL) - startTime > 1 ) {
+				Logger::error(ERR_CGI_TIMEOUT) ;
 				kill( pid, SIGKILL ) ;
 				waitpid( pid, &status, 0 ) ;
 				break ;
@@ -246,7 +246,7 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 			usleep(100000) ;
 		}
 		if (status != 0)
-			throw std::runtime_error(ERR_SCRIPT_TIMEOUT) ;
+			throw std::runtime_error(ERR_CGI) ;
 			
 		_parseOutput( output ) ;
 	}
