@@ -348,8 +348,10 @@ void ClientHandler::readSocket(){
 		if (this->flags_ & THROWING) {/* do nothing */}
 		else if (buffer_.bodyReading) {
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
-			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit())
+			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()) {
+				this->buffer_.bodyBuffer.clear();
 				this->flags_ |= THROWING;
+			}
 		}
 		else if (!buffer_.bodyReading && buffer_cursor){
 			cursor = buffer_cursor - buffer + 4;
