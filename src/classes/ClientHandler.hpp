@@ -32,6 +32,9 @@
 # define SENT 0x02 // Response sent
 # define SENDING 0x04 // Still sending response
 # define RESPONSE 0x8 // Has a response
+# define ERR_BODYTOOBIG 0x10 // Error body size
+# define ERR_NOLENGTH 0x20 // Error no content-length
+# define THROWING 0x30 // Readsocket will throw after reading the header
 
 
 class Runtime;

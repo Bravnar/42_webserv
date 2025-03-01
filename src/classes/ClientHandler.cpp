@@ -326,6 +326,13 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 	return false;
 }
 
+static void handleThrowing(const ClientHandler& client) {
+	if (client.getFlags() & ERR_BODYTOOBIG)
+		throw std::runtime_error(EXC_BODY_TOO_LARGE);
+	else if (client.getFlags() & ERR_NOLENGTH)
+		throw std::runtime_error(EXC_BODY_NO_SIZE);
+}
+
 void ClientHandler::readSocket(){
 	char buffer[DF_MAX_BUFFER + 1];
 	ssize_t bytesRead = 0;
@@ -336,15 +343,13 @@ void ClientHandler::readSocket(){
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0){
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
 		buffer_cursor = strstr(buffer, "\r\n\r\n");
-		if (buffer_.bodyReading) {
+		if (this->flags_ & THROWING) {/* do nothing */}
+		else if (buffer_.bodyReading) {
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
-			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()) {
-				this->buffer_.bodyBuffer.clear();
-				this->buffer_.bodyReading = false;
-				throw std::runtime_error(EXC_BODY_TOO_LARGE);
-			}
+			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit())
+				this->flags_ |= THROWING;
 		}
 		else if (!buffer_.bodyReading && buffer_cursor){
 			cursor = buffer_cursor - buffer + 4;
@@ -352,17 +357,21 @@ void ClientHandler::readSocket(){
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				unsigned long long size = parseBodyInfo(buffer_.requestBuffer, true);
 				if (size > getServerConfig().getClientBodyLimit())
-					throw std::runtime_error(EXC_BODY_TOO_LARGE);
+					this->flags_ |= ERR_BODYTOOBIG;
 				else if (!size)
-					throw std::runtime_error(EXC_BODY_NO_SIZE);
-				buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
-				buffer_.bodyReading = true;
+					this->flags_ |= ERR_NOLENGTH;
+				else {
+					buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
+					buffer_.bodyReading = true;
+				}
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
 		if (memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+			if (this->flags_ & THROWING)
+				handleThrowing(*this);
 			this->flags_ &= ~READING;
 			buffer_.bodyReading = false;
 			return ;
@@ -373,9 +382,11 @@ void ClientHandler::readSocket(){
 	else {
 		if (!this->buffer_.requestBuffer || this->buffer_.requestBuffer->empty())
 			throw std::runtime_error(EXC_NO_BUFFER);
+		else if (this->flags_ & THROWING)
+			handleThrowing(*this);
 		this->flags_ &= ~READING; return;
 	}
-} 
+}
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
