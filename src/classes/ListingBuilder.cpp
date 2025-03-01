@@ -23,6 +23,7 @@ std::string ListingBuilder::buildBody(const std::string& url, const std::string&
 		else
 			files[entry->d_name] = entry;
 	}
+	closedir(dir);
 	for(std::map<std::string, dirent *>::const_iterator it = files.begin(); it != files.end(); it++) {
 		body.append("<a href=\"" + parsedUrl + "/" + std::string(it->first) + "\">" + std::string(it->first) + "</a><br>");
 	}
