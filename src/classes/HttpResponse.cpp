@@ -39,11 +39,13 @@ const std::string HttpResponse::checkStatus(int status) {
 		case 204: return "No Content";
 		case 301: return "Moved Permantly";
 		case 400: return "Bad Request";
+		case 403: return "Forbidden";
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
 		case 408: return "Request Timeout";
 		case 411: return "Length Required";
 		case 413: return "Content Too Large";
+		case 415: return "Unsupported Media Type";
 		case 500: return "Internal Server Error";
 		case 503: return "Service Unavailable";
 		default: return "Unknown";

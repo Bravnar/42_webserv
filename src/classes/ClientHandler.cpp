@@ -216,15 +216,20 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			if (unlink(rootFile.c_str()) < 0)
 				return this->buildResponse(HttpResponse(this->request_, 404));
 			response.setStatus(204);
-		} else if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty() && matchingRoot->getCgi().first.empty()) {
-			try{
-				request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
-				response.setStatus(201);
-			}
-			catch (const std::exception &e) {
-				this->error("POST: ") << e.what() << std::endl;
-				return buildResponse(HttpResponse(request_, 500));
-			}
+		} else if (this->request_.getMethod() == "POST" && matchingRoot->getCgi().first.empty()) {
+			if (matchingRoot->isUploadAccepted()) {
+				if (this->request_.getBoundary().empty())
+					return this->buildResponse(HttpResponse(this->request_, 415));
+				try{
+					request_.buildBody(matchingRoot->getFinalPath(), matchingRoot->getUploadPath());
+					response.setStatus(201);
+				}
+				catch (const std::exception &e) {
+					this->error("POST: ") << e.what() << std::endl;
+					return buildResponse(HttpResponse(request_, 500));
+				}
+			} else
+				return this->buildResponse(HttpResponse(this->request_, 403));
 		}
 	}
 
