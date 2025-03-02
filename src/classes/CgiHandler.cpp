@@ -3,8 +3,8 @@
 #include "RouteConfig.hpp"
 #include <cstring>
 
-# define ERR_CGI "encountered issue with script.\n" 
-# define ERR_CGI_TIMEOUT "timeout reached.\n"
+# define ERR_CGI "encountered issue with the CGI script." 
+# define ERR_CGI_TIMEOUT "CGI script timed out."
 
 /* Constructors / Destructors */
 
@@ -140,6 +140,7 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 	pid_t	pid = fork() ;
 	if ( pid == -1 ) throw std::runtime_error("Failed to fork process.") ;
 	else if (pid == 0) {
+		close(STDERR_FILENO) ; // Ensure no error output from CGI scripts
 		close( pipefd[0] ) ;
 		dup2( pipefd[1], STDOUT_FILENO ) ;
 		close( pipefd[1] ) ;  
@@ -166,9 +167,9 @@ void	CgiHandler::_execGet( const std::string &scriptPath ) {
 		time_t	startTime = time(NULL) ;
 		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
 			if (time(NULL) - startTime > 1 ) {
-				Logger::error(ERR_CGI_TIMEOUT) ;
 				kill( pid, SIGKILL ) ;
 				waitpid( pid, &status, 0 ) ;
+				status = 408 ;
 				break ;
 			}
 			usleep(100000) ;
@@ -190,7 +191,7 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 	pid_t	pid = fork() ;
 	if ( pid == -1 ) throw std::runtime_error( "Failed to fork process" ) ;
 	else if ( pid == 0 ) {
-		// child
+		close(STDERR_FILENO) ; // Ensure no error output from CGI scripts
 		close(inputPipe[1]) ;
 		dup2(inputPipe[0], STDIN_FILENO) ;
 		close(inputPipe[0]) ;
@@ -207,7 +208,6 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		exit(EXIT_FAILURE) ;
 
 	} else {
-		//parent
 		close(inputPipe[0]) ;
 		close(outputPipe[1]) ;
 
@@ -218,32 +218,21 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 		char		buffer[DF_MAX_BUFFER] ;
 		std::string	output ;
 		ssize_t		bytesRead ;
-		// ssize_t		totalBytesRead = 0;
 		int status ;
 
 		while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) output.append(buffer, bytesRead) ;
-		// while ((bytesRead = read( outputPipe[0], buffer, sizeof(buffer) - 1)) > 0) {
-		// 	totalBytesRead += bytesRead ;
-		// 	if (totalBytesRead > static_cast<long int>(_client->getServerConfig().getClientBodyLimit())) {
-		// 		Logger::error("CGI exceeded body limit\n") ;
-		// 		kill( pid, SIGKILL ) ;
-		// 		waitpid( pid, &status, 0 ) ;
-		// 		throw std::runtime_error(ERR_SCRIPT_WRITE_OVERFLOW) ;
-		// 	} 
-		// 	output.append(buffer, bytesRead) ;
-		//}
 		close(outputPipe[0]) ;
 
 		time_t	startTime = time(NULL) ;
 		while (waitpid( pid, &status, WNOHANG ) == 0 ) {
 			if (time(NULL) - startTime > 1 ) {
-				Logger::error(ERR_CGI_TIMEOUT) ;
 				kill( pid, SIGKILL ) ;
 				waitpid( pid, &status, 0 ) ;
 				break ;
 			}
 			usleep(100000) ;
 		}
+		std::cout << status << std::endl ;
 		if (status != 0)
 			throw std::runtime_error(ERR_CGI) ;
 			
