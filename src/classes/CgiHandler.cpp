@@ -192,7 +192,9 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 	pid_t	pid = fork() ;
 	if ( pid == -1 ) throw std::runtime_error( "Failed to fork process" ) ;
 	else if ( pid == 0 ) {
-		close(STDERR_FILENO) ; // Ensure no error output from CGI scripts
+		#ifndef LOGGER_DEBUG
+			close(STDERR_FILENO) ; // Ensure no error output from CGI scripts
+		#endif
 		close(inputPipe[1]) ;
 		dup2(inputPipe[0], STDIN_FILENO) ;
 		close(inputPipe[0]) ;

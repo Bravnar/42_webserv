@@ -75,8 +75,16 @@ boundary = os.getenv("HTTP_BOUNDARY", "")
 if not os.path.exists(upload_dir):
 	os.makedirs(upload_dir)
 
-form = cgi.FieldStorage()
-file_item = form["uploaded_file"]
+try:
+	form = cgi.FieldStorage()
+	file_item = form["uploaded_file"]
+except Exception as e:
+	content = errorContent
+	print("Content-Type: text/html")
+	print(f"Content-Length: {len(content) + 1}")
+	print()
+	print(content)
+	exit(0)
 
 def get_unique_filename(directory, filename):
 	base, ext = os.path.splitext(filename)
@@ -96,13 +104,14 @@ if file_item.filename:
 	try:
 		with open(file_path, "wb") as f:
 			f.write(file_item.file.read())
-		content = successContent.replace("{filename}", filename);
+		content = successContent.replace("{filename}", filename)
 	except Exception as e:
 		if os.path.exists(file_path):
 			os.remove(file_path)
-		content = errorContent;
+		content = errorContent
 else:
-	content = errorContent;
+	print("youas9dasd") 
+	content = errorContent
 
 print("Content-Type: text/html")
 print(f"Content-Length: {len(content) + 1}")
