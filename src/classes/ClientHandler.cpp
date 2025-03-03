@@ -408,7 +408,7 @@ std::string ClientHandler::getLittleBody(size_t *size){
 		*size = buffer_.bodyBuffer.size();
 		return buffer_.bodyBuffer;
 	}
-	size_t cursor = buffer_.bodyBuffer.size() - 250;
+	size_t cursor = buffer_.bodyBuffer.size() - buffer_.boundaryEnd.size() - 2;
 	*size = buffer_.bodyBuffer.size() - cursor;
 	return buffer_.bodyBuffer.substr(cursor, *size);
 }
