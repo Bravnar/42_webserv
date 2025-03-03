@@ -377,7 +377,7 @@ void ClientHandler::readSocket(){
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if (this->buffer_.bodySize >= this->buffer_.bodyWantedSize
+		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
 			|| (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size()))){
 				if (this->flags_ & THROWING)
 					handleThrowing(*this);
