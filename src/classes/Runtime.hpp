@@ -56,7 +56,13 @@ class Runtime {
 		std::map<int, ClientHandler *> clients_;
 		std::vector<pollfd> sockets_;
 		unsigned long long lat_tick_;
-	public:
+
+		static Runtime	*ptr ;
+		static void	signalHandler_( int ) ;
+		void	setUpSignalHandler_() ;
+
+
+		public:
 		Runtime(const ConfigManager&);
 		~Runtime();
 

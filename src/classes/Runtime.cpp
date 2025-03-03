@@ -6,7 +6,11 @@ std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning(
 std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
 std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
 
-Runtime::Runtime(const ConfigManager& config): config_(config) {	
+Runtime *Runtime::ptr = NULL ;
+
+Runtime::Runtime(const ConfigManager& config): config_(config) {
+	ptr = this ;
+	setUpSignalHandler_() ;	
 	this->initializeServers_(this->config_.getServers());
 }
 
@@ -51,8 +55,8 @@ void Runtime::runServers() {
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), this->config_.getMinTimeout()) < 0) {
 			if (errno == EINTR) {
-				this->error("poll error: ") << strerror(errno) << std::endl;
-				continue;
+				// this->error("poll error: ") << strerror(errno) << std::endl; < --- SIGINT ONLY WORKS IF THIS CONDITION BREAKS please test
+				break;
 			}
 			else {
 				this->fatal("poll fatal: ") << strerror(errno) << std::endl;
@@ -277,4 +281,22 @@ pollfd *Runtime::getSocket_(int socket_fd_) {
 		}
 	}
 	return 0;
+}
+
+void	Runtime::signalHandler_( int signum ) {
+	if (ptr)
+		if (signum == SIGINT)
+			ptr->closeServers() ;
+}
+
+void	Runtime::setUpSignalHandler_( ) {
+	struct sigaction sa ;
+	sa.sa_handler = Runtime::signalHandler_ ;
+	sigemptyset(&sa.sa_mask) ;
+	sa.sa_flags = 0;
+
+	if ( sigaction( SIGINT, &sa, NULL ) == -1 ) {
+		Logger::fatal("Error setting signal handler.") << std::endl ;
+	}
+
 }

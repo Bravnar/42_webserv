@@ -53,6 +53,8 @@ ClientHandler::~ClientHandler() {
 	#if LOGGER_DEBUG
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
+	if (this->request_.getAllBody())
+		delete this->request_.getAllBody() ;
 	close(this->socket_fd_);
 	this->runtime_.getClients().erase(this->socket_fd_);
 	if (this->buffer_.externalBody.is_open()) {
