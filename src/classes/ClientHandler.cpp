@@ -344,19 +344,24 @@ void ClientHandler::readSocket(){
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 
-	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		buffer_cursor = strstr(buffer, "\r\n\r\n");
+	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0)
+	{
+		if (!buffer_.bodyReading){
+			this->buffer_.requestBuffer->append(buffer, bytesRead);
+			buffer_cursor = static_cast<char*>(memmem(const_cast<char *>(buffer_.requestBuffer->c_str()), buffer_.requestBuffer->size(), "\r\n\r\n", 4));
+		}
 		if (this->flags_ & THROWING) {/* do nothing */}
-		else if (buffer_.bodyReading) {
+		else if (buffer_.bodyReading)
+		{
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
-			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()) {
+			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()){
 				this->buffer_.bodyBuffer.clear();
 				this->flags_ |= THROWING;
 			}
 		}
-		else if (!buffer_.bodyReading && buffer_cursor){
-			cursor = buffer_cursor - buffer + 4;
-			buffer_.requestBuffer->append(buffer, cursor - 4);
+		else if (!buffer_.bodyReading && buffer_cursor)
+		{
+			cursor = buffer_cursor - buffer_.requestBuffer->c_str() + 4;
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				unsigned long long size = parseBodyInfo(buffer_.requestBuffer, true);
 				if (size > getServerConfig().getClientBodyLimit())
@@ -364,20 +369,26 @@ void ClientHandler::readSocket(){
 				else if (!size)
 					this->flags_ |= ERR_NOLENGTH;
 				else {
-					buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
+					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
+					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 4));
+					delete buffer_.requestBuffer;
+					buffer_.requestBuffer = tmp;
+					// buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor);
 					buffer_.bodyReading = true;
 				}
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
-		else
-			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
-			if (this->flags_ & THROWING)
-				handleThrowing(*this);
-			this->flags_ &= ~READING;
-			buffer_.bodyReading = false;
-			return ;
+		if (!buffer_.boundaryEnd.empty()){
+			size_t littleBodySize = 0;
+			std::string littleBody = getLittleBody(&littleBodySize);
+			if (memmem(littleBody.c_str(), littleBodySize, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+				if (this->flags_ & THROWING)
+					handleThrowing(*this);
+				this->flags_ &= ~READING;
+				buffer_.bodyReading = false;
+				return ;
+			}
 		}
 	}
 	else if (bytesRead < 0)
@@ -390,6 +401,16 @@ void ClientHandler::readSocket(){
 		this->flags_ &= ~READING;
 		return;
 	}
+}
+
+std::string ClientHandler::getLittleBody(size_t *size){
+	if (buffer_.bodyBuffer.size() <= 400){
+		*size = buffer_.bodyBuffer.size();
+		return buffer_.bodyBuffer;
+	}
+	size_t cursor = buffer_.bodyBuffer.size() - 250;
+	*size = buffer_.bodyBuffer.size() - cursor;
+	return buffer_.bodyBuffer.substr(cursor, *size);
 }
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
