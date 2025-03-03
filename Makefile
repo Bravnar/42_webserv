@@ -69,7 +69,7 @@ debug : $(HEADERS) $(SRCS) $(OBJS)
 		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -D LOGGER_DEBUG=1; \
 		echo " \t$(NAME) compiled with debug for linux ✅"; \
 	elif [ "$(shell uname)" = "Darwin" ]; then \
-		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -fsanitize=address -D LOGGER_DEBUG=1; \
+		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -D LOGGER_DEBUG=1 -fsanitize=address; \
 		echo " \t$(NAME) compiled with debug for MacOS ✅"; \
 	fi
 

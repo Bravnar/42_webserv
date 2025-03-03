@@ -1,6 +1,7 @@
 #include "./ClientHandler.hpp"
 #include "ServerManager.hpp"
 #include <cstring>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
