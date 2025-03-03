@@ -303,7 +303,7 @@ std::string ErrorBuilder::buildBody(const HttpResponse& response) {
             <p>Maybe you were looking for:</p> \
             <div class=\"buttons\"> \
                 <a href=\"/\">Go Home</a> \
-                <a href=\"./ddanceparty\">Dance the pain away!</a> \
+                <a href=\"/ddanceparty\">Dance the pain away!</a> \
                 <a href=\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\" target=\"_blank\">Secret Link?</a> \
             </div> \
         </div> \
