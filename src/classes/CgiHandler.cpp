@@ -54,14 +54,15 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_envp.clear() ;
 
 	std::string	phpIniPath = "" ;
-	char cwd[PATH_MAX];
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    	phpIniPath = std::string(cwd) + "/www/cgi-php/php.ini";
-		std::cout << phpIniPath << std::endl ;
-	}
+	std::string contentType ;
 	
-	std::cout << phpIniPath << "!!!\n" ;
-	std::string	contentType = _client->getRequest().getHeaders().at("Content-Type") ;
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) { phpIniPath = std::string(cwd) + "/www/cgi-php/php.ini"; }
+	
+	if (_client->getRequest().getHeaders().find("Content-Type") != _client->getRequest().getHeaders().end())
+		contentType = _client->getRequest().getHeaders().at("Content-Type") ;
+	else
+		contentType = "plain/text" ;
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
@@ -232,7 +233,6 @@ void	CgiHandler::_execPost( const std::string &scriptPath ) {
 			}
 			usleep(100000) ;
 		}
-		std::cout << status << std::endl ;
 		if (status != 0)
 			throw std::runtime_error(ERR_CGI) ;
 			
