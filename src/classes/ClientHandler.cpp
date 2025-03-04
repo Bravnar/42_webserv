@@ -340,15 +340,17 @@ static void handleThrowing(const ClientHandler& client) {
 void ClientHandler::readSocket(){
 	char buffer[DF_MAX_BUFFER + 1];
 	ssize_t bytesRead = 0;
-	size_t cursor = 0;
-	char *buffer_cursor = 0;
+	size_t buffer_cursor = 0;
 
 	bzero(buffer, DF_MAX_BUFFER + 1);
 	if (!this->buffer_.requestBuffer)
 		this->buffer_.requestBuffer = new std::string("");
 
 	if ((bytesRead = recv(this->socket_fd_, buffer, DF_MAX_BUFFER, 0)) > 0) {
-		buffer_cursor = strstr(buffer, "\r\n\r\n");
+		if (!this->buffer_.bodyReading) {
+			this->buffer_.requestBuffer->append(buffer, bytesRead);
+			buffer_cursor = this->buffer_.requestBuffer->find("\r\n\r\n");
+		}
 		if (this->flags_ & THROWING) { this->buffer_.bodySize += bytesRead; }
 		else if (buffer_.bodyReading) {
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
@@ -358,9 +360,10 @@ void ClientHandler::readSocket(){
 				this->flags_ |= ERR_BODYTOOBIG;
 			}
 		}
-		else if (!buffer_.bodyReading && buffer_cursor){
-			cursor = buffer_cursor - buffer + 4;
-			buffer_.requestBuffer->append(buffer, cursor - 4);
+		else if (!buffer_.bodyReading && buffer_cursor != std::string::npos){
+			std::string cursor = this->buffer_.requestBuffer->substr(this->buffer_.requestBuffer->size() - buffer_cursor);
+			this->buffer_.requestBuffer->erase(buffer_cursor);
+			buffer_.requestBuffer->append(cursor, cursor.size());
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				this->buffer_.bodyWantedSize = parseBodyInfo(buffer_.requestBuffer, true);
 				if (this->buffer_.bodyWantedSize > getServerConfig().getClientBodyLimit())
@@ -368,18 +371,18 @@ void ClientHandler::readSocket(){
 				else if (!this->buffer_.bodyWantedSize)
 					this->flags_ |= ERR_NOLENGTH;
 				else {
-					buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor); //
+					buffer_.bodyBuffer = cursor;
 					this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
 					buffer_.bodyReading = true;
 				}
 				if (this->flags_ & THROWING)
-					this->buffer_.bodySize = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor).size();
+					this->buffer_.bodySize = cursor.size();
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		else
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
-		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
+		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodyWantedSize && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
 			|| (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size()))){
 				if (this->flags_ & THROWING)
 					handleThrowing(*this);
