@@ -35,6 +35,7 @@ $content = "
             <div class=\"buttons cgi-buttons\">
                 <a href=\"../cgi-python/\">PYTHON CGI</a>
                 <a href=\"../cgi-bash/\">BASH CGI</a>
+                <a href=\"../cgi-php/calculator.html\">CGI Calculator!</a>
             </div>
         </div>
     </section>

@@ -45,6 +45,7 @@ content = f"""
             <div class="buttons cgi-buttons">
                 <a href="../cgi-php/">PHP CGI</a>
                 <a href="../cgi-bash/">BASH CGI</a>
+				<a href="../cgi-python/calculator.html">CGI Calculator!</a>
             </div>
         </div>
     </section>
