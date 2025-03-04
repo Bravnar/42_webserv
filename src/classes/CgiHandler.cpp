@@ -106,7 +106,8 @@ void	CgiHandler::_setGetEnvVariables( void ) {
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
 	_cgiStrVect.push_back("QUERY_STRING=" + _client->getRequest().getQuery()) ;
-	_cgiStrVect.push_back("HTTP_COOKIE=" + cookies) ;
+	if (!cookies.empty())
+		_cgiStrVect.push_back("HTTP_COOKIE=" + cookies) ;
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		#ifdef LOGGER_DEBUG
 			Logger::debug(_cgiStrVect[i]) << std::endl ;

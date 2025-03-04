@@ -395,7 +395,7 @@ void ClientHandler::readSocket(){
 				else {
 					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
 					this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
-					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 4));
+					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
 					delete buffer_.requestBuffer;
 					buffer_.requestBuffer = tmp;
 					buffer_.bodyReading = true;
