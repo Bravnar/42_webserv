@@ -25,6 +25,7 @@
 # define EXC_BODY_TOO_LARGE "The request body is too large"
 # define EXC_NO_BUFFER "No request buffer"
 # define EXC_BODY_NO_SIZE "The body has nos size"
+# define EXC_CLOSE "The client closed connection"
 
 // Flags for state
 
