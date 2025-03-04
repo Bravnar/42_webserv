@@ -191,6 +191,10 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		if (msg == EXC_NO_BUFFER) {
 			delete client;
 			return -1;
+		} else if (msg == EXC_CLOSE) {
+			this->info("test") << std::endl;
+			delete client;
+			return -1;
 		}
 		client->clearFlag(READING);
 		if (msg == EXC_BODY_TOO_LARGE)
