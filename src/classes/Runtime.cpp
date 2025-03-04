@@ -192,7 +192,6 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			delete client;
 			return -1;
 		} else if (msg == EXC_CLOSE) {
-			this->info("test") << std::endl;
 			delete client;
 			return -1;
 		}

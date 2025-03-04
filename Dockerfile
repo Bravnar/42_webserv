@@ -12,7 +12,7 @@ COPY Makefile /usr/webserv/Makefile
 
 WORKDIR /usr/webserv
 
-RUN make
+RUN make debug
 
 FROM alpine:latest
 
