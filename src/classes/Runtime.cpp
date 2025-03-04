@@ -54,10 +54,7 @@ void Runtime::runServers() {
 	signal(SIGPIPE, SIG_IGN);
 	while (true) {
 		if (poll(&this->sockets_[0], this->sockets_.size(), this->config_.getMinTimeout()) < 0) {
-			if (errno == EINTR) {
-				// this->error("poll error: ") << strerror(errno) << std::endl; < --- SIGINT ONLY WORKS IF THIS CONDITION BREAKS please test
-				break;
-			}
+			if (errno == EINTR) break;
 			else {
 				this->fatal("poll fatal: ") << strerror(errno) << std::endl;
 				break;
@@ -79,9 +76,8 @@ void Runtime::closeServers() {
 }
 
 void Runtime::handleExit_() {
-	while (!this->clients_.empty()) {
-		delete &*this->clients_.begin();
-	}
+	while (!this->clients_.empty())
+		delete this->clients_.begin()->second;
 	this->clients_.clear();
 	this->servers_.clear();
 	this->servers_map_.clear();
@@ -287,9 +283,7 @@ pollfd *Runtime::getSocket_(int socket_fd_) {
 }
 
 void	Runtime::signalHandler_( int signum ) {
-	if (ptr)
-		if (signum == SIGINT)
-			ptr->closeServers() ;
+	(void)signum;
 }
 
 void	Runtime::setUpSignalHandler_( ) {
