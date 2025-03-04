@@ -48,6 +48,8 @@ struct s_clientBuffer {
 	std::string boundaryEnd;
 	std::ifstream externalBody;
 	bool bodyReading;
+	unsigned long long bodySize;
+	unsigned long long bodyWantedSize;
 	s_clientBuffer():
 		requestBuffer(0),
 		bodyBuffer(),
@@ -55,7 +57,9 @@ struct s_clientBuffer {
 		boundary(),
 		boundaryEnd(),
 		externalBody(),
-		bodyReading(false){}
+		bodyReading(false),
+		bodySize(0),
+		bodyWantedSize(0) {}
 };
 
 // Unique client address identifier

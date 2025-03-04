@@ -54,6 +54,8 @@ ClientHandler::~ClientHandler() {
 	#if LOGGER_DEBUG
 		this->debug("Client request deconstructor") << std::endl;
 	#endif
+	if (this->request_.getAllBody())
+		delete this->request_.getAllBody() ;
 	close(this->socket_fd_);
 	this->runtime_.getClients().erase(this->socket_fd_);
 	if (this->buffer_.externalBody.is_open()) {
@@ -157,8 +159,9 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		if (!matchingRoot) throw std::runtime_error(EXC_NO_ROUTE);
-		if (matchingRoot->getPath() != "/" && matchingRoot->getPath() == this->request_.getUrl())
-			return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
+		if (matchingRoot->getPath() != "/"
+			&& (matchingRoot->getPath() == this->request_.getUrl() || !matchingRoot->getReturn().empty()))
+				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
 		rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
@@ -351,36 +354,40 @@ void ClientHandler::readSocket(){
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
 			buffer_cursor = static_cast<char*>(memmem(const_cast<char *>(buffer_.requestBuffer->c_str()), buffer_.requestBuffer->size(), "\r\n\r\n", 4));
 		}
-		if (this->flags_ & THROWING) {/* do nothing */}
+		if (this->flags_ & THROWING) {this->buffer_.bodySize += bytesRead;}
 		else if (buffer_.bodyReading)
 		{
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
+			this->buffer_.bodySize += this->buffer_.bodyBuffer.size();
 			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()){
 				this->buffer_.bodyBuffer.clear();
-				this->flags_ |= THROWING;
+				this->flags_ |= ERR_BODYTOOBIG;
 			}
 		}
 		else if (!buffer_.bodyReading && buffer_cursor)
 		{
 			cursor = buffer_cursor - buffer_.requestBuffer->c_str() + 4;
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
-				unsigned long long size = parseBodyInfo(buffer_.requestBuffer, true);
-				if (size > getServerConfig().getClientBodyLimit())
+				this->buffer_.bodyWantedSize = parseBodyInfo(buffer_.requestBuffer, true);
+				if (this->buffer_.bodyWantedSize > getServerConfig().getClientBodyLimit())
 					this->flags_ |= ERR_BODYTOOBIG;
-				else if (!size)
+				else if (!this->buffer_.bodyWantedSize)
 					this->flags_ |= ERR_NOLENGTH;
 				else {
 					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
 					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 4));
 					delete buffer_.requestBuffer;
 					buffer_.requestBuffer = tmp;
-					// buffer_.bodyBuffer = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor);
 					buffer_.bodyReading = true;
 				}
+				if (this->flags_ & THROWING)
+					this->buffer_.bodySize = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor).size();
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
-		if (!buffer_.boundaryEnd.empty()){
+		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
+			|| !buffer_.boundaryEnd.empty())
+		{
 			size_t littleBodySize = 0;
 			std::string littleBody = getLittleBody(&littleBodySize);
 			if (memmem(littleBody.c_str(), littleBodySize, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
@@ -394,7 +401,8 @@ void ClientHandler::readSocket(){
 	}
 	else if (bytesRead < 0)
 		throw std::runtime_error(EXC_SOCKET_READ);
-	else {
+	else
+	{
 		if (!this->buffer_.requestBuffer || this->buffer_.requestBuffer->empty())
 			throw std::runtime_error(EXC_NO_BUFFER);
 		else if (this->flags_ & THROWING)
