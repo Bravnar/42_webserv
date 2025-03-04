@@ -67,15 +67,20 @@ re:
 debug : $(HEADERS) $(SRCS) $(OBJS)
 	@if [ "$(shell uname)" = "Linux" ]; then\
 		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -D LOGGER_DEBUG=1; \
-		echo " \t$(NAME) compiled with debug for linux ✅"; \
+		echo " \t$(NAME) compiled with debug for Linux ✅"; \
 	elif [ "$(shell uname)" = "Darwin" ]; then \
 		$(CXX) $(CXXFLAGS) -o $(NAME) $(SRCS) -g3 -D LOGGER_DEBUG=1 -fsanitize=address; \
 		echo " \t$(NAME) compiled with debug for MacOS ✅"; \
 	fi
 
 up: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
-		@docker compose up --build -d
-		@echo "\033[0;32m ✅ WebservSIR and Nginx are up! ✅ \033[0m"
+	@if [ "$(shell uname)" = "Linux" ]; then\
+		docker compose up --build -d;\
+		echo "\033[0;32m ✅ WebservSIR and Nginx are up for Linux! ✅ \033[0m";\
+	elif [ "$(shell uname)" = "Darwin" ]; then \
+		docker-compose up --build -d; \
+		echo "\033[0;32m ✅ WebservSIR and Nginx are up for MacOS! ✅ \033[0m";\
+	fi
 
 down: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
 		@docker compose down

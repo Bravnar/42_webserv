@@ -141,7 +141,6 @@ class ClientHandler
 		void flush();
 
 		// Getters
-		std::string getLittleBody(size_t *);
 		const HttpRequest& getRequest() const;
 		HttpResponse& getResponse();
 		const char *getClientIp() const;
