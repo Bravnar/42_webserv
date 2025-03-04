@@ -117,6 +117,8 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 				inLocationBlock = false ;
 				RouteConfig&	route = currentServer->getRoutes()[currentServer->getRoutes().size() - 1] ;
 				if (route.getMethods().empty()) route.addMethod("GET") ;
+				if ((!route.getCgi().first.empty() && !route.getCgi().second.empty()) && route.getIndex() == "index.html")
+					route.setIndex( "index." + route.getCgi().second ) ;
 			} else if (inServerBlock) {
 				inServerBlock = false ;
 				if (currentServer->getServerRoot().empty()) throw std::runtime_error("Error: Missing 'root' directive in server block.") ;

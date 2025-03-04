@@ -55,9 +55,11 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 
 	std::string	phpIniPath = "" ;
 	std::string contentType ;
+	std::string	noDotFinalPath = (_route->getFinalPath().at(0) == '.') ? _route->getFinalPath().substr(1) : _route->getFinalPath() ;
 	
 	char cwd[PATH_MAX];
-	if (getcwd(cwd, sizeof(cwd)) != NULL) { phpIniPath = std::string(cwd) + "/www/cgi-php/php.ini"; }
+	// if (getcwd(cwd, sizeof(cwd)) != NULL) { phpIniPath = std::string(cwd) + "/www/cgi-php/php.ini"; } 
+	if (getcwd(cwd, sizeof(cwd)) != NULL) { phpIniPath = std::string(cwd) + noDotFinalPath ; } 
 	
 	if (_client->getRequest().getHeaders().find("Content-Type") != _client->getRequest().getHeaders().end())
 		contentType = _client->getRequest().getHeaders().at("Content-Type") ;
@@ -78,6 +80,9 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("PHPRC=" + phpIniPath); 
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
+		#ifdef LOGGER_DEBUG
+			Logger::debug(_cgiStrVect[i]) << std::endl ;
+		#endif 
 		_envp.push_back(const_cast<char *>(_cgiStrVect[i].c_str())) ;
 	}
 	_envp.push_back(NULL) ;
