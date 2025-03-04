@@ -385,18 +385,13 @@ void ClientHandler::readSocket(){
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
-		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
-			|| !buffer_.boundaryEnd.empty())
-		{
-			size_t littleBodySize = 0;
-			std::string littleBody = getLittleBody(&littleBodySize);
-			if (memmem(littleBody.c_str(), littleBodySize, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size())){
+		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodyWantedSize && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
+			|| (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size()))){
 				if (this->flags_ & THROWING)
 					handleThrowing(*this);
-				this->flags_ &= ~READING;
-				buffer_.bodyReading = false;
-				return ;
-			}
+			this->flags_ &= ~READING;
+			buffer_.bodyReading = false;
+			return ;
 		}
 	}
 	else if (bytesRead < 0)
