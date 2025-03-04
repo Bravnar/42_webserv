@@ -407,16 +407,6 @@ void ClientHandler::readSocket(){
 	}
 }
 
-std::string ClientHandler::getLittleBody(size_t *size){
-	if (buffer_.bodyBuffer.size() <= 400){
-		*size = buffer_.bodyBuffer.size();
-		return buffer_.bodyBuffer;
-	}
-	size_t cursor = buffer_.bodyBuffer.size() - buffer_.boundaryEnd.size() - 2;
-	*size = buffer_.bodyBuffer.size() - cursor;
-	return buffer_.bodyBuffer.substr(cursor, *size);
-}
-
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
