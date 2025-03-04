@@ -13,7 +13,7 @@
 #include <fstream>
 #include <sys/stat.h>
 
-# define PATH_TO_DOWNLOAD "./www/uploads/" //TODO: avoid hardcode ?
+# define PATH_TO_DOWNLOAD "./www/uploads/"
 # define EXC_INVALID_RL "invalid RequestLine"
 # define EXC_INVALID_BOUNDARY "invalid Boundary"
 # define EXC_BODY_NEG_SIZE "Negative body size"
