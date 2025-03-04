@@ -344,7 +344,8 @@ static void handleSignals(const char *buffer, ssize_t bytesRead) {
 			if (static_cast<int>(*buffer) == 4) throw std::runtime_error(EXC_CLOSE);
 			break ;
 		case 5: {
-			if (memmem(buffer, bytesRead, (char []){-1, -12, -1, -3, 6}, 5)) throw std::runtime_error(EXC_CLOSE);
+			char	arr[5] = {-1, -12, -1, -3, 6} ;
+			if (memmem(buffer, bytesRead, arr, 5)) throw std::runtime_error(EXC_CLOSE);
 			break ;
 		}
 	}

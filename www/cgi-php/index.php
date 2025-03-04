@@ -23,7 +23,7 @@ $content = "
             <h2>Happy <span style=\"color: blue;\">$day_message</span> Hope you're having a great day!</h2>
         </div>
         <div class=\"container\">
-            <h1>Welcome to Python CGI Page!</h1>
+            <h1>Welcome to PHP CGI Page!</h1>
             <img src=\"./winnie_php.jpg\" alt=\"Image Placeholder\">
             <br>
             <p>The main website is at <strong>http://127.0.0.1/</strong></p>
