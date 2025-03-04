@@ -6,14 +6,16 @@ HttpRequest::HttpRequest():
 	url_(""),
 	httpVersion_(""),
 	_allBody(0),
-	_boundary(""){}
+	_boundary(""),
+	_query("") {}
 
 HttpRequest::HttpRequest(const std::string *buffer, std::string *bodyBuffer):
 	method_(""),
 	url_(""),
 	httpVersion_(""),
 	_allBody(0),
-	_boundary("")
+	_boundary(""),
+	_query("")
 {
 	buildFromBuffer_(buffer, bodyBuffer);
 }
@@ -25,7 +27,8 @@ HttpRequest::HttpRequest(const HttpRequest& copy):
 	headers_(copy.headers_),
 	reqLine_(copy.reqLine_),
 	_allBody(copy._allBody),
-	_boundary(copy._boundary)
+	_boundary(copy._boundary),
+	_query(copy._query)
 	{}
 
 HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
@@ -35,6 +38,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& assign) {
 		this->httpVersion_ = assign.httpVersion_;
 		this->headers_ = assign.headers_;
 		this->reqLine_ = assign.reqLine_;
+		this->_query = assign._query;
 		if (_allBody)
 			delete _allBody;
 		if (assign._allBody)
@@ -79,6 +83,7 @@ void HttpRequest::parseRequestLine_(const std::string& line) {
 		Logger::debug("removing query from url") << std::endl;
 	#endif
 	if (this->url_.find('?', 0) != std::string::npos) {
+		this->_query = this->url_.substr(this->url_.find('?') + 1) ;
 		this->url_ = this->url_.substr(0, this->url_.find('?', 0));
 	}
 	this->reqLine_ = this->method_ + " " + this->url_ + " " + this->httpVersion_;
@@ -177,3 +182,4 @@ const std::map<std::string, std::string>& HttpRequest::getHeaders() const { retu
 const std::string& HttpRequest::getUrl() const { return this->url_; }
 const std::string& HttpRequest::getHttpVersion() const { return this->httpVersion_; }
 const std::string& HttpRequest::getReqLine() const { return this->reqLine_; }
+const std::string& HttpRequest::getQuery() const { return this->_query; }

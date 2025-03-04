@@ -36,6 +36,7 @@ class HttpRequest {
 		std::string *_allBody;
 		std::string _boundary;
 		std::string _boundaryEnd;
+		std::string	_query;
 
 	public:
 		// canonical
@@ -58,6 +59,7 @@ class HttpRequest {
 		const std::string& getUrl() const;
 		const std::string& getHttpVersion() const;
 		const std::string& getReqLine() const;
+		const std::string& getQuery() const;
 		void buildBody(std::string location, std::string path) const;
 };
 
