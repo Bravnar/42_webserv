@@ -65,6 +65,7 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 		contentType = _client->getRequest().getHeaders().at("Content-Type") ;
 	else
 		contentType = "plain/text" ;
+	std::string cookies = (_client->getRequest().getHeaders().find(H_COOKIE) != _client->getRequest().getHeaders().end()) ? _client->getRequest().getHeaders().at(H_COOKIE) : "" ;
 
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
@@ -78,7 +79,9 @@ void	CgiHandler::_setPostEnvVariables( void ) {
 	_cgiStrVect.push_back("CONTENT_TYPE=" + contentType) ;
 	_cgiStrVect.push_back("HTTP_BOUNDARY=" + _client->getRequest().getBoundary()) ;
 	_cgiStrVect.push_back("PHPRC=" + phpIniPath);
-	_cgiStrVect.push_back("QUERY_STRING=" + _client->getRequest().getQuery()) ; 
+	_cgiStrVect.push_back("QUERY_STRING=" + _client->getRequest().getQuery()) ;
+	if (!cookies.empty())
+		_cgiStrVect.push_back("HTTP_COOKIE=" + cookies) ;
 	
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		#ifdef LOGGER_DEBUG
@@ -94,6 +97,8 @@ void	CgiHandler::_setGetEnvVariables( void ) {
 	_cgiStrVect.clear() ;
 	_envp.clear() ;
 
+	std::string cookies = (_client->getRequest().getHeaders().find(H_COOKIE) != _client->getRequest().getHeaders().end()) ? _client->getRequest().getHeaders().at(H_COOKIE) : "" ;
+
 	_cgiStrVect.push_back("GATEWAY_INTERFACE=CGI/1.1") ;
 	_cgiStrVect.push_back("REQUEST_METHOD=" + _client->getRequest().getMethod()) ;
 	_cgiStrVect.push_back("SCRIPT_FILENAME=" + _script) ;
@@ -101,6 +106,7 @@ void	CgiHandler::_setGetEnvVariables( void ) {
 	_cgiStrVect.push_back("SERVER_SOFTWARE=PlaceHolder") ;
 	_cgiStrVect.push_back("REDIRECT_STATUS=200") ;
 	_cgiStrVect.push_back("QUERY_STRING=" + _client->getRequest().getQuery()) ;
+	_cgiStrVect.push_back("HTTP_COOKIE=" + cookies) ;
 	for	( size_t i = 0 ; i < _cgiStrVect.size() ; i++ ) {
 		#ifdef LOGGER_DEBUG
 			Logger::debug(_cgiStrVect[i]) << std::endl ;
