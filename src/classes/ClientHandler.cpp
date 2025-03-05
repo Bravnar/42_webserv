@@ -201,7 +201,14 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			this->buffer_.externalBody.open(rootFile.c_str(), std::ios::binary);
 		else if (matchingRoot && matchingRoot->isDirectoryListingEnabled()) {
 			// Build directory listing
-			this->buffer_.internalBody = ListingBuilder::buildBody(request_.getUrl(), rootFile);
+			try {
+				this->buffer_.internalBody = ListingBuilder::buildBody(request_.getUrl(), rootFile);
+			} catch (const std::exception& e) {
+				std::string msg(e.what());
+				if (msg == EXC_NO_DIR)
+					return this->buildResponse(HttpResponse(this->request_, 404));
+				return this->buildResponse(HttpResponse(this->request_, 500));
+			}
 		}
 		
 	}
