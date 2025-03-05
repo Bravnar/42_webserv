@@ -43,7 +43,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 				this->warning("if trying to use virtualhosts, the host:port need to match perfectly") << std::endl;
 				continue;
 			}
-			host->getVirtualHosts().push_back(host);
+			host->getVirtualHosts().push_back(&*server);
 
 		}
 	}
