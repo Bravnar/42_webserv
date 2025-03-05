@@ -68,3 +68,5 @@ ServerManager::~ServerManager() {
 const pollfd& ServerManager::getSocket() const { return this->socket_; }
 const ServerConfig& ServerManager::getConfig() const { return this->config_; }
 const std::vector<RouteConfig>& ServerManager::getRouteConfig() const { return this->routeconfig_; }
+std::vector<ServerManager *>& ServerManager::getVirtualHosts() { return this->virtualHosts_; }
+const std::vector<ServerManager *>& ServerManager::getVirtualHosts() const { return this->virtualHosts_; }

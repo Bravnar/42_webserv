@@ -26,6 +26,7 @@
 # define EXC_NO_BUFFER "No request buffer"
 # define EXC_BODY_NO_SIZE "The body has nos size"
 # define EXC_CLOSE "The client closed connection"
+# define EXC_BODY_SIZE_MISMATCH "The client body size mismatches"
 
 // Flags for state
 
@@ -33,9 +34,6 @@
 # define SENT 0x02 // Response sent
 # define SENDING 0x04 // Still sending response
 # define RESPONSE 0x8 // Has a response
-# define ERR_BODYTOOBIG 0x10 // Error body size
-# define ERR_NOLENGTH 0x20 // Error no content-length
-# define THROWING 0x30 // Readsocket will throw after reading the header
 
 
 class Runtime;
@@ -89,11 +87,11 @@ class ClientHandler
 	
 		// Internal logs
 
-		std::ostream& fatal(const std::string&);
-		std::ostream& error(const std::string&);
-		std::ostream& warning(const std::string&);
-		std::ostream& info(const std::string&);
-		std::ostream& debug(const std::string&);
+		std::ostream& fatal(const std::string&) const;
+		std::ostream& error(const std::string&) const;
+		std::ostream& warning(const std::string&) const;
+		std::ostream& info(const std::string&) const;
+		std::ostream& debug(const std::string&) const;
 
 		// Internal functions
 	
@@ -108,7 +106,8 @@ class ClientHandler
 
 		const int socket_fd_;
 		Runtime& runtime_;
-		const ServerManager& server_;
+		const ServerManager &hostServer_;
+		const ServerManager *server_;
 		const s_clientAddress address_;
 		s_clientBuffer buffer_;
 		HttpRequest request_;
@@ -119,7 +118,7 @@ class ClientHandler
 	public:
 		// Canonical
 
-		ClientHandler(Runtime&, ServerManager&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
+		ClientHandler(Runtime&, const ServerManager&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
 		~ClientHandler();
 
 		//Member functions
@@ -139,6 +138,8 @@ class ClientHandler
 		const HttpResponse& buildResponse(HttpResponse);
 		// Flush client state
 		void flush();
+		// Retrieve right server from server map
+		void retrieveServer();
 
 		// Getters
 		const HttpRequest& getRequest() const;
@@ -152,6 +153,8 @@ class ClientHandler
 		unsigned long long getLastAlive() const;
 		void updateLastAlive();
 		const s_clientBuffer& getBuffer() const;
+		bool hasServer() const;
+		const ServerManager& getHostServer() const;
 };
 
 #endif
