@@ -26,6 +26,15 @@ std::string	replWhitespace( const std::string& str ) {
 	return result ;
 }
 
+int	countCurly( const std::string& str ) {
+	int	count = 0;
+	for (size_t i = 0; i < str.size(); i++) {
+		if (str[i] == '}')
+		 count++ ;
+	}
+	return count ;
+}
+
 /* Setters for function pointers -------------------------------------- */
 
 /* SERVER CONFIG ------------------------------------------------------ */

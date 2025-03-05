@@ -111,8 +111,9 @@ std::vector<ServerConfig> ConfigParser::parse( const std::string &filePath ) {
 			inServerBlock = true ;
 			continue ;
 		}
-
+		
 		if (line == "}" || line.find("}") != std::string::npos) {
+			if ( countCurly(line) > 1 ) throw std::runtime_error("invalid closing bracket: " + line) ;
 			if (inLocationBlock) {
 				inLocationBlock = false ;
 				RouteConfig&	route = currentServer->getRoutes()[currentServer->getRoutes().size() - 1] ;

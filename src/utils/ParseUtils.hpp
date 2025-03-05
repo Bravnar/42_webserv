@@ -31,6 +31,7 @@ void	setLocationIndex( RouteConfig& route, const std::string &str ) ;
 
 /* Helper functions */
 
+int	countCurly( const std::string& str ) ;
 std::string	trim( const std::string& str ) ;
 std::string	replWhitespace( const std::string& str ) ;
 
