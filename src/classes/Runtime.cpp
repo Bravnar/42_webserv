@@ -36,6 +36,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 			socket_reserved += server->getConfig().getMaxClients();
 			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
+			server->getVirtualHosts().push_back(&*server);
 		} catch (const std::exception& e) {
 			ServerManager *host = 0;
 			if (!(host = getHost(*server))) {
