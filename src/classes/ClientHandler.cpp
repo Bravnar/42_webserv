@@ -5,11 +5,26 @@
 #include <stdexcept>
 #include <string>
 
-std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::fatal(const std::string& msg) const {
+	if (this->server_) return Logger::fatal(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+	else return Logger::fatal("ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+}
+std::ostream& ClientHandler::error(const std::string& msg) const {
+	if (this->server_) return Logger::error(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+	else return Logger::error("ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+}
+std::ostream& ClientHandler::warning(const std::string& msg) const {;
+	if (this->server_) return Logger::warning(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+	else return Logger::warning("ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+}
+std::ostream& ClientHandler::info(const std::string& msg) const {;
+	if (this->server_) return Logger::info(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+	else return Logger::info("ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+}
+std::ostream& ClientHandler::debug(const std::string& msg) const {
+	if (this->server_) return Logger::debug(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+	else return Logger::debug("ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg);
+}
 
 static pollfd createPollfd(int fd) {
 	pollfd out;
@@ -19,9 +34,11 @@ static pollfd createPollfd(int fd) {
 	return out;
 }
 
-ClientHandler::ClientHandler(Runtime& runtime, int socket_fd, sockaddr_in addr, socklen_t addrlen):	
+ClientHandler::ClientHandler(Runtime& runtime, const ServerManager& origin, int socket_fd, sockaddr_in addr, socklen_t addrlen):	
 	socket_fd_(socket_fd),
 	runtime_(runtime),
+	hostServer_(origin),
+	server_(0),
 	address_(addr, addrlen),
 	flags_(READING) {
 		struct timeval tv;
@@ -36,6 +53,8 @@ ClientHandler::ClientHandler(Runtime& runtime, int socket_fd, sockaddr_in addr, 
 ClientHandler::ClientHandler(const ClientHandler& copy):
 	socket_fd_(-1),	
 	runtime_(copy.runtime_),
+	hostServer_(copy.hostServer_),
+	server_(0),
 	flags_(copy.flags_),
 	last_alive_(copy.last_alive_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
@@ -139,6 +158,8 @@ void ClientHandler::sendResponse() {
 
 const HttpRequest& ClientHandler::buildRequest() {
 	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
+	if (this->request_.getAllBody() && this->request_.getHeaders().find(H_CONTENT_LENGTH) == this->request_.getHeaders().end())
+		throw std::runtime_error(EXC_BODY_NO_SIZE);
 	return this->request_;
 }
 
@@ -205,12 +226,12 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			this->buffer_.externalBody.close();
 		const std::map<int, std::string>& errorPages = this->server_->getConfig().getErrorPages();
 		int status = response.getStatus();
-		if (errorPages.find(status) != errorPages.end()) {
+		if (errorPages.find(status) != errorPages.end())
 			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
-			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
-		} 
 		if (!this->buffer_.externalBody.is_open() || this->buffer_.externalBody.fail())
 			this->buffer_.internalBody = ErrorBuilder::buildBody(response);
+		else
+			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(errorPages.at(status));
 	} else {
 		if (this->request_.getMethod() == "DELETE") {
 			if (this->buffer_.externalBody.is_open())
@@ -246,14 +267,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 				for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ;
 					it != cgi.getOutputHeaders().end() ; it++ ) {
 						response.getHeaders()[it->first] = it->second ;
-					} //TODO: @Banatawa, can you please check that this doesn't break anything (uploads / cgi)
-					  // if ok, delete comments below
-				// response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-				// if (cgi.getOutputHeaders().find(H_CONTENT_TYPE) != cgi.getOutputHeaders().end())
-				// 	response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
-				// else response.getHeaders()[H_CONTENT_TYPE] = "text/html" ;
-				// if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty())
-				// 	response.setStatus(201);
+					}
 			}
 		}
 		catch(const std::exception& e) {
@@ -271,7 +285,8 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 			response.getHeaders()[H_CONTENT_TYPE] = HttpResponse::getType(rootFile);
 	}
 	else if (!this->buffer_.internalBody.empty()) {
-		response.getHeaders()[H_CONTENT_TYPE] = "text/html";
+		if (response.getHeaders().find(H_CONTENT_TYPE) == response.getHeaders().end())
+			response.getHeaders()[H_CONTENT_TYPE] = "text/html";
 		response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size());
 	}
 	else
@@ -282,6 +297,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 }
 
 void ClientHandler::flush() {
+	this->server_ = 0;
 	if (this->buffer_.externalBody.is_open()) {
 		this->buffer_.externalBody.close();
 	}
@@ -334,13 +350,6 @@ unsigned long long ClientHandler::parseBodyInfo(std::string *request, bool bodyL
 	return false;
 }
 
-static void handleThrowing(const ClientHandler& client) {
-	if (client.getFlags() & ERR_BODYTOOBIG)
-		throw std::runtime_error(EXC_BODY_TOO_LARGE);
-	else if (client.getFlags() & ERR_NOLENGTH)
-		throw std::runtime_error(EXC_BODY_NO_SIZE);
-}
-
 static void handleSignals(const char *buffer, ssize_t bytesRead) {
 	switch (bytesRead) {
 		case 1:
@@ -371,45 +380,30 @@ void ClientHandler::readSocket(){
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
 			buffer_cursor = static_cast<char*>(memmem(const_cast<char *>(buffer_.requestBuffer->c_str()), buffer_.requestBuffer->size(), "\r\n\r\n", 4));
 		}
-		if (this->flags_ & THROWING) {this->buffer_.bodySize += bytesRead;}
-		else if (buffer_.bodyReading)
+		if (buffer_.bodyReading)
 		{
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
 			this->buffer_.bodySize += this->buffer_.bodyBuffer.size();
-			if (this->buffer_.bodyBuffer.size() > getServerConfig().getClientBodyLimit()){
-				this->buffer_.bodyBuffer.clear();
-				this->flags_ |= ERR_BODYTOOBIG;
-			}
 		}
 		else if (!buffer_.bodyReading && buffer_cursor)
 		{
 			cursor = buffer_cursor - buffer_.requestBuffer->c_str() + 4;
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				this->buffer_.bodyWantedSize = parseBodyInfo(buffer_.requestBuffer, true);
-				if (this->buffer_.bodyWantedSize > getServerConfig().getClientBodyLimit())
-					this->flags_ |= ERR_BODYTOOBIG;
-				else if (!this->buffer_.bodyWantedSize)
-					this->flags_ |= ERR_NOLENGTH;
-				else {
-					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
-					this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
-					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
-					delete buffer_.requestBuffer;
-					buffer_.requestBuffer = tmp;
-					buffer_.bodyReading = true;
-				}
-				if (this->flags_ & THROWING)
-					this->buffer_.bodySize = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor).size();
+				buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
+				this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
+				std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
+				delete buffer_.requestBuffer;
+				buffer_.requestBuffer = tmp;
+				buffer_.bodyReading = true;
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodyWantedSize && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
 			|| (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size()))){
-				if (this->flags_ & THROWING)
-					handleThrowing(*this);
-			this->flags_ &= ~READING;
-			buffer_.bodyReading = false;
-			return ;
+				this->flags_ &= ~READING;
+				buffer_.bodyReading = false;
+				return ;
 		}
 	}
 	else if (bytesRead < 0)
@@ -418,15 +412,27 @@ void ClientHandler::readSocket(){
 	{
 		if (!this->buffer_.requestBuffer || this->buffer_.requestBuffer->empty())
 			throw std::runtime_error(EXC_NO_BUFFER);
-		else if (this->flags_ & THROWING)
-			handleThrowing(*this);
 		this->flags_ &= ~READING;
 		return;
 	}
 }
 
-void ClientHandler::retrieveServer(const std::vector<ServerManager>& servers) {
-
+void ClientHandler::retrieveServer() {
+	std::string clientServername;
+	size_t cursor = 0;
+	const std::string& clientHost = this->request_.getHeaders().at(H_HOST);
+	if ((cursor = clientHost.find(":")) != std::string::npos) {
+		clientServername = clientHost.substr(0, cursor);
+	} else clientServername = clientHost;
+	for(std::vector<ServerManager *>::const_iterator it = this->hostServer_.getVirtualHosts().begin();
+		it != this->hostServer_.getVirtualHosts().end(); it++) {
+			if (std::find((*it)->getConfig().getServerNames().begin(), (*it)->getConfig().getServerNames().end(), clientServername) != (*it)->getConfig().getServerNames().end()) {
+				this->server_ = *it;
+				break;
+			}
+		}
+	if (!this->server_)
+		this->server_ = &this->hostServer_;
 }
 
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
@@ -435,7 +441,14 @@ const char *ClientHandler::getClientIp() const { return this->address_.clientIp;
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
-const ServerConfig& ClientHandler::getServerConfig() const { return this->server_->getConfig(); }
+const ServerConfig& ClientHandler::getServerConfig() const {
+	if (this->server_)
+		return this->server_->getConfig();
+	else {
+		this->warning("webserver getting serverConfig from client, but client has no designated server yet") << std::endl;
+		return this->hostServer_.getConfig();
+	}
+}
 int ClientHandler::getFd() const { return this->socket_fd_; }
 unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
 void ClientHandler::updateLastAlive() {
@@ -445,4 +458,3 @@ void ClientHandler::updateLastAlive() {
 }
 const s_clientBuffer& ClientHandler::getBuffer() const { return this->buffer_; }
 bool ClientHandler::hasServer() const { return this->server_; }
-void ClientHandler::setServer(const ServerManager *server) { this->server_ = server; }

@@ -36,6 +36,7 @@ class ServerManager {
 		const struct sockaddr_in addrv4_;
 		const struct sockaddr *address_;
 		const std::vector<RouteConfig>& routeconfig_;
+		std::vector<ServerManager *> virtualHosts_;
 		int server_fd_;
 		pollfd socket_;
 
@@ -56,6 +57,8 @@ class ServerManager {
 		const pollfd& getSocket() const;
 		const ServerConfig& getConfig() const;
 		const std::vector<RouteConfig>& getRouteConfig() const;
+		std::vector<ServerManager *>& getVirtualHosts();
+		const std::vector<ServerManager *>& getVirtualHosts() const;
 };
 
 #endif

@@ -5,8 +5,6 @@
 # include "./ServerManager.hpp"
 # include <csignal>
 
-# define EXC_NOT_VALID_SERVERNAME "No virtual host matchin client host"
-
 class ClientHandler;
 
 class Runtime {
@@ -17,14 +15,16 @@ class Runtime {
 		Runtime(const Runtime&);
 		Runtime& operator=(const Runtime&);
 
-		std::ostream& fatal(const std::string&);
-		std::ostream& error(const std::string&);
-		std::ostream& warning(const std::string&);
-		std::ostream& info(const std::string&);
-		std::ostream& debug(const std::string&);
+		std::ostream& fatal(const std::string&) const ;
+		std::ostream& error(const std::string&) const ;
+		std::ostream& warning(const std::string&) const ;
+		std::ostream& info(const std::string&) const ;
+		std::ostream& debug(const std::string&) const ;
 
 		// Initializes server
 		void initializeServers_(const std::vector<ServerConfig>&);
+		// Get binded server for virtual host
+		ServerManager *getHost(const ServerManager&);
 		// Properly handle exit
 		void handleExit_();
 		// Handle polling Servers

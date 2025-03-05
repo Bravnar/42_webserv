@@ -23,7 +23,8 @@ RUN apk update \
 		libgcc \
 		python3 \
 		php-cgi \
-		bash
+		bash \
+		valgrind
 
 RUN ln -s /bin/bash /usr/bin/bash
 
@@ -33,4 +34,4 @@ COPY ./config_files /usr/webserv/config_files
 
 WORKDIR /usr/webserv/
 
-ENTRYPOINT ["/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]
+ENTRYPOINT ["valgrind", "--leak-check=full", "--track-origins=yes", "/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]

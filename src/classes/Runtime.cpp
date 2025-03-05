@@ -1,10 +1,10 @@
 #include "./Runtime.hpp"
 
-std::ostream& Runtime::fatal(const std::string& msg) { return Logger::fatal("Runtime: " + msg); }
-std::ostream& Runtime::error(const std::string& msg) { return Logger::error("Runtime: " + msg); }
-std::ostream& Runtime::warning(const std::string& msg) { return Logger::warning("Runtime: " + msg); }
-std::ostream& Runtime::info(const std::string& msg) { return Logger::info("Runtime: " + msg); }
-std::ostream& Runtime::debug(const std::string& msg) { return Logger::debug("Runtime: " + msg); }
+std::ostream& Runtime::fatal(const std::string& msg) const { return Logger::fatal("Runtime: " + msg); }
+std::ostream& Runtime::error(const std::string& msg) const { return Logger::error("Runtime: " + msg); }
+std::ostream& Runtime::warning(const std::string& msg) const { return Logger::warning("Runtime: " + msg); }
+std::ostream& Runtime::info(const std::string& msg) const { return Logger::info("Runtime: " + msg); }
+std::ostream& Runtime::debug(const std::string& msg) const { return Logger::debug("Runtime: " + msg); }
 
 Runtime *Runtime::ptr = NULL ;
 
@@ -12,6 +12,17 @@ Runtime::Runtime(const ConfigManager& config): config_(config) {
 	ptr = this ;
 	setUpSignalHandler_() ;	
 	this->initializeServers_(this->config_.getServers());
+}
+
+ServerManager *Runtime::getHost(const ServerManager& ref) {
+	for(std::map<int, ServerManager*>::const_iterator it = this->servers_map_.begin();
+		it != this->servers_map_.end(); it++) {
+			if (it->second->getConfig().getPort() == ref.getConfig().getPort()
+				&& it->second->getConfig().getHost() == ref.getConfig().getHost()) {
+					return it->second;
+			}
+		}
+	return 0;
 }
 
 void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
@@ -26,7 +37,14 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 			this->servers_map_[server->getSocket().fd] = &*server;
 			this->sockets_.push_back(server->getSocket());
 		} catch (const std::exception& e) {
-			this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
+			ServerManager *host = 0;
+			if (!(host = getHost(*server))) {
+				this->fatal("'") << server->getConfig().getServerNames()[0] << "' : " << e.what() << std::endl;
+				this->warning("if trying to use virtualhosts, the host:port need to match perfectly") << std::endl;
+				continue;
+			}
+			host->getVirtualHosts().push_back(host);
+
 		}
 	}
 	this->sockets_.reserve(socket_reserved);
@@ -102,7 +120,8 @@ void Runtime::checkClientsSockets_() {
 					continue;
 			}
 		}
-		if (this->lat_tick_ >= (client->getLastAlive() + client->getServerConfig().getTimeout())) {
+		// TODO: Fix this later
+		if (client->hasServer() && this->lat_tick_ >= (client->getLastAlive() + client->getServerConfig().getTimeout())) {
 			#if LOGGER_DEBUG
 				this->debug("throw client: reached timeout") << std::endl;
 			#endif
@@ -135,25 +154,12 @@ void Runtime::checkServersSocket_() {
 				this->error("error on request accept(): ") << strerror(errno) << std::endl;
 				continue;
 			}
-			this->clients_[socket_fd] = new ClientHandler(*this, socket_fd, client_addr, client_len);
+			this->clients_[socket_fd] = new ClientHandler(*this, *this->servers_map_.at(this->sockets_[i].fd), socket_fd, client_addr, client_len);
 		}
 	}
 }
 
 void Runtime::handleRequest_(ClientHandler *client) {
-	// Check if server name corresponds
-	if (!client->getServerConfig().getIsDefault()) {
-		std::string hostname = client->getRequest().getHeaders().at(H_HOST);
-		bool isFound = false;
-	
-		for(std::vector<std::string>::const_iterator servername = client->getServerConfig().getServerNames().begin(); servername != client->getServerConfig().getServerNames().end(); servername ++) {
-			if(*servername == "default" || hostname.find(*servername) != std::string::npos) {
-				isFound = true;
-				break;
-			}
-		}
-		if (!isFound) throw std::runtime_error(EXC_NOT_VALID_SERVERNAME);
-	}
 	// Print Request
 	std::ostream& stream = this->info("") << C_BLUE << client->getServerConfig().getServerNames()[0] << C_RESET << ": Request "
 		<< client->getRequest().getMethod() << " " << client->getRequest().getUrl()
@@ -168,9 +174,10 @@ void Runtime::handleRequest_(ClientHandler *client, const std::string& exception
 	// Called on building error -> create a new response based on throw event
 	if (exception == EXC_INVALID_RL || exception == EXC_BODY_NEG_SIZE || exception == EXC_BODY_NOLIMITER || exception == EXC_HEADER_NOHOST)
 		client->buildResponse(HttpResponse(client->getRequest(), 400));
-	else {
-		client->buildResponse(HttpResponse(client->getRequest(), 500));
-	}
+	else if (exception == EXC_BODY_TOO_LARGE) client->buildResponse(HttpResponse(client->getRequest(), 413));
+	else if (exception == EXC_BODY_NO_SIZE) client->buildResponse(HttpResponse(client->getRequest(), 411));
+	else if (exception == EXC_BODY_SIZE_MISMATCH) client->buildResponse(HttpResponse(client->getRequest(), 400));
+	else client->buildResponse(HttpResponse(client->getRequest(), 500));
 	#if LOGGER_DEBUG
 		this->debug("client ") << client->getFd() << ": " << exception << std::endl;
 	#endif
@@ -192,9 +199,7 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 			return -1;
 		}
 		client->clearFlag(READING);
-		if (msg == EXC_BODY_TOO_LARGE) client->buildResponse(HttpResponse(client->getRequest(), 413));
-		else if (msg == EXC_BODY_NO_SIZE) client->buildResponse(HttpResponse(client->getRequest(), 411));
-		else client->buildResponse(HttpResponse(client->getRequest(), 500));
+		client->buildResponse(HttpResponse(client->getRequest(), 500));
 		socket->events = POLLOUT | POLLHUP;
 		this->error("client ") << client->getFd() << ": " << e.what() << std::endl;
 		status = 1;
@@ -205,16 +210,19 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	}
 	socket->events = POLLOUT | POLLHUP;
 	try {
-		client->buildRequest();
+		client->buildRequest(); // TODO: handle no length and too big here
+		client->retrieveServer();
+		if (client->getRequest().getAllBody()) {
+			unsigned long long bodySize = Convert::ToT<unsigned long long>(client->getRequest().getHeaders().at(H_CONTENT_LENGTH));
+			if(bodySize > client->getServerConfig().getClientBodyLimit())
+				throw std::runtime_error(EXC_BODY_TOO_LARGE);
+			else if (bodySize != client->getRequest().getAllBody()->size())
+				throw std::runtime_error(EXC_BODY_SIZE_MISMATCH);
+		}
 		this->handleRequest_(client);
 	} catch (const std::exception& e) {
 		this->error(e.what()) << std::endl;
 		std::string exception(e.what());
-		
-		if (exception == EXC_NOT_VALID_SERVERNAME) {
-			delete client;
-			return -1;
-		}
 		this->handleRequest_(client, exception);
 		status = 1;
 	}
