@@ -120,8 +120,8 @@ void Runtime::checkClientsSockets_() {
 					continue;
 			}
 		}
-		// TODO: Fix this later (maybe check the biggest timeout of all servers @stan)
-		if (client->hasServer() && this->lat_tick_ >= (client->getLastAlive() + client->getServerConfig().getTimeout())) {
+		int clientTimeout = client->hasServer() ? client->getServerConfig().getTimeout() : client->getHostServer().getConfig().getTimeout();
+		if (this->lat_tick_ >= (client->getLastAlive() + clientTimeout)) {
 			#if LOGGER_DEBUG
 				this->debug("throw client: reached timeout") << std::endl;
 			#endif

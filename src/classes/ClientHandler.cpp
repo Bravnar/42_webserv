@@ -458,3 +458,4 @@ void ClientHandler::updateLastAlive() {
 }
 const s_clientBuffer& ClientHandler::getBuffer() const { return this->buffer_; }
 bool ClientHandler::hasServer() const { return this->server_; }
+const ServerManager& ClientHandler::getHostServer() const { return this->hostServer_; }

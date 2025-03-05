@@ -154,6 +154,7 @@ class ClientHandler
 		void updateLastAlive();
 		const s_clientBuffer& getBuffer() const;
 		bool hasServer() const;
+		const ServerManager& getHostServer() const;
 };
 
 #endif
