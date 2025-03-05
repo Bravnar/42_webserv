@@ -167,6 +167,13 @@ void Runtime::handleRequest_(ClientHandler *client) {
 	#if LOGGER_DEBUG
 		stream << " (fd: " << client->getFd() << ")";
 	#endif
+	if (client->getRequest().getAllBody()) {
+		unsigned long long bodySize = Convert::ToT<unsigned long long>(client->getRequest().getHeaders().at(H_CONTENT_LENGTH));
+		if(bodySize > client->getServerConfig().getClientBodyLimit())
+			throw std::runtime_error(EXC_BODY_TOO_LARGE);
+		else if (bodySize != client->getRequest().getAllBody()->size())
+			throw std::runtime_error(EXC_BODY_SIZE_MISMATCH);
+	}
 	stream << std::endl;
 }
 
@@ -210,15 +217,8 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 	}
 	socket->events = POLLOUT | POLLHUP;
 	try {
-		client->buildRequest(); // TODO: handle no length and too big here
+		client->buildRequest();
 		client->retrieveServer();
-		if (client->getRequest().getAllBody()) {
-			unsigned long long bodySize = Convert::ToT<unsigned long long>(client->getRequest().getHeaders().at(H_CONTENT_LENGTH));
-			if(bodySize > client->getServerConfig().getClientBodyLimit())
-				throw std::runtime_error(EXC_BODY_TOO_LARGE);
-			else if (bodySize != client->getRequest().getAllBody()->size())
-				throw std::runtime_error(EXC_BODY_SIZE_MISMATCH);
-		}
 		this->handleRequest_(client);
 	} catch (const std::exception& e) {
 		this->error(e.what()) << std::endl;
