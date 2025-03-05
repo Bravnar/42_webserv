@@ -108,7 +108,7 @@ class ClientHandler
 
 		const int socket_fd_;
 		Runtime& runtime_;
-		const ServerManager& server_;
+		const ServerManager *server_;
 		const s_clientAddress address_;
 		s_clientBuffer buffer_;
 		HttpRequest request_;
@@ -119,7 +119,7 @@ class ClientHandler
 	public:
 		// Canonical
 
-		ClientHandler(Runtime&, ServerManager&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
+		ClientHandler(Runtime&, int socket_fd, sockaddr_in addr, socklen_t addrlen);
 		~ClientHandler();
 
 		//Member functions
@@ -139,6 +139,8 @@ class ClientHandler
 		const HttpResponse& buildResponse(HttpResponse);
 		// Flush client state
 		void flush();
+		// Retrieve right server from server vector
+		void retrieveServer(const std::vector<ServerManager>&);
 
 		// Getters
 		const HttpRequest& getRequest() const;
@@ -152,6 +154,8 @@ class ClientHandler
 		unsigned long long getLastAlive() const;
 		void updateLastAlive();
 		const s_clientBuffer& getBuffer() const;
+		bool hasServer() const;
+		void setServer(const ServerManager*);
 };
 
 #endif

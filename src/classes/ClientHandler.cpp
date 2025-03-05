@@ -5,11 +5,11 @@
 #include <stdexcept>
 #include <string>
 
-std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
-std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + server_.getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::fatal(const std::string& msg) { return Logger::fatal(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::error(const std::string& msg) { return Logger::error(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::warning(const std::string& msg) { return Logger::warning(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::info(const std::string& msg) { return Logger::info(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
+std::ostream& ClientHandler::debug(const std::string& msg) { return Logger::debug(C_BLUE + server_->getConfig().getServerNames()[0] + C_RESET + ": ClientHandler (fd: " + Convert::ToString(this->socket_fd_) + "): " + msg); }
 
 static pollfd createPollfd(int fd) {
 	pollfd out;
@@ -19,10 +19,9 @@ static pollfd createPollfd(int fd) {
 	return out;
 }
 
-ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket_fd, sockaddr_in addr, socklen_t addrlen):	
+ClientHandler::ClientHandler(Runtime& runtime, int socket_fd, sockaddr_in addr, socklen_t addrlen):	
 	socket_fd_(socket_fd),
 	runtime_(runtime),
-	server_(server),
 	address_(addr, addrlen),
 	flags_(READING) {
 		struct timeval tv;
@@ -37,7 +36,6 @@ ClientHandler::ClientHandler(Runtime& runtime, ServerManager& server, int socket
 ClientHandler::ClientHandler(const ClientHandler& copy):
 	socket_fd_(-1),	
 	runtime_(copy.runtime_),
-	server_(copy.server_),
 	flags_(copy.flags_),
 	last_alive_(copy.last_alive_) {
 		Logger::fatal("A client was created by copy. Client constructors by copy aren't inteeded; the class init and deconstructor interacts with runtime!") << std::endl;
@@ -151,7 +149,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	const RouteConfig *matchingRoot = 0;
 	// Open file or build 301 permanent redirection or 302 non-permanent redirection
 	if (response.getUrl()) {
-		const std::vector<RouteConfig>& routes = this->server_.getRouteConfig();
+		const std::vector<RouteConfig>& routes = this->server_->getRouteConfig();
 		for (std::vector<RouteConfig>::const_iterator route = routes.begin(); route != routes.end(); route++) {
 			const std::string& locationRoot = route->getPath();
 			if (response.getUrl()->size() >= locationRoot.size() && response.getUrl()->substr(0, locationRoot.size()) == locationRoot)
@@ -205,7 +203,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	if (response.getStatus() < 200 || response.getStatus() > 299 ) {
 		if (this->buffer_.externalBody.is_open())
 			this->buffer_.externalBody.close();
-		const std::map<int, std::string>& errorPages = this->server_.getConfig().getErrorPages();
+		const std::map<int, std::string>& errorPages = this->server_->getConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end()) {
 			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
@@ -422,13 +420,17 @@ void ClientHandler::readSocket(){
 	}
 }
 
+void ClientHandler::retrieveServer(const std::vector<ServerManager>& servers) {
+
+}
+
 HttpResponse& ClientHandler::getResponse() { return this->response_; }
 const char *ClientHandler::getClientIp() const { return this->address_.clientIp; }
 
 int8_t ClientHandler::getFlags() const { return this->flags_; }
 void ClientHandler::clearFlag(int8_t flag) { this->flags_ &= ~flag; }
 void ClientHandler::setFlag(int8_t flag) { this->flags_ |= flag; }
-const ServerConfig& ClientHandler::getServerConfig() const { return this->server_.getConfig(); }
+const ServerConfig& ClientHandler::getServerConfig() const { return this->server_->getConfig(); }
 int ClientHandler::getFd() const { return this->socket_fd_; }
 unsigned long long ClientHandler::getLastAlive() const { return this->last_alive_; }
 void ClientHandler::updateLastAlive() {
@@ -437,3 +439,5 @@ void ClientHandler::updateLastAlive() {
 	this->last_alive_ = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 const s_clientBuffer& ClientHandler::getBuffer() const { return this->buffer_; }
+bool ClientHandler::hasServer() const { return this->server_; }
+void ClientHandler::setServer(const ServerManager *server) { this->server_ = server; }
