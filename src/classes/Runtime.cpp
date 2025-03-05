@@ -45,6 +45,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 				continue;
 			}
 			host->getVirtualHosts().push_back(&*server);
+			host->updateMaxBody(server->getMaxBody());
 			for(std::vector<std::string>::const_iterator it = host->getConfig().getServerNames().begin();
 				it != host->getConfig().getServerNames().end(); it++) {
 					if (std::find(server->getConfig().getServerNames().begin(), server->getConfig().getServerNames().end(), *it) != server->getConfig().getServerNames().end())
@@ -173,14 +174,16 @@ void Runtime::handleRequest_(ClientHandler *client) {
 	#if LOGGER_DEBUG
 		stream << " (fd: " << client->getFd() << ")";
 	#endif
-	if (client->getRequest().getAllBody()) {
+	stream << std::endl;
+	if (client->getFlags() & THROWING || client->getRequest().getAllBody()) {
 		unsigned long long bodySize = Convert::ToT<unsigned long long>(client->getRequest().getHeaders().at(H_CONTENT_LENGTH));
-		if(bodySize > client->getServerConfig().getClientBodyLimit())
+		if (client->getFlags() & ERR_NOLENGTH)
+			throw std::runtime_error(EXC_BODY_NO_SIZE);
+		else if(client->getFlags() & ERR_BODYTOOBIG || bodySize > client->getServerConfig().getClientBodyLimit())
 			throw std::runtime_error(EXC_BODY_TOO_LARGE);
 		else if (bodySize != client->getRequest().getAllBody()->size())
 			throw std::runtime_error(EXC_BODY_SIZE_MISMATCH);
 	}
-	stream << std::endl;
 }
 
 void Runtime::handleRequest_(ClientHandler *client, const std::string& exception) {
@@ -191,9 +194,6 @@ void Runtime::handleRequest_(ClientHandler *client, const std::string& exception
 	else if (exception == EXC_BODY_NO_SIZE) client->buildResponse(HttpResponse(client->getRequest(), 411));
 	else if (exception == EXC_BODY_SIZE_MISMATCH) client->buildResponse(HttpResponse(client->getRequest(), 400));
 	else client->buildResponse(HttpResponse(client->getRequest(), 500));
-	#if LOGGER_DEBUG
-		this->debug("client ") << client->getFd() << ": " << exception << std::endl;
-	#endif
 }
 
 int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {

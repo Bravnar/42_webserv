@@ -158,8 +158,6 @@ void ClientHandler::sendResponse() {
 
 const HttpRequest& ClientHandler::buildRequest() {
 	this->request_ = HttpRequest(this->buffer_.requestBuffer, &this->buffer_.bodyBuffer);
-	if (this->request_.getAllBody() && this->request_.getHeaders().find(H_CONTENT_LENGTH) == this->request_.getHeaders().end())
-		throw std::runtime_error(EXC_BODY_NO_SIZE);
 	return this->request_;
 }
 
@@ -318,6 +316,8 @@ void ClientHandler::flush() {
 	buffer_.boundary.clear();
 	buffer_.boundaryEnd.clear();
 	buffer_.bodyReading = false;
+	this->buffer_.bodySize = 0;
+	this->buffer_.bodyWantedSize = 0;
 	this->request_ = HttpRequest();
 	this->response_ = HttpResponse();
 	this->flags_ = READING;
@@ -387,30 +387,43 @@ void ClientHandler::readSocket(){
 			this->buffer_.requestBuffer->append(buffer, bytesRead);
 			buffer_cursor = static_cast<char*>(memmem(const_cast<char *>(buffer_.requestBuffer->c_str()), buffer_.requestBuffer->size(), "\r\n\r\n", 4));
 		}
-		if (buffer_.bodyReading)
+		if (this->flags_ & THROWING) {this->buffer_.bodySize += bytesRead;}
+		else if (buffer_.bodyReading)
 		{
 			this->buffer_.bodyBuffer.append(buffer, bytesRead);
 			this->buffer_.bodySize += this->buffer_.bodyBuffer.size();
+			if (this->buffer_.bodyBuffer.size() > this->getHostServer().getMaxBody()){
+				this->buffer_.bodyBuffer.clear();
+				this->flags_ |= ERR_BODYTOOBIG;
+			}
 		}
 		else if (!buffer_.bodyReading && buffer_cursor)
 		{
 			cursor = buffer_cursor - buffer_.requestBuffer->c_str() + 4;
 			if (parseBodyInfo(buffer_.requestBuffer, false)){
 				this->buffer_.bodyWantedSize = parseBodyInfo(buffer_.requestBuffer, true);
-				buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
-				this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
-				std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
-				delete buffer_.requestBuffer;
-				buffer_.requestBuffer = tmp;
-				buffer_.bodyReading = true;
+				if (this->buffer_.bodyWantedSize > this->getHostServer().getMaxBody())
+					this->flags_ |= ERR_BODYTOOBIG;
+				else if (!this->buffer_.bodyWantedSize)
+					this->flags_ |= ERR_NOLENGTH;
+				else {
+					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
+					this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
+					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
+					delete buffer_.requestBuffer;
+					buffer_.requestBuffer = tmp;
+					buffer_.bodyReading = true;
+				}
+				if (this->flags_ & THROWING)
+					this->buffer_.bodySize = std::string(buffer, bytesRead).substr(cursor, bytesRead - cursor).size();
 			}
 			else{ this->flags_ &= ~READING; return ;}
 		}
 		if ((buffer_.boundaryEnd.empty() && this->buffer_.bodyWantedSize && this->buffer_.bodySize >= this->buffer_.bodyWantedSize)
 			|| (!buffer_.boundaryEnd.empty() && memmem(buffer, bytesRead, buffer_.boundaryEnd.c_str(), buffer_.boundaryEnd.size()))){
-				this->flags_ &= ~READING;
-				buffer_.bodyReading = false;
-				return ;
+			this->flags_ &= ~READING;
+			buffer_.bodyReading = false;
+			return ;
 		}
 	}
 	else if (bytesRead < 0)
@@ -452,7 +465,9 @@ const ServerConfig& ClientHandler::getServerConfig() const {
 	if (this->server_)
 		return this->server_->getConfig();
 	else {
-		this->warning("webserver getting serverConfig from client, but client has no designated server yet") << std::endl;
+		#if LOGGER_DEBUG > 0
+			this->warning("webserver getting serverConfig from client, but client has no designated server yet") << std::endl;
+		#endif
 		return this->hostServer_.getConfig();
 	}
 }
