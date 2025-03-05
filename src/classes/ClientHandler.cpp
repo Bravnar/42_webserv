@@ -245,12 +245,17 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					this->buffer_.externalBody.close();
 				cgi.run() ; 
 				this->buffer_.internalBody = cgi.getOutputBody(); 
-				response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
-				if (cgi.getOutputHeaders().find(H_CONTENT_TYPE) != cgi.getOutputHeaders().end())
-					response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
-				else response.getHeaders()[H_CONTENT_TYPE] = "text/html" ;
-				if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty())
-					response.setStatus(201);
+				for (std::map<std::string, std::string>::const_iterator it = cgi.getOutputHeaders().begin() ;
+					it != cgi.getOutputHeaders().end() ; it++ ) {
+						response.getHeaders()[it->first] = it->second ;
+					} //TODO: @Banatawa, can you please check that this doesn't break anything (uploads / cgi)
+					  // if ok, delete comments below
+				// response.getHeaders()[H_CONTENT_LENGTH] = Convert::ToString(this->buffer_.internalBody.size()) ;
+				// if (cgi.getOutputHeaders().find(H_CONTENT_TYPE) != cgi.getOutputHeaders().end())
+				// 	response.getHeaders()[H_CONTENT_TYPE] = cgi.getOutputHeaders().at(H_CONTENT_TYPE) ;
+				// else response.getHeaders()[H_CONTENT_TYPE] = "text/html" ;
+				// if (this->request_.getMethod() == "POST" && !this->request_.getBoundary().empty())
+				// 	response.setStatus(201);
 			}
 		}
 		catch(const std::exception& e) {
@@ -390,7 +395,7 @@ void ClientHandler::readSocket(){
 				else {
 					buffer_.bodyBuffer = buffer_.requestBuffer->substr(cursor, buffer_.requestBuffer->size() - cursor);
 					this->buffer_.bodySize = this->buffer_.bodyBuffer.size();
-					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 4));
+					std::string *tmp = new std::string(buffer_.requestBuffer->substr(0, cursor - 3));
 					delete buffer_.requestBuffer;
 					buffer_.requestBuffer = tmp;
 					buffer_.bodyReading = true;
