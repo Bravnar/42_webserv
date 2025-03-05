@@ -227,9 +227,9 @@ int Runtime::handleClientPollin_(ClientHandler *client, pollfd *socket) {
 		client->retrieveServer();
 		this->handleRequest_(client);
 	} catch (const std::exception& e) {
-		this->error(e.what()) << std::endl;
 		std::string exception(e.what());
 		this->handleRequest_(client, exception);
+		this->error(e.what()) << std::endl;
 		status = 1;
 	}
 	client->updateLastAlive();
