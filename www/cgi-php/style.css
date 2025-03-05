@@ -28,6 +28,13 @@ section {
 	justify-content: center;
 	align-items: center;
 }
+.container.picture {
+	width: 30%;
+	height: 20%;
+	margin: 0;
+	padding: 10px;
+	display: inline;
+}
 h1 {
 	border-bottom: 2px solid black;
 	padding-bottom: 10px;
