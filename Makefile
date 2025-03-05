@@ -28,7 +28,7 @@ FILES =	main \
 SRCS = $(addsuffix .cpp, $(addprefix src/, $(FILES)))
 OBJS = $(addprefix objs/, $(addsuffix .o, $(FILES)))
 
-# Additional include paths (not used in this Makefile)
+# Additional include paths (not used in this make -sfile)
 # HEADERS =
 #INCLUDE_PATHS = -I.
 
@@ -61,8 +61,8 @@ fclean: clean
 		@rm -rf $(NAME).dSYM
 
 re:
-	@make fclean
-	@make all
+	@make -s fclean
+	@make -s all
 
 debug : $(HEADERS) $(SRCS) $(OBJS)
 	@if [ "$(shell uname)" = "Linux" ]; then\
