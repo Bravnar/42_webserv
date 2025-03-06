@@ -49,7 +49,7 @@ void Runtime::initializeServers_(const std::vector<ServerConfig>& configs) {
 			for(std::vector<std::string>::const_iterator it = host->getConfig().getServerNames().begin();
 				it != host->getConfig().getServerNames().end(); it++) {
 					if (std::find(server->getConfig().getServerNames().begin(), server->getConfig().getServerNames().end(), *it) != server->getConfig().getServerNames().end())
-						this->warning("conflicting server name \"" + *it + "\" on http://" + server->getConfig().getHost() + ":" + Convert::ToString(server->getConfig().getPort()) + ", ignored") << std::endl;
+						this->warning("conflicting server name \"" + *it + "\" on http://" + server->getConfig().getHost() + ":" + Convert::ToString(server->getConfig().getPort())) << ", ignored" << std::endl;
 				}
 
 		}
