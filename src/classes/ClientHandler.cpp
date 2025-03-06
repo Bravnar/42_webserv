@@ -176,10 +176,11 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 					matchingRoot = &*route;
 		}
 		if (!matchingRoot) throw std::runtime_error(EXC_NO_ROUTE);
+		std::string formatedUrl = ReplaceAll::replace(this->request_.getUrl(),"%20"," ");
 		if (matchingRoot->getPath() != "/"
-			&& (matchingRoot->getPath() == this->request_.getUrl() || !matchingRoot->getReturn().empty()))
+			&& (matchingRoot->getPath() == formatedUrl || !matchingRoot->getReturn().empty()))
 				return this->buildResponse(HttpResponse(this->request_, *matchingRoot));
-		rootFile = matchingRoot->getLocationRoot() + "/" + this->request_.getUrl();
+		rootFile = matchingRoot->getLocationRoot() + "/" + formatedUrl;
 		if (rootFile.at(rootFile.size() - 1) != '/') {
 			struct stat s;
 			if (!stat(rootFile.c_str(), &s) && s.st_mode & S_IFDIR) {
