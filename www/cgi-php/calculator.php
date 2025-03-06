@@ -1,3 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="./winnie_php.jpg">
+    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP-CGI!</title>
+</head>
+<body>
+    <section>
+        <div class="container">
+            <h1>CGI-PHP Calculator</h1>
+            <h2>Hope you're having a great day!</h2>
+        </div>
+        <div class="container">
+            <h1>Welcome to PHP CGI Page!</h1>
+            <div style="margin-top: 0px;" class="container">
+		<h2>Results</h2>
 <?php
     if (!isset($_COOKIE["histo"]))
     {
@@ -117,8 +136,7 @@
 
 <br>
 
-Historique : 
-<br>
+<h2>Historique</h2>
 
 <?php 
 foreach ($histo as $calc)
@@ -127,3 +145,21 @@ foreach ($histo as $calc)
 }
 
 ?>
+            </div>
+            <br>
+            <p>The main website is at <strong>http://127.0.0.1/</strong></p>
+            <p>But this one is at <strong>http://127.0.0.1/cgi-php/index.php</strong>!</p>
+            <div class="buttons">
+                <a href="/">Go To Main Site</a>
+                <a href="/404notfound">Get a 404 Error!</a>                
+            </div>
+            <div class="buttons cgi-buttons">
+                <a href="../cgi-python/">PYTHON CGI</a>
+                <a href="../cgi-bash/">BASH CGI</a>
+                <a href="../cgi-php/calculator.html">CGI Calculator!</a>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

@@ -1,63 +1,89 @@
 <!DOCTYPE html>
-<html lang='en'>
-
+<html lang="en">
 <head>
-    <title>Calculator</title>
+    <link rel="icon" href="./winnie_php.jpg">
+    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP-CGI!</title>
 </head>
-
 <body>
+    <section>
+        <div class="container">
+            <h1>CGI-PHP Calculator</h1>
+            <h2>Hope you're having a great day!</h2>
+        </div>
+        <div class="container">
+            <h1>Welcome to PHP CGI Page!</h1>
+            <div style="margin-top: 0px;" class="container">
+                <!-- <form action="calculator.py" method="GET">
+                    <h1>Calculator py get</h1>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr1">
+                    <select name="operation" id="name">
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                        <option value="*">*</option>
+                        <option value="/">/</option>
+                    </select>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr2">
+                    <button type="submit">Submit</button>
+                </form>
 
-    <!-- <form action="calculator.py" method="GET">
-        <h1>Calculator py get</h1>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr1">
-        <select name="operation" id="name">
-            <option value="+">+</option>
-            <option value="-">-</option>
-            <option value="*">*</option>
-            <option value="/">/</option>
-        </select>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr2">
-        <button type="submit">Submit</button>
-    </form>
+                <form action="calculator.py" method="POST">
+                    <h1>Calculator py post</h1>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr1">
+                    <select name="operation" id="name">
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                        <option value="*">*</option>
+                        <option value="/">/</option>
+                    </select>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr2">
+                    <button type="submit">Submit</button>
+                </form> -->
+                <form action="calculator.php" method="GET">
+                    <h2>Calculator php get</h1>
+                        <br>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr1">
+                    <select name="operation" id="name">
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                        <option value="*">*</option>
+                        <option value="/">/</option>
+                    </select>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr2">
+                    <button type="submit">Submit</button>
+                </form>
 
-    <form action="calculator.py" method="POST">
-        <h1>Calculator py post</h1>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr1">
-        <select name="operation" id="name">
-            <option value="+">+</option>
-            <option value="-">-</option>
-            <option value="*">*</option>
-            <option value="/">/</option>
-        </select>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr2">
-        <button type="submit">Submit</button>
-    </form> -->
-
-    <form action="calculator.php" method="GET">
-        <h1>Calculator php get</h1>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr1">
-        <select name="operation" id="name">
-            <option value="+">+</option>
-            <option value="-">-</option>
-            <option value="*">*</option>
-            <option value="/">/</option>
-        </select>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr2">
-        <button type="submit">Submit</button>
-    </form>
-
-    <form action="calculator.php" method="POST">
-        <h1>Calculator php post</h1>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr1">
-        <select name="operation" id="name">
-            <option value="+">+</option>
-            <option value="-">-</option>
-            <option value="*">*</option>
-            <option value="/">/</option>
-        </select>
-        <input type="text" required minlength="1" size="20" id="name" name="nbr2">
-        <button type="submit">Submit</button>
-    </form>
+                <form action="calculator.php" method="POST">
+                    <br><br>
+                    <h2>Calculator php post</h1>
+                        <br>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr1">
+                    <select name="operation" id="name">
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                        <option value="*">*</option>
+                        <option value="/">/</option>
+                    </select>
+                    <input type="text" required minlength="1" size="20" id="name" name="nbr2">
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+            <br>
+            <p>The main website is at <strong>http://127.0.0.1/</strong></p>
+            <p>But this one is at <strong>http://127.0.0.1/cgi-php/index.php</strong>!</p>
+            <div class="buttons">
+                <a href="/">Go To Main Site</a>
+                <a href="/404notfound">Get a 404 Error!</a>                
+            </div>
+            <div class="buttons cgi-buttons">
+                <a href="../cgi-python/">PYTHON CGI</a>
+                <a href="../cgi-bash/">BASH CGI</a>
+                <a href="../cgi-php/calculator.html">CGI Calculator!</a>
+            </div>
+        </div>
+    </section>
 </body>
 
 </html>
