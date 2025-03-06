@@ -62,26 +62,58 @@ if (form.getvalue('nbr1') != None and form.getvalue('nbr2') != None and form.get
 
 
 print ("Content-Type: text/html")
+print()
 
+print("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="./winnie_php.jpg">
+    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python CGI!</title>
+</head>
+<body>
+    <section>
+        <div class="container">
+            <h1>CGI-Python Calculator</h1>
+            <h2>Hope you're having a great day!</h2>
+        </div>
+        <div class="container">
+            <h1>Welcome to Python CGI Page!</h1>
+            <div style="margin-top: 0px;" class="container">
+                <h2>Results</h2>
+""")
 
-print ("")
-print ("<html>")
-print ("<head>")
-print ("<title>CALCULATOR</title>")
-print ("</head>")
-print ("<body>")
+if res is not None:
+    print(f"<p>Calcul made with {method}</p>")
+    print(f"<p>Result of {nbr1} {operation} {nbr2} is {res} !!!!</p>")
 
-if (res != None):
-   print (f"calcul made with {method}<br>")
-   print (f"result of {nbr1} {operation} {nbr2} is {res} !!!! <br>")
-print (f"<br><br>")
+print("""
+                <br><br>
+                <h2>Historique</h2>
+""")
 
-
-print("Historique<br>")
 for i in histo:
-   print(i)
-   print("<br>")
+    print(f"<p>{i}</p>")
 
-
-print ("</body>")
-print ("</html>")
+print("""
+            </div>
+            <br>
+            <p>The main website is at <strong>http://127.0.0.1/</strong></p>
+            <p>But this one is at <strong>http://127.0.0.1/cgi-python/index.py</strong>!</p>
+            <div class="buttons">
+                <a href="/">Go To Main Site</a>
+                <a href="/404notfound">Get a 404 Error!</a>
+            </div>
+            <div class="buttons cgi-buttons">
+                <a href="../cgi-php/">PHP CGI</a>
+                <a href="../cgi-bash/">BASH CGI</a>
+                <a href="../cgi-python/calculator.html">CGI Calculator!</a>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+""")
