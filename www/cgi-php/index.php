@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <link rel="icon" href="./winnie_php.jpg">
-	<link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhP-CGI!</title>
@@ -13,11 +13,11 @@
         <div class="container">
             <h1>WebServ-PHP-CGI</h1>
             <h2>Happy <span style="color: blue;">
-				<?php
-				$day_of_week = date("l");
-				$day_message = "$day_of_week";
-				echo $day_message;
-				?>!</span> Hope you're having a great day!</h2>
+                <?php
+                $day_of_week = date("l");
+                $day_message = "$day_of_week";
+                echo $day_message;
+                ?>!</span> Hope you're having a great day!</h2>
         </div>
         <div class="container">
             <h1>Welcome to PHP CGI Page!</h1>
@@ -38,7 +38,7 @@
     </section>
     <section>
         <div class="container">
-            <h2>Latest Memes</h2>
+            <h2>Upload Memes</h2>
             <p1>( *.png, *.jpg, *.jpeg, *.gif )</p1>
             <div class="container" style="margin-top: 20px; max-width: 40%;">
                 <h3>Upload a File</h3>
@@ -46,27 +46,30 @@
                 <form action="./upload.php" method="post" enctype="multipart/form-data">
                     <input type="file" name="uploaded_file" id="fileToUpload">
                     <input type="submit" value="Upload">
-				</form>
+                </form>
             </div>
-            <div class="container" style="width: 90%; flex-direction: row; gap: 20px; flex-wrap: wrap;">
+            <h2 style="margin-top: 50px;">Latest Memes</h2>
+            <div style="display: flex; width: 100%; justify-content: center; align-items: center; flex-direction: row; gap: 20px; flex-wrap: wrap;">
                 <?php
                 $dir = './uploads';
                 $files = scandir($dir);
                 foreach ($files as $file) {
                     if ($file !== '.' && $file !== '..' && preg_match('/\.(png|jpg|jpeg|gif)$/i', $file)) {
+                        $creationDate = date("F d Y H:i:s.", filectime('./uploads/' . $file));
                         echo '
                         <div class="container picture" style="display: flex; flex-direction: column; align-items: center; margin: 10px;">
                             <img src="./uploads/' . $file . '" alt="Image Placeholder" style="max-width: 100%; height: auto;">
                             <p>' . $file . '</p>
+                            <p>Created on: ' . $creationDate . '</p>
                             <a href="#" onclick="deleteFile(\'' . $file . '\')" style="background-color: #f44336; color: white; border: none; padding: 10px; cursor: pointer; text-decoration: none; margin-top: 10px;">Delete</a>
                         </div>';
                     }
-				}
+                }                
                 ?>
             </div>
         </div>
     </section>
-	<script>
+    <script>
         function deleteFile(fileName) {
             var xhr = new XMLHttpRequest();
             xhr.open('DELETE', './uploads/' + fileName, true);
