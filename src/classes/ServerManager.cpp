@@ -22,6 +22,7 @@ static sockaddr_in newAddr(int port, std::string interface) {
 }
 
 void ServerManager::init() {
+	this->maxBody_ = this->config_.getClientBodyLimit();
 	this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (this->server_fd_ < 0) { throw std::logic_error("server_fd_ socket: " + std::string(strerror(errno))); }
@@ -41,7 +42,8 @@ ServerManager::ServerManager(const ServerConfig& config):
 	addrv4_(newAddr(config.getPort(), config.getHost())),
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(config.getRoutes()),
-	server_fd_(-1) {}
+	server_fd_(-1),
+	maxBody_(0) {}
 
 ServerManager::ServerManager(const ServerManager& copy):
 	config_(copy.config_),
@@ -49,7 +51,8 @@ ServerManager::ServerManager(const ServerManager& copy):
 	address_((sockaddr *)&this->addrv4_),
 	routeconfig_(copy.routeconfig_),
 	server_fd_(copy.server_fd_),
-	socket_(copy.socket_) {}
+	socket_(copy.socket_),
+	maxBody_(copy.maxBody_) {}
 
 ServerManager& ServerManager::operator=(const ServerManager& assign) {
 	if (this == &assign)
@@ -70,3 +73,5 @@ const ServerConfig& ServerManager::getConfig() const { return this->config_; }
 const std::vector<RouteConfig>& ServerManager::getRouteConfig() const { return this->routeconfig_; }
 std::vector<ServerManager *>& ServerManager::getVirtualHosts() { return this->virtualHosts_; }
 const std::vector<ServerManager *>& ServerManager::getVirtualHosts() const { return this->virtualHosts_; }
+unsigned long long ServerManager::getMaxBody() const { return this->maxBody_; }
+void ServerManager::updateMaxBody(unsigned long long value) { if(value > this->maxBody_) this->maxBody_ = value; }

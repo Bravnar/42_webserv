@@ -39,6 +39,7 @@ class ServerManager {
 		std::vector<ServerManager *> virtualHosts_;
 		int server_fd_;
 		pollfd socket_;
+		unsigned long long maxBody_;
 
 	public:
 		// Canonical
@@ -59,6 +60,10 @@ class ServerManager {
 		const std::vector<RouteConfig>& getRouteConfig() const;
 		std::vector<ServerManager *>& getVirtualHosts();
 		const std::vector<ServerManager *>& getVirtualHosts() const;
+		// Get the biggest body limit from virtual hosts
+		unsigned long long getMaxBody() const;
+		// Will update maxBody_ if new value is bigger
+		void updateMaxBody(unsigned long long);
 };
 
 #endif
