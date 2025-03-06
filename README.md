@@ -41,7 +41,7 @@ make re
 Run the server with:
 
 ```bash
-./webserv [option: script file]
+./webserv [optional: script file]
 ```
 
 ## Features ✨
