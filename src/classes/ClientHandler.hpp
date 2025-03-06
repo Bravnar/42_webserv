@@ -18,6 +18,7 @@
 # include "./ListingBuilder.hpp"
 # include "./ErrorBuilder.hpp"
 # include <climits>
+# include "../utils/ReplaceAll.hpp"
 
 # define EXC_SOCKET_READ "Error reading from socket"
 # define EXC_FILE_READ "Error reading from file"

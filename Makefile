@@ -21,6 +21,7 @@ FILES =	main \
 		classes/RouteConfig \
 		classes/CgiHandler \
 		utils/ParseUtils \
+		utils/ReplaceAll \
 		utils/Logger \
 		utils/Convert \
 
