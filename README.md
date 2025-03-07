@@ -18,7 +18,12 @@ Ready to build your own web server? Clone the repository with:
 git clone https://github.com/Bravnar/42_webserv.git
 ```
 ## Compiling & Running Webserv 🚀
-Use `Makefile` to compile the project:
+To run the project without compiling (over docker!):
+```bash
+make up
+```
+
+To compile the project:
 ```bash
 make
 ```

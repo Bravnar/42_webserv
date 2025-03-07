@@ -89,9 +89,9 @@ down: $(HEADERS) Dockerfile docker-compose.yml $(SRCS)
 		@echo "\033[0;32m ✅ WebservSIR and Nginx are down! ✅ \033[0m"
 
 logs: Dockerfile docker-compose.yml $(SRCS)
-		@docker logs 42_webserv-webserv-1
+		@docker logs WebservSIR
 
-randomfile:
-	@dd if=/dev/urandom of=./www/siege/randomfile bs=1M count=10240
+attach: Dockerfile docker-compose.yml $(SRCS)
+		@docker attach WebservSIR
 
-.PHONY: all clean fclean re debug up down logs randomfile
+.PHONY: all clean fclean re debug up down logs

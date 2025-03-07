@@ -12,7 +12,7 @@ COPY Makefile /usr/webserv/Makefile
 
 WORKDIR /usr/webserv
 
-RUN make debug
+RUN make
 
 FROM alpine:latest
 
@@ -23,8 +23,7 @@ RUN apk update \
 		libgcc \
 		python3 \
 		php-cgi \
-		bash \
-		valgrind
+		bash
 
 RUN ln -s /bin/bash /usr/bin/bash
 
@@ -34,4 +33,4 @@ COPY ./config_files /usr/webserv/config_files
 
 WORKDIR /usr/webserv/
 
-ENTRYPOINT ["valgrind", "--leak-check=full", "--track-origins=yes", "/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]
+ENTRYPOINT ["/usr/webserv/webserv", "/usr/webserv/config_files/default.conf"]
