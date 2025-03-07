@@ -15,7 +15,7 @@ Ahoy, coding navigators! Welcome to **42_webserv**, our own lightweight web serv
 ## Cloning the Repository 🛠
 Ready to build your own web server? Clone the repository with:
 ```bash
-git clone https://github.com/Bravnar/42_webserv.git
+git --recurse-submodule clone https://github.com/Bravnar/42_webserv.git
 ```
 ## Compiling & Running Webserv 🚀
 To run the project without compiling (over docker!):
