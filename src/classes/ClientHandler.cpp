@@ -230,7 +230,7 @@ const HttpResponse& ClientHandler::buildResponse(HttpResponse response) {
 	if (response.getStatus() < 200 || response.getStatus() > 299 ) {
 		if (this->buffer_.externalBody.is_open())
 			this->buffer_.externalBody.close();
-		const std::map<int, std::string>& errorPages = this->server_->getConfig().getErrorPages();
+		const std::map<int, std::string>& errorPages = this->getServerConfig().getErrorPages();
 		int status = response.getStatus();
 		if (errorPages.find(status) != errorPages.end())
 			this->buffer_.externalBody.open(errorPages.at(status).c_str(), std::ios::binary);
